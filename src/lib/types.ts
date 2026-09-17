@@ -136,3 +136,18 @@ export interface CreditCardInvoiceDetails {
   dueDate: Date | null
   isClosed: boolean
 }
+
+export interface RecurringBill {
+  id: string
+  created_at?: string
+  user_id?: string
+  name: string
+  amount: number
+  currency: CurrencyCode
+  category: string
+  wallet_id: string
+  due_day: number
+  is_active: boolean
+  scope: WalletScope
+  family_id?: string | null
+}

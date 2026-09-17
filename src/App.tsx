@@ -5,6 +5,7 @@ import type {
   Transaction,
   WalletScope,
   TransactionType,
+  RecurringBill,
 } from './lib/types'
 import { ensureInitialWallets } from './lib/walletService'
 import {
@@ -12,6 +13,7 @@ import {
   calculateBalances,
   calculateCardInvoices,
 } from './lib/accountingService'
+import { fetchRecurringBills } from './lib/recurringService'
 import { Navbar } from './components/Navbar'
 import { ScopeFilter } from './components/ScopeFilter'
 import { CurrencyDashboard } from './components/CurrencyDashboard'
@@ -20,7 +22,9 @@ import { TransactionList } from './components/TransactionList'
 import { MonthSelector } from './components/MonthSelector'
 import { MonthlySummary } from './components/MonthlySummary'
 import { CategoryBreakdown } from './components/CategoryBreakdown'
+import { MonthlyBillsWidget } from './components/MonthlyBillsWidget'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
+import { RecurringBillsModal } from './components/RecurringBillsModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
 import { ManageAccountModal } from './components/ManageAccountModal'
 import { FamilySettingsModal } from './components/FamilySettingsModal'
@@ -40,6 +44,7 @@ export default function App() {
   // Core Data
   const [wallets, setWallets] = useState<Wallet[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [recurringBills, setRecurringBills] = useState<RecurringBill[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 
   // Scope filter: 'personal' (Minhas Contas) | 'shared' (Caixa da Família) | 'all' (Consolidado)
@@ -55,10 +60,13 @@ export default function App() {
   const [quickTxSourceId, setQuickTxSourceId] = useState<string | undefined>()
   const [quickTxDestId, setQuickTxDestId] = useState<string | undefined>()
   const [quickTxAmount, setQuickTxAmount] = useState<number | undefined>()
+  const [quickTxCategory, setQuickTxCategory] = useState<string | undefined>()
+  const [quickTxDescription, setQuickTxDescription] = useState<string | undefined>()
 
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false)
   const [managingWallet, setManagingWallet] = useState<Wallet | null>(null)
   const [isFamilySettingsOpen, setIsFamilySettingsOpen] = useState(false)
+  const [isRecurringBillsModalOpen, setIsRecurringBillsModalOpen] = useState(false)
 
   // 1. Supabase Auth Session listener
   useEffect(() => {
@@ -101,13 +109,18 @@ export default function App() {
       const loadedWallets = await ensureInitialWallets(sessionUser.id)
       setWallets(loadedWallets)
 
-      if (loadedWallets.length > 0) {
-        const walletIds = loadedWallets.map((w) => w.id)
-        const loadedTxs = await fetchTransactions(walletIds)
-        setTransactions(loadedTxs)
-      } else {
-        setTransactions([])
-      }
+      const sharedWallet = loadedWallets.find((w) => w.type === 'shared' && w.family_id)
+      const familyId = sharedWallet?.family_id || null
+
+      const [loadedTxs, loadedBills] = await Promise.all([
+        loadedWallets.length > 0
+          ? fetchTransactions(loadedWallets.map((w) => w.id))
+          : Promise.resolve([]),
+        fetchRecurringBills('all', familyId).catch(() => []),
+      ])
+
+      setTransactions(loadedTxs)
+      setRecurringBills(loadedBills)
     } catch (err) {
       console.error('Error refreshing data:', err)
     }
@@ -123,12 +136,20 @@ export default function App() {
         .then(async (loadedWallets) => {
           if (!isMounted) return
           setWallets(loadedWallets)
-          if (loadedWallets.length > 0) {
-            const walletIds = loadedWallets.map((w) => w.id)
-            const loadedTxs = await fetchTransactions(walletIds)
-            if (isMounted) setTransactions(loadedTxs)
-          } else {
-            if (isMounted) setTransactions([])
+
+          const sharedWallet = loadedWallets.find((w) => w.type === 'shared' && w.family_id)
+          const familyId = sharedWallet?.family_id || null
+
+          const [loadedTxs, loadedBills] = await Promise.all([
+            loadedWallets.length > 0
+              ? fetchTransactions(loadedWallets.map((w) => w.id))
+              : Promise.resolve([]),
+            fetchRecurringBills('all', familyId).catch(() => []),
+          ])
+
+          if (isMounted) {
+            setTransactions(loadedTxs)
+            setRecurringBills(loadedBills)
           }
         })
         .catch((err) => {
@@ -171,6 +192,8 @@ export default function App() {
     setQuickTxSourceId(bankAccount?.id)
     setQuickTxDestId(cardWallet.id)
     setQuickTxAmount(invoiceAmount > 0 ? invoiceAmount : undefined)
+    setQuickTxCategory(undefined)
+    setQuickTxDescription(undefined)
     setIsQuickTxOpen(true)
   }
 
@@ -181,12 +204,32 @@ export default function App() {
     setQuickTxSourceId(undefined)
     setQuickTxDestId(undefined)
     setQuickTxAmount(undefined)
+    setQuickTxCategory(undefined)
+    setQuickTxDescription(undefined)
     setIsQuickTxOpen(true)
   }
 
   // Edit existing transaction
   const handleEditTransaction = (tx: Transaction) => {
     setEditingTransaction(tx)
+    setQuickTxType(tx.type)
+    setQuickTxSourceId(tx.wallet_id)
+    setQuickTxDestId(tx.destination_wallet_id || undefined)
+    setQuickTxAmount(Number(tx.amount))
+    setQuickTxCategory(tx.category)
+    setQuickTxDescription(tx.description || undefined)
+    setIsQuickTxOpen(true)
+  }
+
+  // 1-Click Pay Recurring Bill
+  const handlePayBill = (bill: RecurringBill) => {
+    setEditingTransaction(null)
+    setQuickTxType('expense')
+    setQuickTxSourceId(bill.wallet_id)
+    setQuickTxDestId(undefined)
+    setQuickTxAmount(bill.amount)
+    setQuickTxCategory(bill.category)
+    setQuickTxDescription(bill.name)
     setIsQuickTxOpen(true)
   }
 
@@ -230,6 +273,7 @@ export default function App() {
           setSessionUser(null)
           setWallets([])
           setTransactions([])
+          setRecurringBills([])
         }}
       />
 
@@ -292,8 +336,17 @@ export default function App() {
                 />
               </div>
 
-              {/* Sidebar Column: AccountList */}
-              <div className="lg:col-span-4 order-1 lg:order-2">
+              {/* Sidebar Column: MonthlyBillsWidget and AccountList */}
+              <div className="lg:col-span-4 order-1 lg:order-2 space-y-6">
+                <MonthlyBillsWidget
+                  recurringBills={recurringBills}
+                  monthlyTransactions={monthlyTransactions}
+                  wallets={wallets}
+                  currentScope={currentScope}
+                  onOpenManage={() => setIsRecurringBillsModalOpen(true)}
+                  onPayBill={handlePayBill}
+                />
+
                 <AccountList
                   wallets={wallets}
                   transactions={transactions}
@@ -329,6 +382,8 @@ export default function App() {
         initialSourceWalletId={quickTxSourceId}
         initialDestWalletId={quickTxDestId}
         initialAmount={quickTxAmount}
+        initialCategory={quickTxCategory}
+        initialDescription={quickTxDescription}
         onClose={() => {
           setIsQuickTxOpen(false)
           setEditingTransaction(null)
@@ -336,6 +391,16 @@ export default function App() {
         onTransactionCreated={() => {
           refreshData()
         }}
+      />
+
+      {/* Recurring Bills Modal */}
+      <RecurringBillsModal
+        isOpen={isRecurringBillsModalOpen}
+        onClose={() => setIsRecurringBillsModalOpen(false)}
+        wallets={wallets}
+        scope={currentScope}
+        familyId={wallets.find((w) => w.type === 'shared' && w.family_id)?.family_id}
+        onBillsChanged={() => refreshData()}
       />
 
       {/* Create Account Modal */}

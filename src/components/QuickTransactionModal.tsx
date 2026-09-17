@@ -45,6 +45,8 @@ interface QuickTransactionModalProps {
   initialSourceWalletId?: string
   initialDestWalletId?: string
   initialAmount?: number
+  initialCategory?: string
+  initialDescription?: string
   onClose: () => void
   onTransactionCreated: () => void
 }
@@ -71,6 +73,8 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   initialSourceWalletId,
   initialDestWalletId,
   initialAmount,
+  initialCategory,
+  initialDescription,
   onClose,
   onTransactionCreated,
 }) => {
@@ -112,6 +116,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   )
   const [category, setCategory] = useState<string>(
     editingTransaction?.category ??
+      initialCategory ??
       (initialType === 'income'
         ? 'Salário'
         : initialType === 'transfer'
@@ -119,7 +124,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
         : 'Alimentação')
   )
   const [description, setDescription] = useState<string>(
-    editingTransaction?.description ?? ''
+    editingTransaction?.description ?? initialDescription ?? ''
   )
   const [transactionDate, setTransactionDate] = useState<string>(
     editingTransaction?.transaction_date
@@ -717,7 +722,9 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = (prop
   if (!props.isOpen) return null
 
   // Mounting key resets form cleanly on open or transaction switch without needing useEffect
-  const formKey = props.editingTransaction?.id ?? 'new-tx'
+  const formKey =
+    props.editingTransaction?.id ??
+    `new-tx-${props.initialType || ''}-${props.initialSourceWalletId || ''}-${props.initialAmount || ''}-${props.initialCategory || ''}-${props.initialDescription || ''}`
 
   return <QuickTransactionForm key={formKey} {...props} />
 }
