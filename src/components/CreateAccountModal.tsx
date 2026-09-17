@@ -23,6 +23,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [accountType, setAccountType] = useState<AccountType>('checking')
   const [currency, setCurrency] = useState<CurrencyCode>('PYG')
   const [scope, setScope] = useState<WalletScope>('personal')
+  const [initialBalance, setInitialBalance] = useState<string>('0')
   const [creditLimit, setCreditLimit] = useState<string>('')
   const [closingDay, setClosingDay] = useState<string>('')
   const [dueDay, setDueDay] = useState<string>('')
@@ -65,6 +66,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         familyId = await getOrCreateMyFamilyId()
       }
 
+      const parsedInitialBalance = initialBalance.trim() ? Number(initialBalance.trim()) : 0
+
       await createWallet({
         owner_id: userId,
         name: name.trim(),
@@ -72,12 +75,19 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         account_type: accountType,
         currency,
         family_id: familyId,
+        initial_balance:
+          accountType === 'credit_card'
+            ? 0
+            : isNaN(parsedInitialBalance)
+            ? 0
+            : parsedInitialBalance,
         credit_limit: accountType === 'credit_card' && creditLimit ? Number(creditLimit) : null,
         closing_day: accountType === 'credit_card' && closingDay ? parseInt(closingDay, 10) : null,
         due_day: accountType === 'credit_card' && dueDay ? parseInt(dueDay, 10) : null,
       })
 
       setName('')
+      setInitialBalance('0')
       setCreditLimit('')
       setClosingDay('')
       setDueDay('')
@@ -241,6 +251,26 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Saldo Inicial para contas de liquidez (Efetivo e Conta Bancária) */}
+          {accountType !== 'credit_card' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                {t('createAccount.initialBalance')} ({currency})
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={initialBalance}
+                onChange={(e) => setInitialBalance(e.target.value)}
+                placeholder="0"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-100 placeholder-slate-600 text-sm outline-none transition-all font-mono"
+              />
+              <p className="text-[11px] text-slate-500">
+                {t('createAccount.initialBalanceDesc')}
+              </p>
+            </div>
+          )}
 
           {/* Campos Específicos para Cartão de Crédito */}
           {accountType === 'credit_card' && (

@@ -15,6 +15,7 @@ export interface Wallet {
   account_type: AccountType
   currency: CurrencyCode
   family_id?: string | null
+  initial_balance?: number | null
   credit_limit?: number | null
   closing_day?: number | null
   due_day?: number | null

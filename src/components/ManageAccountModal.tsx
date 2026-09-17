@@ -24,9 +24,15 @@ interface ManageAccountModalProps {
   onAccountUpdated: () => void
 }
 
-export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
+interface ManageAccountModalFormProps {
+  wallet: Wallet
+  transactions: Transaction[]
+  onClose: () => void
+  onAccountUpdated: () => void
+}
+
+const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
   wallet,
-  isOpen,
   transactions,
   onClose,
   onAccountUpdated,
@@ -35,21 +41,27 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [currentName, setCurrentName] = useState(wallet?.name || '')
-  const [accountName, setAccountName] = useState(wallet?.name || '')
+  const [currentName, setCurrentName] = useState(wallet.name || '')
+  const [accountName, setAccountName] = useState(wallet.name || '')
   const [isUpdatingName, setIsUpdatingName] = useState(false)
   const [nameError, setNameError] = useState<string | null>(null)
   const [nameSuccess, setNameSuccess] = useState(false)
 
+  // Initial balance state
+  const initBalStr = wallet.initial_balance != null ? wallet.initial_balance.toString() : '0'
+  const [initialBalance, setInitialBalance] = useState(initBalStr)
+  const [currentInitialBalance, setCurrentInitialBalance] = useState(initBalStr)
+  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false)
+  const [balanceError, setBalanceError] = useState<string | null>(null)
+  const [balanceSuccess, setBalanceSuccess] = useState(false)
+
   // Credit card invoice cycle & limit state
-  const [closingDay, setClosingDay] = useState(wallet?.closing_day?.toString() || '')
-  const [dueDay, setDueDay] = useState(wallet?.due_day?.toString() || '')
-  const [creditLimit, setCreditLimit] = useState(wallet?.credit_limit?.toString() || '')
+  const [closingDay, setClosingDay] = useState(wallet.closing_day?.toString() || '')
+  const [dueDay, setDueDay] = useState(wallet.due_day?.toString() || '')
+  const [creditLimit, setCreditLimit] = useState(wallet.credit_limit?.toString() || '')
   const [isUpdatingCard, setIsUpdatingCard] = useState(false)
   const [cardError, setCardError] = useState<string | null>(null)
   const [cardSuccess, setCardSuccess] = useState(false)
-
-  if (!isOpen || !wallet) return null
 
   const linkedTransactions = transactions.filter(
     (t) => t.wallet_id === wallet.id || t.destination_wallet_id === wallet.id
@@ -120,6 +132,40 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
       setNameError(err instanceof Error ? err.message : 'Erro ao atualizar nome da conta.')
     } finally {
       setIsUpdatingName(false)
+    }
+  }
+
+  const handleSaveInitialBalance = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wallet) return
+
+    setBalanceError(null)
+    setBalanceSuccess(false)
+
+    const trimmed = initialBalance.trim()
+    const parsed = trimmed ? Number(trimmed) : 0
+    if (isNaN(parsed)) {
+      setBalanceError(t('manageAccount.invalidNumber'))
+      return
+    }
+
+    if (String(parsed) === currentInitialBalance) {
+      return
+    }
+
+    setIsUpdatingBalance(true)
+    try {
+      await updateWallet(wallet.id, {
+        initial_balance: parsed,
+      })
+      setCurrentInitialBalance(String(parsed))
+      setBalanceSuccess(true)
+      onAccountUpdated()
+    } catch (err: unknown) {
+      console.error('Error updating initial balance:', err)
+      setBalanceError(err instanceof Error ? err.message : 'Erro ao atualizar saldo inicial.')
+    } finally {
+      setIsUpdatingBalance(false)
     }
   }
 
@@ -262,6 +308,62 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
             </p>
           )}
         </form>
+
+        {/* Edit Initial Balance Form for Liquid Accounts */}
+        {wallet.account_type !== 'credit_card' && (
+          <form
+            onSubmit={handleSaveInitialBalance}
+            className="space-y-2 p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800"
+          >
+            <label className="block text-xs font-semibold text-slate-300">
+              {t('manageAccount.initialBalanceLabel')} ({wallet.currency})
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="any"
+                value={initialBalance}
+                onChange={(e) => {
+                  setInitialBalance(e.target.value)
+                  setBalanceSuccess(false)
+                  setBalanceError(null)
+                }}
+                placeholder="0"
+                className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors font-mono"
+              />
+              <button
+                type="submit"
+                disabled={
+                  isUpdatingBalance ||
+                  initialBalance.trim() === currentInitialBalance ||
+                  isNaN(Number(initialBalance))
+                }
+                className="cursor-pointer px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                {isUpdatingBalance ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t('manageAccount.saveBalance')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {t('manageAccount.initialBalanceDesc')}
+            </p>
+            {balanceError && (
+              <p className="text-[11px] text-rose-400 font-medium">{balanceError}</p>
+            )}
+            {balanceSuccess && (
+              <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                <span>{t('manageAccount.balanceUpdated')}</span>
+              </p>
+            )}
+          </form>
+        )}
 
         {/* Credit Card Cycle and Limit Settings */}
         {wallet.account_type === 'credit_card' && (
@@ -458,5 +560,21 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
         </div>
       </div>
     </div>
+  )
+}
+
+export const ManageAccountModal: React.FC<ManageAccountModalProps> = (props) => {
+  if (!props.isOpen || !props.wallet) return null
+
+  const formKey = `${props.wallet.id}-${props.wallet.name}-${props.wallet.initial_balance ?? 0}-${props.wallet.closing_day ?? ''}-${props.wallet.due_day ?? ''}-${props.wallet.credit_limit ?? ''}`
+
+  return (
+    <ManageAccountModalForm
+      key={formKey}
+      wallet={props.wallet}
+      transactions={props.transactions}
+      onClose={props.onClose}
+      onAccountUpdated={props.onAccountUpdated}
+    />
   )
 }

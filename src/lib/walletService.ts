@@ -117,6 +117,7 @@ export async function ensureInitialWallets(userId: string): Promise<Wallet[]> {
       type: 'personal' as WalletScope,
       account_type: 'cash' as AccountType,
       currency: 'PYG' as CurrencyCode,
+      initial_balance: 0,
     })
   }
 
@@ -127,6 +128,7 @@ export async function ensureInitialWallets(userId: string): Promise<Wallet[]> {
       type: 'shared' as WalletScope,
       account_type: 'cash' as AccountType,
       currency: 'PYG' as CurrencyCode,
+      initial_balance: 0,
     })
   }
 
@@ -148,13 +150,19 @@ export async function createWallet(payload: {
   account_type: AccountType
   currency: CurrencyCode
   family_id?: string | null
+  initial_balance?: number | null
   credit_limit?: number | null
   closing_day?: number | null
   due_day?: number | null
 }): Promise<Wallet> {
+  const insertPayload = {
+    ...payload,
+    initial_balance: payload.initial_balance != null ? payload.initial_balance : 0,
+  }
+
   const { data, error } = await supabase
     .from('wallets')
-    .insert([payload])
+    .insert([insertPayload])
     .select()
     .single()
 
@@ -206,6 +214,7 @@ export async function updateWallet(
   walletId: string,
   payload: {
     name?: string
+    initial_balance?: number | null
     credit_limit?: number | null
     closing_day?: number | null
     due_day?: number | null
@@ -213,6 +222,7 @@ export async function updateWallet(
 ): Promise<Wallet> {
   const updateData: Record<string, unknown> = {}
   if (payload.name !== undefined) updateData.name = payload.name.trim()
+  if (payload.initial_balance !== undefined) updateData.initial_balance = payload.initial_balance
   if (payload.credit_limit !== undefined) updateData.credit_limit = payload.credit_limit
   if (payload.closing_day !== undefined) updateData.closing_day = payload.closing_day
   if (payload.due_day !== undefined) updateData.due_day = payload.due_day
