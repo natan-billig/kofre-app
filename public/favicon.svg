@@ -1,9 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-  <rect width="48" height="48" rx="12" fill="#0f172a" />
-  <circle cx="24" cy="24" r="18" fill="#4f46e5" fill-opacity="0.2" />
-  <path d="M24 8 L37 11 V25 C37 32 24 40 24 40 C24 40 11 32 11 25 V11 Z" fill="#4f46e5" stroke="#818cf8" stroke-width="1.5" stroke-linejoin="round" />
-  <circle cx="24" cy="23" r="7" fill="#0f172a" stroke="#10b981" stroke-width="1.5" />
-  <path d="M24 16.5 V19 M24 27 V29.5 M17.5 23 H20 M28 23 H30.5" stroke="#34d399" stroke-width="1.2" stroke-linecap="round" />
-  <circle cx="24" cy="23" r="2.5" fill="#10b981" />
-  <circle cx="24" cy="23" r="1" fill="#fbbf24" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background #0f172a -->
+  <rect width="512" height="512" fill="#0f172a" />
+
+  <!-- Subtle Ambient Glow -->
+  <circle cx="256" cy="256" r="150" fill="#10b981" fill-opacity="0.14" />
+
+  <defs>
+    <linearGradient id="emeraldBodyGrad" x1="128" y1="126" x2="384" y2="378" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="doorGrad" x1="146" y1="144" x2="366" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#131d31" />
+      <stop offset="100%" stop-color="#0b101c" />
+    </linearGradient>
+    <linearGradient id="hubGrad" x1="234" y1="232" x2="278" y2="276" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Safe Feet (Bottom) -->
+  <rect x="164" y="374" width="38" height="16" rx="8" fill="#047857" />
+  <rect x="310" y="374" width="38" height="16" rx="8" fill="#047857" />
+
+  <!-- Hinges (Left side) -->
+  <rect x="120" y="172" width="14" height="38" rx="7" fill="#34d399" />
+  <rect x="120" y="294" width="14" height="38" rx="7" fill="#34d399" />
+
+  <!-- Outer Safe Body (256x252, centered inside 60% safe zone) -->
+  <rect x="128" y="126" width="256" height="252" rx="42" fill="url(#emeraldBodyGrad)" />
+
+  <!-- Inner Door Panel -->
+  <rect x="146" y="144" width="220" height="216" rx="28" fill="url(#doorGrad)" stroke="#10b981" stroke-width="3.5" stroke-opacity="0.4" />
+
+  <!-- Digital Status LEDs (Top-Right) -->
+  <circle cx="334" cy="164" r="3" fill="#34d399" />
+  <circle cx="346" cy="164" r="3" fill="#10b981" />
+
+  <!-- Tri-Spoke Handles -->
+  <!-- Handle 1 (Bottom, 90 deg) -->
+  <line x1="256" y1="272" x2="256" y2="316" stroke="#34d399" stroke-width="10" stroke-linecap="round" />
+  <circle cx="256" cy="316" r="7" fill="#a7f3d0" />
+
+  <!-- Handle 2 (Top-Left, 210 deg) -->
+  <line x1="240.4" y1="245" x2="202.3" y2="223" stroke="#34d399" stroke-width="10" stroke-linecap="round" />
+  <circle cx="202.3" cy="223" r="7" fill="#a7f3d0" />
+
+  <!-- Handle 3 (Top-Right, 330 deg) -->
+  <line x1="271.6" y1="245" x2="309.7" y2="223" stroke="#34d399" stroke-width="10" stroke-linecap="round" />
+  <circle cx="309.7" cy="223" r="7" fill="#a7f3d0" />
+
+  <!-- Outer Dial Ring -->
+  <circle cx="256" cy="254" r="46" fill="#0b1120" stroke="#10b981" stroke-width="8" />
+
+  <!-- Center Hub -->
+  <circle cx="256" cy="254" r="22" fill="url(#hubGrad)" />
+
+  <!-- Center Keyhole Dot -->
+  <circle cx="256" cy="254" r="7" fill="#0f172a" />
+
+  <!-- Gold Accent -->
+  <circle cx="256" cy="254" r="2.5" fill="#fbbf24" />
 </svg>
