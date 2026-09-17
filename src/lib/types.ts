@@ -1,0 +1,70 @@
+export type CurrencyCode = 'PYG' | 'USD' | 'BRL'
+
+export type AccountType = 'cash' | 'checking' | 'credit_card'
+
+export type WalletScope = 'personal' | 'shared'
+
+export type TransactionType = 'expense' | 'income' | 'transfer'
+
+export interface Wallet {
+  id: string
+  created_at?: string
+  owner_id: string
+  name: string
+  type: WalletScope
+  account_type: AccountType
+  currency: CurrencyCode
+  family_id?: string | null
+  credit_limit?: number | null
+  closing_day?: number | null
+  due_day?: number | null
+}
+
+export interface Transaction {
+  id: string
+  created_at?: string
+  user_id: string
+  wallet_id: string
+  destination_wallet_id?: string | null
+  type: TransactionType
+  amount: number
+  destination_amount?: number | null
+  category: string
+  description?: string | null
+  transaction_date: string
+  original_amount?: number | null
+  original_currency?: CurrencyCode | null
+}
+
+export interface Profile {
+  id: string
+  created_at?: string
+  full_name: string | null
+  email: string | null
+}
+
+export interface CurrencyBalances {
+  PYG: number
+  USD: number
+  BRL: number
+}
+
+export interface CardInvoiceSummary {
+  wallet: Wallet
+  invoiceAmount: number
+  availableLimit: number | null
+}
+
+export interface CreateTransactionDTO {
+  user_id: string
+  wallet_id: string
+  destination_wallet_id?: string | null
+  type: TransactionType
+  amount: number
+  destination_amount?: number | null
+  category: string
+  description?: string | null
+  transaction_date: string
+  original_amount?: number | null
+  original_currency?: CurrencyCode | null
+}
