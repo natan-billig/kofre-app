@@ -371,5 +371,8 @@ export const es: TranslationDictionary = {
     authError: 'Error al procesar la autenticación.',
     showPassword: 'Ver contraseña',
     hidePassword: 'Ocultar contraseña',
+    continueWithGoogle: 'Continuar con Google',
+    signInWithGoogle: 'Iniciar sesión con Google',
+    orContinueWithEmail: 'o continúa con correo',
   },
 }

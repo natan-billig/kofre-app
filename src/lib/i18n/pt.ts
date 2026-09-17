@@ -369,6 +369,9 @@ export const pt = {
     authError: 'Erro ao processar autenticação.',
     showPassword: 'Ver senha',
     hidePassword: 'Ocultar senha',
+    continueWithGoogle: 'Continuar com o Google',
+    signInWithGoogle: 'Entrar com o Google',
+    orContinueWithEmail: 'ou continue com e-mail',
   },
 }
 

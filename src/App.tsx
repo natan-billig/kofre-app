@@ -18,7 +18,7 @@ import {
   getActiveCurrencies,
 } from './lib/accountingService'
 import { fetchRecurringBills } from './lib/recurringService'
-import { fetchUserProfile } from './lib/profileService'
+import { fetchUserProfile, upsertProfile } from './lib/profileService'
 import { fetchDebts } from './lib/debtService'
 import { Navbar } from './components/Navbar'
 import { ScopeFilter } from './components/ScopeFilter'
@@ -83,13 +83,26 @@ export default function App() {
 
   // 1. Supabase Auth Session listener
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        const userName =
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          null
+
         setSessionUser({
           id: session.user.id,
           email: session.user.email,
-          name: session.user.user_metadata?.full_name || null,
+          name: userName,
         })
+
+        if (session.user.email) {
+          await upsertProfile(
+            session.user.id,
+            userName || session.user.email.split('@')[0],
+            session.user.email
+          ).catch((err) => console.warn('Erro ao sincronizar perfil social:', err))
+        }
       } else {
         setSessionUser(null)
       }
@@ -98,13 +111,26 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
+        const userName =
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          null
+
         setSessionUser({
           id: session.user.id,
           email: session.user.email,
-          name: session.user.user_metadata?.full_name || null,
+          name: userName,
         })
+
+        if (session.user.email && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+          await upsertProfile(
+            session.user.id,
+            userName || session.user.email.split('@')[0],
+            session.user.email
+          ).catch((err) => console.warn('Erro ao sincronizar perfil social:', err))
+        }
       } else {
         setSessionUser(null)
       }
