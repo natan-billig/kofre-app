@@ -18,6 +18,7 @@ export interface Wallet {
   credit_limit?: number | null
   closing_day?: number | null
   due_day?: number | null
+  is_archived?: boolean | null
 }
 
 export interface Transaction {
@@ -68,3 +69,6 @@ export interface CreateTransactionDTO {
   original_amount?: number | null
   original_currency?: CurrencyCode | null
 }
+
+export type UpdateTransactionDTO = Partial<Omit<CreateTransactionDTO, 'user_id'>>
+

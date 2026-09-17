@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type { Transaction, Wallet, WalletScope } from '../lib/types'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { fetchProfilesMap } from '../lib/profileService'
+import { deleteTransaction } from '../lib/accountingService'
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -17,12 +18,19 @@ import {
   MoreHorizontal,
   User,
   Globe2,
+  Pencil,
+  Trash2,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react'
 
 interface TransactionListProps {
   transactions: Transaction[]
   wallets: Wallet[]
   currentScope: WalletScope | 'all'
+  currentUserId: string
+  onEditTransaction: (transaction: Transaction) => void
+  onTransactionDeleted: () => void
 }
 
 const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
@@ -42,8 +50,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   wallets,
   currentScope,
+  currentUserId,
+  onEditTransaction,
+  onTransactionDeleted,
 }) => {
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
+  const [txToDelete, setTxToDelete] = useState<Transaction | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Fetch author profiles for all transaction user_ids
   useEffect(() => {
@@ -77,6 +91,25 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
     return true
   })
+
+  const handleConfirmDelete = async () => {
+    if (!txToDelete) return
+
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      await deleteTransaction(txToDelete.id)
+      setTxToDelete(null)
+      onTransactionDeleted()
+    } catch (err: unknown) {
+      console.error('Error deleting transaction:', err)
+      const msg = err instanceof Error ? err.message : 'Erro ao excluir lançamento.'
+      setDeleteError(msg)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div className="rounded-3xl bg-slate-900 border border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm">
@@ -113,6 +146,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             const isSharedTransaction =
               sourceWallet?.type === 'shared' || destWallet?.type === 'shared'
 
+            // Regra de Permissão: no Caixa da Família, editar/excluir APENAS se transaction.user_id === currentUserId
+            const canManage = isSharedTransaction
+              ? t.user_id === currentUserId
+              : true
+
             const authorName = profilesMap[t.user_id] || 'Membro da Família'
 
             const CategoryIcon =
@@ -126,7 +164,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             return (
               <div
                 key={t.id}
-                className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-800/20 px-2 rounded-2xl transition-all"
+                className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-800/20 px-2 rounded-2xl transition-all group"
               >
                 {/* Left side: Icon and description */}
                 <div className="flex items-start gap-3 min-w-0">
@@ -197,36 +235,118 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   </div>
                 </div>
 
-                {/* Right side: Formatted Amount */}
-                <div className="text-right flex-shrink-0 space-y-0.5">
-                  <div
-                    className={`text-sm sm:text-base font-bold tracking-tight ${
-                      t.type === 'expense'
-                        ? 'text-rose-400'
-                        : t.type === 'income'
-                        ? 'text-emerald-400'
-                        : 'text-indigo-300'
-                    }`}
-                  >
-                    {t.type === 'expense' && '- '}
-                    {t.type === 'income' && '+ '}
-                    {formatCurrency(Number(t.amount), sourceWallet?.currency || 'PYG')}
+                {/* Right side: Formatted Amount and Action Buttons */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="text-right space-y-0.5">
+                    <div
+                      className={`text-sm sm:text-base font-bold tracking-tight ${
+                        t.type === 'expense'
+                          ? 'text-rose-400'
+                          : t.type === 'income'
+                          ? 'text-emerald-400'
+                          : 'text-indigo-300'
+                      }`}
+                    >
+                      {t.type === 'expense' && '- '}
+                      {t.type === 'income' && '+ '}
+                      {formatCurrency(Number(t.amount), sourceWallet?.currency || 'PYG')}
+                    </div>
+
+                    {/* If cross-currency transfer, show credited amount */}
+                    {t.type === 'transfer' &&
+                      destWallet &&
+                      sourceWallet &&
+                      sourceWallet.currency !== destWallet.currency &&
+                      t.destination_amount && (
+                        <div className="text-[11px] text-emerald-400/90 font-mono">
+                          Recebe: +{formatCurrency(Number(t.destination_amount), destWallet.currency)}
+                        </div>
+                      )}
                   </div>
 
-                  {/* If cross-currency transfer, show credited amount */}
-                  {t.type === 'transfer' &&
-                    destWallet &&
-                    sourceWallet &&
-                    sourceWallet.currency !== destWallet.currency &&
-                    t.destination_amount && (
-                      <div className="text-[11px] text-emerald-400/90 font-mono">
-                        Recebe: +{formatCurrency(Number(t.destination_amount), destWallet.currency)}
-                      </div>
-                    )}
+                  {/* Contextual Action Menu / Buttons (Only if permitted) */}
+                  {canManage && (
+                    <div className="flex items-center gap-1 pl-1 border-l border-slate-800/80">
+                      <button
+                        type="button"
+                        onClick={() => onEditTransaction(t)}
+                        className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                        title="Editar lançamento"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTxToDelete(t)}
+                        className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        title="Excluir lançamento"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Confirmation Modal for Transaction Deletion */}
+      {txToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-rose-400">
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-white text-base">Excluir Lançamento</h3>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Tem certeza que deseja excluir este lançamento?
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs space-y-1">
+              <div className="font-medium text-white">
+                {txToDelete.description || txToDelete.category}
+              </div>
+              <div className="text-slate-400 flex items-center justify-between">
+                <span>{txToDelete.category} &bull; {formatDate(txToDelete.transaction_date)}</span>
+                <span className="font-bold text-slate-200">
+                  {formatCurrency(Number(txToDelete.amount), walletMap.get(txToDelete.wallet_id)?.currency || 'PYG')}
+                </span>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setTxToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-rose-600/20 transition-all"
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <span>Confirmar Exclusão</span>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

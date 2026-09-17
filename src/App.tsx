@@ -19,6 +19,7 @@ import { AccountList } from './components/AccountList'
 import { TransactionList } from './components/TransactionList'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
+import { ManageAccountModal } from './components/ManageAccountModal'
 import { AuthModal } from './components/auth/AuthModal'
 import { Plus, Loader2 } from 'lucide-react'
 
@@ -40,12 +41,14 @@ export default function App() {
 
   // Modals state
   const [isQuickTxOpen, setIsQuickTxOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [quickTxType, setQuickTxType] = useState<TransactionType>('expense')
   const [quickTxSourceId, setQuickTxSourceId] = useState<string | undefined>()
   const [quickTxDestId, setQuickTxDestId] = useState<string | undefined>()
   const [quickTxAmount, setQuickTxAmount] = useState<number | undefined>()
 
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false)
+  const [managingWallet, setManagingWallet] = useState<Wallet | null>(null)
 
   // 1. Supabase Auth Session listener
   useEffect(() => {
@@ -140,11 +143,11 @@ export default function App() {
 
   // Quick Action: Pagar Fatura
   const handlePayCardInvoice = (cardWallet: Wallet, invoiceAmount: number) => {
-    // Find a bank account to pay from (checking or cash in same or compatible currency)
     const bankAccount = wallets.find(
-      (w) => w.id !== cardWallet.id && w.account_type === 'checking'
-    ) || wallets.find((w) => w.id !== cardWallet.id)
+      (w) => w.id !== cardWallet.id && w.account_type === 'checking' && !w.is_archived
+    ) || wallets.find((w) => w.id !== cardWallet.id && !w.is_archived)
 
+    setEditingTransaction(null)
     setQuickTxType('transfer')
     setQuickTxSourceId(bankAccount?.id)
     setQuickTxDestId(cardWallet.id)
@@ -154,10 +157,17 @@ export default function App() {
 
   // Open default Quick Transaction (+)
   const handleOpenDefaultQuickTx = () => {
+    setEditingTransaction(null)
     setQuickTxType('expense')
     setQuickTxSourceId(undefined)
     setQuickTxDestId(undefined)
     setQuickTxAmount(undefined)
+    setIsQuickTxOpen(true)
+  }
+
+  // Edit existing transaction
+  const handleEditTransaction = (tx: Transaction) => {
+    setEditingTransaction(tx)
     setIsQuickTxOpen(true)
   }
 
@@ -232,6 +242,7 @@ export default function App() {
               transactions={transactions}
               currentScope={currentScope}
               onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
+              onManageAccount={(wallet) => setManagingWallet(wallet)}
             />
 
             {/* Chronological Transactions Feed */}
@@ -239,6 +250,9 @@ export default function App() {
               transactions={transactions}
               wallets={wallets}
               currentScope={currentScope}
+              currentUserId={sessionUser.id}
+              onEditTransaction={handleEditTransaction}
+              onTransactionDeleted={() => refreshData()}
             />
           </>
         )}
@@ -256,16 +270,20 @@ export default function App() {
         </button>
       </div>
 
-      {/* Quick Transaction Modal */}
+      {/* Quick Transaction Modal (Novo / Editar) */}
       <QuickTransactionModal
         userId={sessionUser.id}
         wallets={wallets}
         isOpen={isQuickTxOpen}
+        editingTransaction={editingTransaction}
         initialType={quickTxType}
         initialSourceWalletId={quickTxSourceId}
         initialDestWalletId={quickTxDestId}
         initialAmount={quickTxAmount}
-        onClose={() => setIsQuickTxOpen(false)}
+        onClose={() => {
+          setIsQuickTxOpen(false)
+          setEditingTransaction(null)
+        }}
         onTransactionCreated={() => {
           refreshData()
         }}
@@ -277,6 +295,17 @@ export default function App() {
         isOpen={isCreateAccountOpen}
         onClose={() => setIsCreateAccountOpen(false)}
         onAccountCreated={() => {
+          refreshData()
+        }}
+      />
+
+      {/* Manage / Archive / Delete Account Modal */}
+      <ManageAccountModal
+        wallet={managingWallet}
+        isOpen={Boolean(managingWallet)}
+        transactions={transactions}
+        onClose={() => setManagingWallet(null)}
+        onAccountUpdated={() => {
           refreshData()
         }}
       />

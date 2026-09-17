@@ -3,6 +3,7 @@ import type {
   Wallet,
   Transaction,
   CreateTransactionDTO,
+  UpdateTransactionDTO,
   CurrencyBalances,
   CardInvoiceSummary,
   WalletScope,
@@ -42,6 +43,37 @@ export async function createTransaction(payload: CreateTransactionDTO): Promise<
   }
 
   return data as Transaction
+}
+
+export async function updateTransaction(
+  transactionId: string,
+  payload: UpdateTransactionDTO
+): Promise<Transaction> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .update(payload)
+    .eq('id', transactionId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating transaction:', error)
+    throw error
+  }
+
+  return data as Transaction
+}
+
+export async function deleteTransaction(transactionId: string): Promise<void> {
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', transactionId)
+
+  if (error) {
+    console.error('Error deleting transaction:', error)
+    throw error
+  }
 }
 
 export function calculateAccountBalance(wallet: Wallet, transactions: Transaction[]): number {

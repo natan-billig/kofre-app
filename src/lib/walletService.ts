@@ -82,3 +82,24 @@ export async function createWallet(payload: {
 
   return data as Wallet
 }
+
+export async function deleteWallet(walletId: string): Promise<void> {
+  const { error } = await supabase.from('wallets').delete().eq('id', walletId)
+  if (error) {
+    console.error('Error deleting wallet:', error)
+    throw error
+  }
+}
+
+export async function archiveWallet(walletId: string, isArchived: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('wallets')
+    .update({ is_archived: isArchived })
+    .eq('id', walletId)
+
+  if (error) {
+    console.error('Error updating archive status for wallet:', error)
+    throw error
+  }
+}
+

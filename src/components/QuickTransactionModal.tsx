@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import type {
   Wallet,
+  Transaction,
   TransactionType,
   CurrencyCode,
   CreateTransactionDTO,
+  UpdateTransactionDTO,
 } from '../lib/types'
-import { createTransaction } from '../lib/accountingService'
+import { createTransaction, updateTransaction } from '../lib/accountingService'
 import { formatExchangeRate } from '../lib/formatters'
 import {
   X,
@@ -24,12 +26,14 @@ import {
   Briefcase,
   PiggyBank,
   MoreHorizontal,
+  Edit3,
 } from 'lucide-react'
 
 interface QuickTransactionModalProps {
   userId: string
   wallets: Wallet[]
   isOpen: boolean
+  editingTransaction?: Transaction | null
   initialType?: TransactionType
   initialSourceWalletId?: string
   initialDestWalletId?: string
@@ -55,10 +59,10 @@ const INCOME_CATEGORIES = [
   { name: 'Outros', icon: MoreHorizontal },
 ]
 
-export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
+const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   userId,
   wallets,
-  isOpen,
+  editingTransaction,
   initialType = 'expense',
   initialSourceWalletId,
   initialDestWalletId,
@@ -66,34 +70,74 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
   onClose,
   onTransactionCreated,
 }) => {
-  const [customType, setCustomType] = useState<TransactionType | null>(null)
-  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null)
-  const [selectedDestId, setSelectedDestId] = useState<string | null>(null)
-  const [amount, setAmount] = useState<string>(initialAmount ? String(initialAmount) : '')
-  const [destAmount, setDestAmount] = useState<string>('')
-  const [category, setCategory] = useState<string>('Alimentação')
-  const [description, setDescription] = useState<string>('')
+  // Filter selectable active wallets
+  const selectableWallets = wallets.filter(
+    (w) =>
+      !w.is_archived ||
+      w.id === editingTransaction?.wallet_id ||
+      w.id === editingTransaction?.destination_wallet_id
+  )
+
+  const defaultSource =
+    editingTransaction?.wallet_id ??
+    (initialSourceWalletId && selectableWallets.some((w) => w.id === initialSourceWalletId)
+      ? initialSourceWalletId
+      : selectableWallets[0]?.id || '')
+
+  const defaultDest =
+    editingTransaction?.destination_wallet_id ??
+    (initialDestWalletId && selectableWallets.some((w) => w.id === initialDestWalletId)
+      ? initialDestWalletId
+      : selectableWallets.find((w) => w.id !== defaultSource)?.id || '')
+
+  const [type, setType] = useState<TransactionType>(
+    editingTransaction?.type ?? initialType
+  )
+  const [sourceWalletId, setSourceWalletId] = useState<string>(defaultSource)
+  const [destWalletId, setDestWalletId] = useState<string>(defaultDest)
+  const [amount, setAmount] = useState<string>(
+    editingTransaction
+      ? String(editingTransaction.amount)
+      : initialAmount
+      ? String(initialAmount)
+      : ''
+  )
+  const [destAmount, setDestAmount] = useState<string>(
+    editingTransaction?.destination_amount ? String(editingTransaction.destination_amount) : ''
+  )
+  const [category, setCategory] = useState<string>(
+    editingTransaction?.category ??
+      (initialType === 'income'
+        ? 'Salário'
+        : initialType === 'transfer'
+        ? 'Transferência'
+        : 'Alimentação')
+  )
+  const [description, setDescription] = useState<string>(
+    editingTransaction?.description ?? ''
+  )
   const [transactionDate, setTransactionDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    editingTransaction?.transaction_date
+      ? editingTransaction.transaction_date.substring(0, 10)
+      : new Date().toISOString().split('T')[0]
   )
 
   // Bimoeda / Despesa Internacional
-  const [isBimonetary, setIsBimonetary] = useState<boolean>(false)
-  const [originalAmount, setOriginalAmount] = useState<string>('')
-  const [originalCurrency, setOriginalCurrency] = useState<CurrencyCode>('BRL')
+  const [isBimonetary, setIsBimonetary] = useState<boolean>(
+    Boolean(editingTransaction?.original_amount)
+  )
+  const [originalAmount, setOriginalAmount] = useState<string>(
+    editingTransaction?.original_amount ? String(editingTransaction.original_amount) : ''
+  )
+  const [originalCurrency, setOriginalCurrency] = useState<CurrencyCode>(
+    editingTransaction?.original_currency ?? 'BRL'
+  )
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  if (!isOpen) return null
-
-  const type = customType ?? initialType
-  const sourceWalletId = selectedSourceId ?? initialSourceWalletId ?? wallets[0]?.id ?? ''
-  const defaultDest = wallets.find((w) => w.id !== sourceWalletId)?.id ?? ''
-  const destWalletId = selectedDestId ?? initialDestWalletId ?? defaultDest
-
-  const sourceWallet = wallets.find((w) => w.id === sourceWalletId)
-  const destWallet = wallets.find((w) => w.id === destWalletId)
+  const sourceWallet = selectableWallets.find((w) => w.id === sourceWalletId)
+  const destWallet = selectableWallets.find((w) => w.id === destWalletId)
 
   const isCrossCurrencyTransfer =
     type === 'transfer' &&
@@ -151,36 +195,54 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
     setLoading(true)
 
     try {
-      const payload: CreateTransactionDTO = {
-        user_id: userId,
-        wallet_id: sourceWalletId,
-        destination_wallet_id: type === 'transfer' ? destWalletId : null,
-        type,
-        amount: numAmount,
-        destination_amount: numDestAmount,
-        category: type === 'transfer' ? (isInvoicePayment ? 'Fatura Cartão' : 'Transferência') : category,
-        description: description.trim() || null,
-        transaction_date: transactionDate,
-        original_amount: numOrigAmount,
-        original_currency: origCurr,
+      if (editingTransaction) {
+        const updatePayload: UpdateTransactionDTO = {
+          wallet_id: sourceWalletId,
+          destination_wallet_id: type === 'transfer' ? destWalletId : null,
+          type,
+          amount: numAmount,
+          destination_amount: numDestAmount,
+          category:
+            type === 'transfer'
+              ? isInvoicePayment
+                ? 'Fatura Cartão'
+                : 'Transferência'
+              : category,
+          description: description.trim() || null,
+          transaction_date: transactionDate,
+          original_amount: numOrigAmount,
+          original_currency: origCurr,
+        }
+
+        await updateTransaction(editingTransaction.id, updatePayload)
+      } else {
+        const payload: CreateTransactionDTO = {
+          user_id: userId,
+          wallet_id: sourceWalletId,
+          destination_wallet_id: type === 'transfer' ? destWalletId : null,
+          type,
+          amount: numAmount,
+          destination_amount: numDestAmount,
+          category:
+            type === 'transfer'
+              ? isInvoicePayment
+                ? 'Fatura Cartão'
+                : 'Transferência'
+              : category,
+          description: description.trim() || null,
+          transaction_date: transactionDate,
+          original_amount: numOrigAmount,
+          original_currency: origCurr,
+        }
+
+        await createTransaction(payload)
       }
 
-      await createTransaction(payload)
-
-      // Reset fields
-      setAmount('')
-      setDestAmount('')
-      setDescription('')
-      setIsBimonetary(false)
-      setOriginalAmount('')
-      setCustomType(null)
-      setSelectedSourceId(null)
-      setSelectedDestId(null)
       onTransactionCreated()
       onClose()
     } catch (err: unknown) {
-      console.error('Error creating transaction:', err)
-      const msg = err instanceof Error ? err.message : 'Erro ao registrar transação.'
+      console.error('Error saving transaction:', err)
+      const msg = err instanceof Error ? err.message : 'Erro ao salvar transação.'
       setErrorMsg(msg)
     } finally {
       setLoading(false)
@@ -192,7 +254,16 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
       <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
         {/* Modal Top Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Novo Lançamento</h2>
+          <div className="flex items-center gap-2">
+            {editingTransaction ? (
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center">
+                <Edit3 className="w-4 h-4" />
+              </div>
+            ) : null}
+            <h2 className="text-lg font-bold text-white">
+              {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
@@ -206,7 +277,7 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              setCustomType('expense')
+              setType('expense')
               setCategory('Alimentação')
             }}
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -222,7 +293,7 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              setCustomType('income')
+              setType('income')
               setCategory('Salário')
             }}
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -238,7 +309,7 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              setCustomType('transfer')
+              setType('transfer')
               setCategory('Transferência')
             }}
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -270,10 +341,10 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
                   </label>
                   <select
                     value={sourceWalletId}
-                    onChange={(e) => setSelectedSourceId(e.target.value)}
+                    onChange={(e) => setSourceWalletId(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none"
                   >
-                    {wallets.map((w) => (
+                    {selectableWallets.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name} ({w.currency}) - {w.type === 'shared' ? 'Família' : 'Pessoal'}
                       </option>
@@ -288,10 +359,10 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
                   </label>
                   <select
                     value={destWalletId}
-                    onChange={(e) => setSelectedDestId(e.target.value)}
+                    onChange={(e) => setDestWalletId(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none"
                   >
-                    {wallets
+                    {selectableWallets
                       .filter((w) => w.id !== sourceWalletId)
                       .map((w) => (
                         <option key={w.id} value={w.id}>
@@ -398,10 +469,10 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
                   </label>
                   <select
                     value={sourceWalletId}
-                    onChange={(e) => setSelectedSourceId(e.target.value)}
+                    onChange={(e) => setSourceWalletId(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none"
                   >
-                    {wallets.map((w) => (
+                    {selectableWallets.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.account_type === 'credit_card' ? '💳 ' : ''}
                         {w.name} ({w.currency}) - {w.type === 'shared' ? 'Família' : 'Pessoal'}
@@ -546,7 +617,7 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <span>Confirmar Lançamento</span>
+                <span>{editingTransaction ? 'Salvar Alterações' : 'Confirmar Lançamento'}</span>
               )}
             </button>
           </div>
@@ -554,4 +625,13 @@ export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({
       </div>
     </div>
   )
+}
+
+export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = (props) => {
+  if (!props.isOpen) return null
+
+  // Mounting key resets form cleanly on open or transaction switch without needing useEffect
+  const formKey = props.editingTransaction?.id ?? 'new-tx'
+
+  return <QuickTransactionForm key={formKey} {...props} />
 }
