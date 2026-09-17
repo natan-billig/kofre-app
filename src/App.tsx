@@ -17,6 +17,8 @@ import { ScopeFilter } from './components/ScopeFilter'
 import { CurrencyDashboard } from './components/CurrencyDashboard'
 import { AccountList } from './components/AccountList'
 import { TransactionList } from './components/TransactionList'
+import { MonthSelector } from './components/MonthSelector'
+import { MonthlySummary } from './components/MonthlySummary'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
 import { ManageAccountModal } from './components/ManageAccountModal'
@@ -41,6 +43,9 @@ export default function App() {
 
   // Scope filter: 'personal' (Minhas Contas) | 'shared' (Caixa da Família) | 'all' (Consolidado)
   const [currentScope, setCurrentScope] = useState<WalletScope | 'all'>('personal')
+
+  // Selected Month for Temporal Navigation
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   // Modals state
   const [isQuickTxOpen, setIsQuickTxOpen] = useState(false)
@@ -141,6 +146,15 @@ export default function App() {
   // Compute calculated balances and credit card summaries
   const balances = calculateBalances(wallets, transactions, currentScope)
   const cardInvoices = calculateCardInvoices(wallets, transactions, currentScope)
+
+  // Filter transactions for the selected month (UTC-safe via YYYY-MM substring)
+  const selectedYear = selectedDate.getFullYear()
+  const selectedMonth = selectedDate.getMonth()
+  const monthlyTransactions = transactions.filter((t) => {
+    if (!t.transaction_date) return false
+    const [txYear, txMonth] = t.transaction_date.substring(0, 7).split('-').map(Number)
+    return txYear === selectedYear && txMonth - 1 === selectedMonth
+  })
 
   const personalCount = wallets.filter((w) => w.type === 'personal').length
   const sharedCount = wallets.filter((w) => w.type === 'shared').length
@@ -244,10 +258,24 @@ export default function App() {
 
             {/* Desktop 2-column layout / Mobile vertical stack */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Main Column: TransactionList */}
-              <div className="lg:col-span-8 order-2 lg:order-1">
+              {/* Main Column: TransactionList with MonthSelector and MonthlySummary */}
+              <div className="lg:col-span-8 order-2 lg:order-1 space-y-4">
+                {/* Monthly Time Navigation */}
+                <MonthSelector
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
+
+                {/* Monthly Operational Summary */}
+                <MonthlySummary
+                  transactions={monthlyTransactions}
+                  wallets={wallets}
+                  currentScope={currentScope}
+                />
+
+                {/* Chronological Transactions Feed */}
                 <TransactionList
-                  transactions={transactions}
+                  transactions={monthlyTransactions}
                   wallets={wallets}
                   currentScope={currentScope}
                   currentUserId={sessionUser.id}

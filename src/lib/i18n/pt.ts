@@ -40,6 +40,18 @@ export const pt = {
     empty: 'Nenhuma conta encontrada.',
     newAccountButton: 'Nova Conta',
   },
+  monthSelector: {
+    previousMonth: 'Mês anterior',
+    nextMonth: 'Próximo mês',
+    currentMonth: 'Mês Atual',
+  },
+  monthlySummary: {
+    title: 'Resumo Operacional',
+    incomes: 'Entradas do Mês',
+    expenses: 'Saídas do Mês',
+    balance: 'Balanço',
+    empty: 'Nenhum movimento neste mês',
+  },
   transactions: {
     title: 'Histórico de Lançamentos',
     empty: 'Nenhuma transação encontrada.',

@@ -42,6 +42,18 @@ export const es: TranslationDictionary = {
     empty: 'No se encontraron cuentas.',
     newAccountButton: 'Nueva Cuenta',
   },
+  monthSelector: {
+    previousMonth: 'Mes anterior',
+    nextMonth: 'Próximo mes',
+    currentMonth: 'Mes Actual',
+  },
+  monthlySummary: {
+    title: 'Resumen Operativo',
+    incomes: 'Ingresos del Mes',
+    expenses: 'Gastos del Mes',
+    balance: 'Balance',
+    empty: 'No hay movimientos en este mes',
+  },
   transactions: {
     title: 'Historial de Movimientos',
     empty: 'No hay movimientos registrados.',
