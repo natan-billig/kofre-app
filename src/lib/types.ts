@@ -41,7 +41,9 @@ export interface Profile {
   id: string
   created_at?: string
   full_name: string | null
-  email: string | null
+  email?: string | null
+  avatar?: string | null
+  preferred_currency?: CurrencyCode | null
 }
 
 export interface CurrencyBalances {

@@ -1,21 +1,26 @@
 import React from 'react'
 import { supabase } from '../lib/supabase'
-import { ShieldCheck, LogOut, PlusCircle, UserCircle2, Users2 } from 'lucide-react'
+import { ShieldCheck, LogOut, PlusCircle, Users2 } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { AvatarRenderer, getAvatarColor } from '../lib/avatarHelper'
 
 interface NavbarProps {
   userEmail?: string | null
   userName?: string | null
+  userAvatar?: string | null
   onOpenCreateAccount: () => void
   onOpenFamilySettings: () => void
+  onOpenProfile: () => void
   onSignOut: () => void
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   userEmail,
   userName,
+  userAvatar,
   onOpenCreateAccount,
   onOpenFamilySettings,
+  onOpenProfile,
   onSignOut,
 }) => {
   const { t, language, setLanguage } = useTranslation()
@@ -26,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }
 
   const displayName = userName || userEmail?.split('@')[0] || t('nav.user')
+  const avatarColor = getAvatarColor(userAvatar)
 
   return (
     <header className="w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
@@ -92,13 +98,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden sm:inline">{t('nav.newAccount')}</span>
           </button>
 
-          {/* User Profile */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-950/40 border border-slate-800/80 text-slate-300 text-xs">
-            <UserCircle2 className="w-4 h-4 text-slate-400" />
-            <span className="font-medium max-w-[130px] truncate" title={displayName}>
+          {/* User Profile Button */}
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="cursor-pointer flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-950/40 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white text-xs transition-all active:scale-95"
+            title={t('profile.title')}
+          >
+            <div className={`w-5 h-5 rounded-lg flex items-center justify-center border ${avatarColor}`}>
+              <AvatarRenderer avatarId={userAvatar} className="w-3.5 h-3.5" />
+            </div>
+            <span className="hidden sm:inline-block font-medium max-w-[130px] truncate" title={displayName}>
               {displayName}
             </span>
-          </div>
+          </button>
 
           {/* Logout */}
           <button

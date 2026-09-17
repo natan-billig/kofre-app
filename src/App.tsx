@@ -6,6 +6,7 @@ import type {
   WalletScope,
   TransactionType,
   RecurringBill,
+  Profile,
 } from './lib/types'
 import { ensureInitialWallets } from './lib/walletService'
 import {
@@ -14,6 +15,7 @@ import {
   calculateCardInvoices,
 } from './lib/accountingService'
 import { fetchRecurringBills } from './lib/recurringService'
+import { fetchUserProfile } from './lib/profileService'
 import { Navbar } from './components/Navbar'
 import { ScopeFilter } from './components/ScopeFilter'
 import { CurrencyDashboard } from './components/CurrencyDashboard'
@@ -25,6 +27,7 @@ import { CategoryBreakdown } from './components/CategoryBreakdown'
 import { MonthlyBillsWidget } from './components/MonthlyBillsWidget'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { RecurringBillsModal } from './components/RecurringBillsModal'
+import { ProfileModal } from './components/ProfileModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
 import { ManageAccountModal } from './components/ManageAccountModal'
 import { FamilySettingsModal } from './components/FamilySettingsModal'
@@ -67,6 +70,8 @@ export default function App() {
   const [managingWallet, setManagingWallet] = useState<Wallet | null>(null)
   const [isFamilySettingsOpen, setIsFamilySettingsOpen] = useState(false)
   const [isRecurringBillsModalOpen, setIsRecurringBillsModalOpen] = useState(false)
+  const [userProfile, setUserProfile] = useState<Profile | null>(null)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
 
   // 1. Supabase Auth Session listener
   useEffect(() => {
@@ -112,15 +117,17 @@ export default function App() {
       const sharedWallet = loadedWallets.find((w) => w.type === 'shared' && w.family_id)
       const familyId = sharedWallet?.family_id || null
 
-      const [loadedTxs, loadedBills] = await Promise.all([
+      const [loadedTxs, loadedBills, loadedProfile] = await Promise.all([
         loadedWallets.length > 0
           ? fetchTransactions(loadedWallets.map((w) => w.id))
           : Promise.resolve([]),
         fetchRecurringBills('all', familyId).catch(() => []),
+        fetchUserProfile(sessionUser.id).catch(() => null),
       ])
 
       setTransactions(loadedTxs)
       setRecurringBills(loadedBills)
+      if (loadedProfile) setUserProfile(loadedProfile)
     } catch (err) {
       console.error('Error refreshing data:', err)
     }
@@ -140,16 +147,18 @@ export default function App() {
           const sharedWallet = loadedWallets.find((w) => w.type === 'shared' && w.family_id)
           const familyId = sharedWallet?.family_id || null
 
-          const [loadedTxs, loadedBills] = await Promise.all([
+          const [loadedTxs, loadedBills, loadedProfile] = await Promise.all([
             loadedWallets.length > 0
               ? fetchTransactions(loadedWallets.map((w) => w.id))
               : Promise.resolve([]),
             fetchRecurringBills('all', familyId).catch(() => []),
+            fetchUserProfile(sessionUser.id).catch(() => null),
           ])
 
           if (isMounted) {
             setTransactions(loadedTxs)
             setRecurringBills(loadedBills)
+            if (loadedProfile) setUserProfile(loadedProfile)
           }
         })
         .catch((err) => {
@@ -266,14 +275,17 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         userEmail={sessionUser.email}
-        userName={sessionUser.name}
+        userName={userProfile?.full_name || sessionUser.name}
+        userAvatar={userProfile?.avatar}
         onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
         onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
         onSignOut={() => {
           setSessionUser(null)
           setWallets([])
           setTransactions([])
           setRecurringBills([])
+          setUserProfile(null)
         }}
       />
 
@@ -434,6 +446,30 @@ export default function App() {
         onFamilyLinked={() => {
           refreshData()
           setCurrentScope('shared')
+        }}
+      />
+
+      {/* Profile Edition & Customization Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        userId={sessionUser.id}
+        userEmail={sessionUser.email}
+        currentProfile={userProfile}
+        onClose={() => setIsProfileModalOpen(false)}
+        onProfileUpdated={(updatedProfile) => {
+          setUserProfile(updatedProfile)
+          if (updatedProfile.full_name) {
+            setSessionUser((prev) =>
+              prev ? { ...prev, name: updatedProfile.full_name } : null
+            )
+          }
+        }}
+        onSignOut={() => {
+          setSessionUser(null)
+          setWallets([])
+          setTransactions([])
+          setRecurringBills([])
+          setUserProfile(null)
         }}
       />
     </div>
