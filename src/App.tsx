@@ -20,6 +20,7 @@ import { TransactionList } from './components/TransactionList'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
 import { ManageAccountModal } from './components/ManageAccountModal'
+import { FamilySettingsModal } from './components/FamilySettingsModal'
 import { AuthModal } from './components/auth/AuthModal'
 import { Plus, Loader2 } from 'lucide-react'
 
@@ -49,6 +50,7 @@ export default function App() {
 
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false)
   const [managingWallet, setManagingWallet] = useState<Wallet | null>(null)
+  const [isFamilySettingsOpen, setIsFamilySettingsOpen] = useState(false)
 
   // 1. Supabase Auth Session listener
   useEffect(() => {
@@ -206,6 +208,7 @@ export default function App() {
         userEmail={sessionUser.email}
         userName={sessionUser.name}
         onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
+        onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
         onSignOut={() => {
           setSessionUser(null)
           setWallets([])
@@ -221,6 +224,7 @@ export default function App() {
           onSelectScope={setCurrentScope}
           personalCount={personalCount}
           sharedCount={sharedCount}
+          onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
         />
 
         {dataLoading ? (
@@ -307,6 +311,17 @@ export default function App() {
         onClose={() => setManagingWallet(null)}
         onAccountUpdated={() => {
           refreshData()
+        }}
+      />
+
+      {/* Family Settings & Invite Code Modal */}
+      <FamilySettingsModal
+        userId={sessionUser.id}
+        isOpen={isFamilySettingsOpen}
+        onClose={() => setIsFamilySettingsOpen(false)}
+        onFamilyLinked={() => {
+          refreshData()
+          setCurrentScope('shared')
         }}
       />
     </div>

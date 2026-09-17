@@ -1,11 +1,12 @@
 import React from 'react'
 import { supabase } from '../lib/supabase'
-import { ShieldCheck, LogOut, PlusCircle, UserCircle2 } from 'lucide-react'
+import { ShieldCheck, LogOut, PlusCircle, UserCircle2, Users2 } from 'lucide-react'
 
 interface NavbarProps {
   userEmail?: string | null
   userName?: string | null
   onOpenCreateAccount: () => void
+  onOpenFamilySettings: () => void
   onSignOut: () => void
 }
 
@@ -13,6 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   userEmail,
   userName,
   onOpenCreateAccount,
+  onOpenFamilySettings,
   onSignOut,
 }) => {
   const handleLogout = async () => {
@@ -39,7 +41,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Family Sharing Modal Button */}
+          <button
+            onClick={onOpenFamilySettings}
+            className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs sm:text-sm font-medium text-emerald-300 hover:text-emerald-200 transition-all"
+            title="Gestão da Família e Código de Compartilhamento"
+          >
+            <Users2 className="w-4 h-4 text-emerald-400" />
+            <span className="hidden xs:inline sm:inline">Família</span>
+          </button>
+
           <button
             onClick={onOpenCreateAccount}
             className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-xs sm:text-sm font-medium text-slate-200 hover:text-white transition-all"

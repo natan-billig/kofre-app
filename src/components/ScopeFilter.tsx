@@ -7,6 +7,7 @@ interface ScopeFilterProps {
   onSelectScope: (scope: WalletScope | 'all') => void
   personalCount: number
   sharedCount: number
+  onOpenFamilySettings?: () => void
 }
 
 export const ScopeFilter: React.FC<ScopeFilterProps> = ({
@@ -14,6 +15,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
   onSelectScope,
   personalCount,
   sharedCount,
+  onOpenFamilySettings,
 }) => {
   return (
     <div className="w-full">
@@ -75,6 +77,22 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           <span>Consolidado</span>
         </button>
       </div>
+
+      {currentScope === 'shared' && onOpenFamilySettings && (
+        <div className="mt-2.5 flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+          <div className="flex items-center gap-2">
+            <Users2 className="w-4 h-4 text-emerald-400" />
+            <span className="font-medium">Caixa Compartilhado da Família</span>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenFamilySettings}
+            className="cursor-pointer font-semibold underline underline-offset-2 hover:text-white transition-colors"
+          >
+            Gerenciar / Convidar
+          </button>
+        </div>
+      )}
     </div>
   )
 }

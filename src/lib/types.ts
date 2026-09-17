@@ -72,3 +72,23 @@ export interface CreateTransactionDTO {
 
 export type UpdateTransactionDTO = Partial<Omit<CreateTransactionDTO, 'user_id'>>
 
+export interface Family {
+  id: string
+  created_at?: string
+  name: string
+  invite_code: string
+}
+
+export interface FamilyMember {
+  id: string
+  created_at?: string
+  user_id: string
+  family_id: string
+  role: 'owner' | 'member' | string
+  families?: Family | null
+}
+
+export interface JoinFamilyResult {
+  success: boolean
+  message?: string
+}
