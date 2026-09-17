@@ -55,6 +55,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
   const [category, setCategory] = useState('')
   const [walletId, setWalletId] = useState('')
   const [dueDay, setDueDay] = useState('')
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [billScope, setBillScope] = useState<WalletScope>(
     scope === 'shared' ? 'shared' : 'personal'
   )
@@ -117,6 +118,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     setCurrency(defaultWallet?.currency || 'PYG')
     setCategory(categories[0]?.name || 'Moradia')
     setDueDay('10')
+    setStartDate(new Date().toISOString().split('T')[0])
     setBillScope(scope === 'shared' ? 'shared' : 'personal')
     setIsActive(true)
     setFormError(null)
@@ -131,6 +133,11 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     setCategory(bill.category)
     setWalletId(bill.wallet_id)
     setDueDay(String(bill.due_day))
+    setStartDate(
+      bill.start_date
+        ? bill.start_date.substring(0, 10)
+        : new Date().toISOString().split('T')[0]
+    )
     setBillScope(bill.scope)
     setIsActive(bill.is_active)
     setFormError(null)
@@ -210,6 +217,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           category,
           wallet_id: walletId,
           due_day: numDay,
+          start_date: startDate || undefined,
           is_active: isActive,
           scope: billScope,
           family_id: billScope === 'shared' ? familyId || null : null,
@@ -224,6 +232,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           category,
           wallet_id: walletId,
           due_day: numDay,
+          start_date: startDate || undefined,
           is_active: isActive,
           scope: billScope,
           family_id: billScope === 'shared' ? familyId || null : null,
@@ -416,8 +425,8 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                 </div>
               </div>
 
-              {/* Due Day & Active Toggle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              {/* Due Day & Start Date Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     {t('recurringBills.dueDay')} (1-31)
@@ -434,19 +443,33 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                   />
                 </div>
 
-                <div className="flex items-center gap-3 h-[42px] px-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={isActive}
-                      onChange={(e) => setIsActive(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-700 bg-slate-900"
-                    />
-                    <span className="text-xs font-medium text-slate-300">
-                      {isActive ? t('recurringBills.active') : t('recurringBills.paused')}
-                    </span>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    {t('recurringBills.startDate')}
                   </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                    required
+                  />
                 </div>
+              </div>
+
+              {/* Active Toggle */}
+              <div className="flex items-center gap-3 h-[38px] px-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-700 bg-slate-900"
+                  />
+                  <span className="text-xs font-medium text-slate-300">
+                    {isActive ? t('recurringBills.active') : t('recurringBills.paused')}
+                  </span>
+                </label>
               </div>
 
               {/* Form Buttons */}
@@ -536,6 +559,14 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                         <span className="text-indigo-400 font-medium">
                           {t('recurringBills.dueOn')} {bill.due_day}
                         </span>
+                        {bill.start_date && (
+                          <>
+                            <span>•</span>
+                            <span className="text-slate-400">
+                              {t('recurringBills.billingStart')}: {bill.start_date.substring(0, 7)}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 

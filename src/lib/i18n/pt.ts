@@ -102,6 +102,8 @@ export const pt = {
     createdSuccess: 'Conta fixa cadastrada com sucesso!',
     updatedSuccess: 'Conta fixa atualizada com sucesso!',
     dueOn: 'Vence dia',
+    startDate: 'A partir de (Mês/Ano)',
+    billingStart: 'Início da cobrança',
   },
   transactions: {
     title: 'Histórico de Lançamentos',

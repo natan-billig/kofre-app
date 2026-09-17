@@ -104,6 +104,8 @@ export const es: TranslationDictionary = {
     createdSuccess: '¡Cuenta fija registrada con éxito!',
     updatedSuccess: '¡Cuenta fija actualizada con éxito!',
     dueOn: 'Vence el día',
+    startDate: 'A partir de (Mes/Año)',
+    billingStart: 'Inicio del cobro',
   },
   transactions: {
     title: 'Historial de Movimientos',

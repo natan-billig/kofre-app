@@ -149,6 +149,7 @@ export interface RecurringBill {
   category: string
   wallet_id: string
   due_day: number
+  start_date?: string
   is_active: boolean
   scope: WalletScope
   family_id?: string | null

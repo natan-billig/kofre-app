@@ -356,6 +356,7 @@ export default function App() {
                   monthlyTransactions={monthlyTransactions}
                   wallets={wallets}
                   currentScope={currentScope}
+                  selectedDate={selectedDate}
                   onOpenManage={() => setIsRecurringBillsModalOpen(true)}
                   onPayBill={handlePayBill}
                 />

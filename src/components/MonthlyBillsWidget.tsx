@@ -17,6 +17,7 @@ interface MonthlyBillsWidgetProps {
   monthlyTransactions: Transaction[]
   wallets: Wallet[]
   currentScope: WalletScope | 'all'
+  selectedDate?: Date
   onOpenManage: () => void
   onPayBill: (bill: RecurringBill) => void
 }
@@ -26,14 +27,21 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
   monthlyTransactions,
   wallets,
   currentScope,
+  selectedDate,
   onOpenManage,
   onPayBill,
 }) => {
   const { t, language } = useTranslation()
 
-  // Filter bills based on current scope and whether they are active
+  // Filter bills based on current scope, active status, and temporal validity (start_date)
+  const targetDate = selectedDate || new Date()
+  const selectedMonthPrefix = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`
+
   const filteredBills = recurringBills.filter((bill) => {
     if (!bill.is_active) return false
+    if (bill.start_date && bill.start_date.substring(0, 7) > selectedMonthPrefix) {
+      return false
+    }
     if (currentScope === 'all') return true
     return bill.scope === currentScope
   })
