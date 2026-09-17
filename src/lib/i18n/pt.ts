@@ -21,6 +21,14 @@ export const pt = {
     success: 'Perfil atualizado com sucesso!',
     signOut: 'Sair da Conta',
     error: 'Erro ao atualizar perfil.',
+    connectedAccounts: 'Contas Conectadas',
+    connectGoogle: 'Conectar conta Google',
+    googleConnected: 'Google Conectado',
+    unlink: 'Desvincular',
+    linkGoogleDesc: 'Vincule sua conta para fazer login sem senha',
+    linkGoogleError: 'Não foi possível vincular a conta Google. Verifique se o e-mail do Google é o mesmo desta conta.',
+    unlinkSuccess: 'Conta Google desvinculada com sucesso.',
+    unlinkConfirm: 'Deseja desvincular sua conta Google? Você precisará usar e-mail e senha para entrar.',
   },
   scope: {
     myAccounts: 'Minhas Contas',
@@ -372,6 +380,8 @@ export const pt = {
     continueWithGoogle: 'Continuar com o Google',
     signInWithGoogle: 'Entrar com o Google',
     orContinueWithEmail: 'ou continue com e-mail',
+    alreadyRegisteredWithPassword:
+      'Esta conta foi criada com e-mail e senha. Faça login normalmente e vincule o Google nas configurações do seu perfil.',
   },
 }
 

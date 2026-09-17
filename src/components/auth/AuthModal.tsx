@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { upsertProfile } from '../../lib/profileService'
 import { signInWithGoogle } from '../../lib/authService'
@@ -51,8 +51,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    const hash = window.location.hash
+    const search = window.location.search
+    const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : search)
+    const errorCode = params.get('error_code') || params.get('error')
+    const errorDescription = params.get('error_description')
+
+    if (errorCode || errorDescription) {
+      const combined = `${errorCode || ''} ${errorDescription || ''}`.toLowerCase()
+      if (
+        combined.includes('identity_already_exists') ||
+        combined.includes('already registered') ||
+        combined.includes('different provider') ||
+        combined.includes('user already exists')
+      ) {
+        return t('auth.alreadyRegisteredWithPassword')
+      }
+      if (errorDescription) {
+        return decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+      }
+    }
+    return null
+  })
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Clean up any OAuth error fragments from URL history without reloading
+    const hash = window.location.hash
+    const search = window.location.search
+    const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : search)
+    if (params.get('error_code') || params.get('error') || params.get('error_description')) {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+    }
+  }, [])
 
   const handleGoogleSignIn = async () => {
     setErrorMsg(null)
@@ -61,8 +96,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
       await signInWithGoogle()
     } catch (err: unknown) {
       console.error('Google Auth error:', err)
-      const message = err instanceof Error ? err.message : t('auth.authError')
-      setErrorMsg(message)
+      const errObj = err as Record<string, unknown> | null
+      const rawMsg =
+        (typeof errObj?.message === 'string' && errObj.message) ||
+        (typeof errObj?.error_description === 'string' && errObj.error_description) ||
+        ''
+      const lower = rawMsg.toLowerCase()
+      if (
+        lower.includes('identity_already_exists') ||
+        lower.includes('already registered') ||
+        lower.includes('different provider') ||
+        lower.includes('user already exists')
+      ) {
+        setErrorMsg(t('auth.alreadyRegisteredWithPassword'))
+      } else {
+        const message = err instanceof Error ? err.message : t('auth.authError')
+        setErrorMsg(message)
+      }
       setGoogleLoading(false)
     }
   }

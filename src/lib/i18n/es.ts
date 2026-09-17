@@ -23,6 +23,14 @@ export const es: TranslationDictionary = {
     success: '¡Perfil actualizado con éxito!',
     signOut: 'Cerrar Sesión',
     error: 'Error al actualizar el perfil.',
+    connectedAccounts: 'Cuentas Conectadas',
+    connectGoogle: 'Conectar cuenta de Google',
+    googleConnected: 'Google Conectado',
+    unlink: 'Desvincular',
+    linkGoogleDesc: 'Vincula tu cuenta para iniciar sesión sin contraseña',
+    linkGoogleError: 'No fue posible vincular la cuenta de Google. Verifica que el correo de Google sea el mismo de esta cuenta.',
+    unlinkSuccess: 'Cuenta de Google desvinculada con éxito.',
+    unlinkConfirm: '¿Deseas desvincular tu cuenta de Google? Deberás usar correo y contraseña para entrar.',
   },
   scope: {
     myAccounts: 'Mis Cuentas',
@@ -374,5 +382,7 @@ export const es: TranslationDictionary = {
     continueWithGoogle: 'Continuar con Google',
     signInWithGoogle: 'Iniciar sesión con Google',
     orContinueWithEmail: 'o continúa con correo',
+    alreadyRegisteredWithPassword:
+      'Esta cuenta fue creada con correo y contraseña. Inicia sesión normalmente y vincula Google en los ajustes de tu perfil.',
   },
 }
