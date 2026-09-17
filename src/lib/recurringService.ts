@@ -32,11 +32,15 @@ export async function fetchRecurringBills(
     throw error
   }
 
-  return (data as RecurringBill[]) || []
+  const rawList = (data as RecurringBill[]) || []
+  return rawList.map((item) => ({
+    ...item,
+    type: item.type || 'expense',
+  }))
 }
 
 /**
- * Cria uma nova regra de conta fixa recorrente.
+ * Cria uma nova regra de conta fixa recorrente (despesa ou receita/salário).
  */
 export async function createRecurringBill(
   bill: Omit<RecurringBill, 'id' | 'created_at'>
@@ -49,21 +53,49 @@ export async function createRecurringBill(
 
   const payload = {
     ...bill,
+    type: bill.type || 'expense',
     user_id: userId,
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('recurring_bills')
     .insert([payload])
     .select()
     .single()
+
+  // Fallback resiliente caso a coluna type ainda não exista no schema do banco
+  if (error && (error.code === 'PGRST204' || error.message?.includes('type'))) {
+    const fallbackPayload = {
+      name: payload.name,
+      amount: payload.amount,
+      currency: payload.currency,
+      category: payload.category,
+      wallet_id: payload.wallet_id,
+      due_day: payload.due_day,
+      start_date: payload.start_date,
+      is_active: payload.is_active,
+      scope: payload.scope,
+      family_id: payload.family_id,
+      user_id: payload.user_id,
+    }
+    const retry = await supabase
+      .from('recurring_bills')
+      .insert([fallbackPayload])
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Erro ao criar conta fixa:', error)
     throw error
   }
 
-  return data as RecurringBill
+  return {
+    ...(data as RecurringBill),
+    type: (data as RecurringBill)?.type || bill.type || 'expense',
+  }
 }
 
 /**
@@ -73,19 +105,36 @@ export async function updateRecurringBill(
   id: string,
   partialBill: Partial<RecurringBill>
 ): Promise<RecurringBill> {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('recurring_bills')
     .update(partialBill)
     .eq('id', id)
     .select()
     .single()
 
+  // Fallback resiliente se a coluna type não existir no schema
+  if (error && (error.code === 'PGRST204' || error.message?.includes('type'))) {
+    const { type: _unused, ...fallbackPartial } = partialBill
+    void _unused
+    const retry = await supabase
+      .from('recurring_bills')
+      .update(fallbackPartial)
+      .eq('id', id)
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
+
   if (error) {
     console.error('Erro ao atualizar conta fixa:', error)
     throw error
   }
 
-  return data as RecurringBill
+  return {
+    ...(data as RecurringBill),
+    type: (data as RecurringBill)?.type || partialBill.type || 'expense',
+  }
 }
 
 /**
@@ -104,17 +153,18 @@ export async function deleteRecurringBill(id: string): Promise<void> {
 }
 
 /**
- * Verifica de forma inteligente se uma conta fixa já foi liquidada nas transações do mês.
+ * Verifica de forma inteligente se uma conta fixa (despesa ou receita) já foi liquidada nas transações do mês.
  */
 export function checkBillPaidInMonth(
   bill: RecurringBill,
   monthlyTransactions: Transaction[]
 ): boolean {
+  const expectedType = bill.type || 'expense'
   const billNameLower = bill.name.trim().toLowerCase()
   const billCatLower = bill.category.trim().toLowerCase()
 
   return monthlyTransactions.some((t) => {
-    if (t.type !== 'expense') return false
+    if (t.type !== expectedType) return false
 
     const descLower = (t.description || '').trim().toLowerCase()
     const catLower = (t.category || '').trim().toLowerCase()
@@ -126,7 +176,7 @@ export function checkBillPaidInMonth(
       return true
     }
 
-    // Critério 2: Mesma categoria E (mesma conta de débito OU mesmo valor exato)
+    // Critério 2: Mesma categoria E (mesma conta bancária OU mesmo valor exato)
     if (catLower === billCatLower) {
       if (t.wallet_id === bill.wallet_id && Math.abs(tAmt - bAmt) < 0.01) {
         return true

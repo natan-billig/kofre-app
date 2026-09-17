@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { RecurringBill, Transaction, Wallet, WalletScope } from '../lib/types'
 import { checkBillPaidInMonth } from '../lib/recurringService'
 import { formatCurrency } from '../lib/formatters'
@@ -9,6 +9,7 @@ import {
   Check,
   Clock,
   ArrowUpRight,
+  ArrowDownLeft,
   Plus,
 } from 'lucide-react'
 
@@ -32,6 +33,7 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
   onPayBill,
 }) => {
   const { t, language } = useTranslation()
+  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income'>('all')
 
   // Filter bills based on current scope, active status, and temporal validity (start_date)
   const targetDate = selectedDate || new Date()
@@ -52,12 +54,22 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
     isPaid: checkBillPaidInMonth(bill, monthlyTransactions),
   }))
 
-  const paidCount = billsWithStatus.filter((b) => b.isPaid).length
-  const totalCount = billsWithStatus.length
+  const expenseCount = billsWithStatus.filter((b) => b.bill.type !== 'income').length
+  const incomeCount = billsWithStatus.filter((b) => b.bill.type === 'income').length
+
+  // Filter according to active tab
+  const displayedBillsWithStatus = billsWithStatus.filter((b) => {
+    if (typeFilter === 'expense') return b.bill.type !== 'income'
+    if (typeFilter === 'income') return b.bill.type === 'income'
+    return true
+  })
+
+  const paidCount = displayedBillsWithStatus.filter((b) => b.isPaid).length
+  const totalCount = displayedBillsWithStatus.length
   const progressPercent = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0
 
   // Sort: pending first, then by due_day ascending
-  const sortedBills = [...billsWithStatus].sort((a, b) => {
+  const sortedBills = [...displayedBillsWithStatus].sort((a, b) => {
     if (a.isPaid !== b.isPaid) {
       return a.isPaid ? 1 : -1
     }
@@ -95,20 +107,68 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
         </button>
       </div>
 
-      {/* Progress Bar when there are bills */}
+      {/* Tabs: Todas | Despesas Previstas | Rendas Previstas (apenas se houver itens ou rendas cadastradas) */}
+      {(billsWithStatus.length > 0 || incomeCount > 0) && (
+        <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800 text-xs">
+          <button
+            type="button"
+            onClick={() => setTypeFilter('all')}
+            className={`cursor-pointer px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+              typeFilter === 'all'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            {t('recurringBills.allTypes')} ({billsWithStatus.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTypeFilter('expense')}
+            className={`cursor-pointer px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+              typeFilter === 'expense'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            {t('recurringBills.expectedExpenses')} ({expenseCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTypeFilter('income')}
+            className={`cursor-pointer px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+              typeFilter === 'income'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            {t('recurringBills.expectedIncomes')} ({incomeCount})
+          </button>
+        </div>
+      )}
+
+      {/* Progress Bar when there are bills in current view */}
       {totalCount > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-[11px] text-slate-400">
             <span>
-              {paidCount} {t('recurringBills.statusPaid').toLowerCase()} ({progressPercent}%)
+              {paidCount}{' '}
+              {typeFilter === 'income'
+                ? t('recurringBills.statusReceived').toLowerCase()
+                : t('recurringBills.statusPaid').toLowerCase()}{' '}
+              ({progressPercent}%)
             </span>
             <span>
-              {totalCount - paidCount} {t('recurringBills.statusPending').toLowerCase()}
+              {totalCount - paidCount}{' '}
+              {typeFilter === 'income'
+                ? t('recurringBills.statusToReceive').toLowerCase()
+                : t('recurringBills.statusPending').toLowerCase()}
             </span>
           </div>
           <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div
-              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+              className={`h-full rounded-full transition-all duration-500 ${
+                typeFilter === 'income' ? 'bg-emerald-500' : 'bg-indigo-500'
+              }`}
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -120,12 +180,16 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
         <div className="text-center py-6 px-4 border border-dashed border-slate-800/70 rounded-2xl">
           <CalendarClock className="w-8 h-8 text-slate-600 mx-auto mb-2" />
           <p className="text-slate-400 text-xs font-medium">
-            {t('recurringBills.emptyMonth')}
+            {typeFilter === 'income'
+              ? t('recurringBills.emptyIncomes')
+              : typeFilter === 'expense'
+              ? t('recurringBills.emptyExpenses')
+              : t('recurringBills.emptyMonth')}
           </p>
           <button
             type="button"
             onClick={onOpenManage}
-            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-medium rounded-xl transition-colors"
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-medium rounded-xl transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t('recurringBills.newBill')}</span>
@@ -134,7 +198,8 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
       ) : (
         <div className="space-y-2.5">
           {sortedBills.map(({ bill, isPaid }) => {
-            const debitWallet = wallets.find((w) => w.id === bill.wallet_id)
+            const wallet = wallets.find((w) => w.id === bill.wallet_id)
+            const isIncome = bill.type === 'income'
 
             return (
               <div
@@ -143,25 +208,42 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
               >
                 {/* Left */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-slate-800/90 border border-slate-700/60 flex flex-col items-center justify-center shrink-0">
+                  <div
+                    className={`w-9 h-9 rounded-xl border flex flex-col items-center justify-center shrink-0 ${
+                      isIncome
+                        ? 'bg-emerald-950/40 border-emerald-500/30'
+                        : 'bg-slate-800/90 border-slate-700/60'
+                    }`}
+                  >
                     <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold leading-none">
                       {dayLabel}
                     </span>
-                    <span className="text-xs font-bold text-white leading-tight mt-0.5">
+                    <span
+                      className={`text-xs font-bold leading-tight mt-0.5 ${
+                        isIncome ? 'text-emerald-300' : 'text-white'
+                      }`}
+                    >
                       {bill.due_day}
                     </span>
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold text-white truncate">
-                      {bill.name}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-white truncate">
+                        {bill.name}
+                      </span>
+                      {isIncome && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-medium shrink-0">
+                          {t('recurringBills.typeIncome')}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate">
                       <span>{bill.category}</span>
-                      {debitWallet && (
+                      {wallet && (
                         <>
                           <span>•</span>
-                          <span className="truncate">{debitWallet.name}</span>
+                          <span className="truncate">{wallet.name}</span>
                         </>
                       )}
                     </div>
@@ -171,11 +253,28 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
                 {/* Right */}
                 <div className="flex items-center gap-2.5 shrink-0">
                   <div className="text-right">
-                    <div className="text-xs font-bold text-white tracking-tight">
+                    <div
+                      className={`text-xs font-bold tracking-tight font-mono ${
+                        isIncome ? 'text-emerald-400' : 'text-white'
+                      }`}
+                    >
+                      {isIncome ? '+' : ''}
                       {formatCurrency(bill.amount, bill.currency)}
                     </div>
                     <div className="mt-0.5">
-                      {isPaid ? (
+                      {isIncome ? (
+                        isPaid ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">
+                            <Check className="w-2.5 h-2.5" />
+                            {t('recurringBills.statusReceived')}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md">
+                            <Clock className="w-2.5 h-2.5" />
+                            {t('recurringBills.statusToReceive')}
+                          </span>
+                        )
+                      ) : isPaid ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">
                           <Check className="w-2.5 h-2.5" />
                           {t('recurringBills.statusPaid')}
@@ -193,11 +292,25 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
                     <button
                       type="button"
                       onClick={() => onPayBill(bill)}
-                      title={t('recurringBills.payBill')}
-                      className="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-medium rounded-xl shadow-sm shadow-emerald-950/40 transition-all"
+                      title={
+                        isIncome
+                          ? t('recurringBills.confirmReceive')
+                          : t('recurringBills.payBill')
+                      }
+                      className={`cursor-pointer flex items-center gap-1 px-2.5 py-1.5 text-white text-xs font-medium rounded-xl shadow-sm active:scale-95 transition-all ${
+                        isIncome
+                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40'
+                          : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950/40'
+                      }`}
                     >
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                      <span className="font-semibold">{t('recurringBills.pay')}</span>
+                      {isIncome ? (
+                        <ArrowDownLeft className="w-3.5 h-3.5" />
+                      ) : (
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      )}
+                      <span className="font-semibold">
+                        {isIncome ? t('recurringBills.receive') : t('recurringBills.pay')}
+                      </span>
                     </button>
                   )}
                 </div>

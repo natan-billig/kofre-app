@@ -162,6 +162,7 @@ export interface RecurringBill {
   is_active: boolean
   scope: WalletScope
   family_id?: string | null
+  type?: 'expense' | 'income'
 }
 
 export type DebtType = 'i_owe' | 'they_owe'

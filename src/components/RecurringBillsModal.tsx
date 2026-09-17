@@ -21,6 +21,8 @@ import {
   Power,
   CreditCard,
   Tag,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from 'lucide-react'
 
 interface RecurringBillsModalProps {
@@ -43,12 +45,13 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
   const { t } = useTranslation()
 
   const [bills, setBills] = useState<RecurringBill[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
+  const [allCategories, setAllCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
 
   // Form state
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingBill, setEditingBill] = useState<RecurringBill | null>(null)
+  const [billType, setBillType] = useState<'expense' | 'income'>('expense')
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<CurrencyCode>('PYG')
@@ -72,6 +75,12 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
   // Filter selectable wallets
   const selectableWallets = wallets.filter((w) => !w.is_archived)
 
+  const categories = allCategories.filter((c) =>
+    billType === 'income'
+      ? c.type === 'income' || c.type === 'both'
+      : c.type === 'expense' || c.type === 'both'
+  )
+
   useEffect(() => {
     let isMounted = true
     if (isOpen) {
@@ -92,7 +101,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
         .then(([fetchedBills, fetchedCats]) => {
           if (isMounted) {
             setBills(fetchedBills)
-            setCategories(fetchedCats.filter((c) => c.type === 'expense' || c.type === 'both'))
+            setAllCategories(fetchedCats)
           }
         })
         .catch((err) => {
@@ -109,14 +118,32 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
 
   if (!isOpen) return null
 
+  const handleTypeChange = (newType: 'expense' | 'income') => {
+    setBillType(newType)
+    const validCats = allCategories.filter((c) =>
+      newType === 'income'
+        ? c.type === 'income' || c.type === 'both'
+        : c.type === 'expense' || c.type === 'both'
+    )
+    if (!validCats.some((c) => c.name === category)) {
+      const defaultCat =
+        newType === 'income'
+          ? validCats.find((c) => c.name === 'Salário')?.name || validCats[0]?.name || 'Salário'
+          : validCats.find((c) => c.name === 'Moradia')?.name || validCats[0]?.name || 'Moradia'
+      setCategory(defaultCat)
+    }
+  }
+
   const handleOpenCreateForm = () => {
     setEditingBill(null)
+    setBillType('expense')
     setName('')
     setAmount('')
     const defaultWallet = selectableWallets[0]
     setWalletId(defaultWallet?.id || '')
     setCurrency(defaultWallet?.currency || 'PYG')
-    setCategory(categories[0]?.name || 'Moradia')
+    const expenseCats = allCategories.filter((c) => c.type === 'expense' || c.type === 'both')
+    setCategory(expenseCats[0]?.name || 'Moradia')
     setDueDay('10')
     setStartDate(new Date().toISOString().split('T')[0])
     setBillScope(scope === 'shared' ? 'shared' : 'personal')
@@ -127,6 +154,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
 
   const handleOpenEditForm = (bill: RecurringBill) => {
     setEditingBill(bill)
+    setBillType(bill.type || 'expense')
     setName(bill.name)
     setAmount(String(bill.amount))
     setCurrency(bill.currency)
@@ -221,6 +249,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           is_active: isActive,
           scope: billScope,
           family_id: billScope === 'shared' ? familyId || null : null,
+          type: billType,
         })
         setBills((prev) => prev.map((b) => (b.id === editingBill.id ? updated : b)))
         setFeedbackMsg(t('recurringBills.updatedSuccess'))
@@ -236,6 +265,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           is_active: isActive,
           scope: billScope,
           family_id: billScope === 'shared' ? familyId || null : null,
+          type: billType,
         })
         setBills((prev) => [...prev, created].sort((a, b) => a.due_day - b.due_day))
         setFeedbackMsg(t('recurringBills.createdSuccess'))
@@ -330,6 +360,34 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                 </button>
               </div>
 
+              {/* Selector: Despesa Fixa vs. Receita / Salário */}
+              <div className="grid grid-cols-2 gap-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange('expense')}
+                  className={`cursor-pointer py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    billType === 'expense'
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span>{t('recurringBills.typeExpense')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange('income')}
+                  className={`cursor-pointer py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    billType === 'income'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <ArrowDownLeft className="w-3.5 h-3.5" />
+                  <span>{t('recurringBills.typeIncome')}</span>
+                </button>
+              </div>
+
               {formError && (
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-400 text-xs">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -340,13 +398,17 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
               {/* Name */}
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  {t('recurringBills.name')}
+                  {billType === 'income' ? t('recurringBills.nameIncome') : t('recurringBills.name')}
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={t('recurringBills.namePlaceholder')}
+                  placeholder={
+                    billType === 'income'
+                      ? t('recurringBills.nameIncomePlaceholder')
+                      : t('recurringBills.namePlaceholder')
+                  }
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
                   required
                 />
@@ -408,7 +470,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
 
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    {t('recurringBills.debitAccount')}
+                    {billType === 'income' ? t('recurringBills.creditAccount') : t('recurringBills.debitAccount')}
                   </label>
                   <select
                     value={walletId}
@@ -429,7 +491,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    {t('recurringBills.dueDay')} (1-31)
+                    {(billType === 'income' ? t('recurringBills.receiptDay') : t('recurringBills.dueDay'))} (1-31)
                   </label>
                   <input
                     type="number"
@@ -528,14 +590,33 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                   >
                     {/* Left: Info */}
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-white text-sm truncate">
                           {bill.name}
                         </span>
                         <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                            bill.type === 'income'
+                              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
+                          }`}
+                        >
+                          {bill.type === 'income' ? (
+                            <>
+                              <ArrowDownLeft className="w-2.5 h-2.5" />
+                              <span>{t('recurringBills.typeIncome')}</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowUpRight className="w-2.5 h-2.5" />
+                              <span>{t('recurringBills.typeExpense')}</span>
+                            </>
+                          )}
+                        </span>
+                        <span
                           className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                             bill.is_active
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
                               : 'bg-slate-800 text-slate-400'
                           }`}
                         >
@@ -557,7 +638,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                         </span>
                         <span>•</span>
                         <span className="text-indigo-400 font-medium">
-                          {t('recurringBills.dueOn')} {bill.due_day}
+                          {bill.type === 'income' ? t('recurringBills.receiptOn') : t('recurringBills.dueOn')} {bill.due_day}
                         </span>
                         {bill.start_date && (
                           <>
@@ -573,8 +654,12 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                     {/* Right: Amount & Actions */}
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
-                        <span className="text-sm font-bold text-white tracking-tight block">
-                          {formatCurrency(bill.amount, bill.currency)}
+                        <span
+                          className={`text-sm font-bold tracking-tight block font-mono ${
+                            bill.type === 'income' ? 'text-emerald-400' : 'text-white'
+                          }`}
+                        >
+                          {bill.type === 'income' ? '+' : ''}{formatCurrency(bill.amount, bill.currency)}
                         </span>
                       </div>
 

@@ -223,10 +223,10 @@ export default function App() {
     setIsQuickTxOpen(true)
   }
 
-  // Quick Action: Pagar Conta Fixa
+  // Quick Action: Pagar Conta Fixa ou Confirmar Recebimento de Renda/Salário
   const handlePayBill = (bill: RecurringBill) => {
     setEditingTransaction(null)
-    setQuickTxType('expense')
+    setQuickTxType(bill.type === 'income' ? 'income' : 'expense')
     setQuickTxSourceId(bill.wallet_id)
     setQuickTxDestId(undefined)
     setQuickTxAmount(bill.amount)
