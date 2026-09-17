@@ -1,17 +1,66 @@
 import { supabase } from './supabase'
 import type { Category, CategoryType, WalletScope } from './types'
 
-const DEFAULT_CATEGORIES: Array<{ name: string; type: CategoryType }> = [
-  { name: 'Alimentação', type: 'expense' },
-  { name: 'Supermercado', type: 'expense' },
-  { name: 'Moradia', type: 'expense' },
-  { name: 'Transporte', type: 'expense' },
-  { name: 'Lazer', type: 'expense' },
-  { name: 'Saúde', type: 'expense' },
-  { name: 'Compras', type: 'expense' },
-  { name: 'Salário', type: 'income' },
-  { name: 'Investimentos', type: 'income' },
-  { name: 'Outros', type: 'both' },
+export const DEFAULT_MACRO_PRESETS = [
+  'Moradia',
+  'Alimentação',
+  'Transporte',
+  'Lazer',
+  'Saúde',
+  'Compras',
+  'Educação',
+  'Serviços',
+  'Investimentos',
+  'Outros',
+]
+
+export const DEFAULT_MACRO_MAP: Record<string, string> = {
+  Alimentação: 'Alimentação',
+  Supermercado: 'Alimentação',
+  Restaurante: 'Alimentação',
+  Lanche: 'Alimentação',
+  Moradia: 'Moradia',
+  Aluguel: 'Moradia',
+  Luz: 'Moradia',
+  Água: 'Moradia',
+  Internet: 'Moradia',
+  Condomínio: 'Moradia',
+  Transporte: 'Transporte',
+  Combustível: 'Transporte',
+  Uber: 'Transporte',
+  Oficina: 'Transporte',
+  Lazer: 'Lazer',
+  Cinema: 'Lazer',
+  Viagem: 'Lazer',
+  Saúde: 'Saúde',
+  Farmácia: 'Saúde',
+  Médico: 'Saúde',
+  Compras: 'Compras',
+  Vestuário: 'Compras',
+  Eletrônicos: 'Compras',
+  Educação: 'Educação',
+  Faculdade: 'Educação',
+  Curso: 'Educação',
+  Serviços: 'Serviços',
+  Salário: 'Renda',
+  Investimentos: 'Investimentos',
+  Câmbio: 'Câmbio',
+  Transferência: 'Transferência',
+  'Pagamento de Fatura': 'Pagamento de Fatura',
+  Outros: 'Outros',
+}
+
+const DEFAULT_CATEGORIES: Array<{ name: string; type: CategoryType; macro_category?: string }> = [
+  { name: 'Alimentação', type: 'expense', macro_category: 'Alimentação' },
+  { name: 'Supermercado', type: 'expense', macro_category: 'Alimentação' },
+  { name: 'Moradia', type: 'expense', macro_category: 'Moradia' },
+  { name: 'Transporte', type: 'expense', macro_category: 'Transporte' },
+  { name: 'Lazer', type: 'expense', macro_category: 'Lazer' },
+  { name: 'Saúde', type: 'expense', macro_category: 'Saúde' },
+  { name: 'Compras', type: 'expense', macro_category: 'Compras' },
+  { name: 'Salário', type: 'income', macro_category: 'Renda' },
+  { name: 'Investimentos', type: 'income', macro_category: 'Investimentos' },
+  { name: 'Outros', type: 'both', macro_category: 'Outros' },
 ]
 
 /**
@@ -52,12 +101,27 @@ export async function fetchCategories(
           scope,
           family_id: scope === 'shared' ? familyId || null : null,
           user_id: user.id,
+          macro_category: cat.macro_category,
         }))
 
-        const { data: inserted, error: insertError } = await supabase
+        let { data: inserted, error: insertError } = await supabase
           .from('categories')
           .insert(toInsert)
           .select()
+
+        // Fallback se a coluna macro_category ainda não existir no schema do banco
+        if (insertError && (insertError.code === 'PGRST204' || insertError.message?.includes('macro_category'))) {
+          const fallbackToInsert = toInsert.map((item) => ({
+            name: item.name,
+            type: item.type,
+            scope: item.scope,
+            family_id: item.family_id,
+            user_id: item.user_id,
+          }))
+          const retry = await supabase.from('categories').insert(fallbackToInsert).select()
+          inserted = retry.data
+          insertError = retry.error
+        }
 
         if (!insertError && inserted && inserted.length > 0) {
           return (inserted as Category[]).sort((a, b) => a.name.localeCompare(b.name))
@@ -76,6 +140,7 @@ export async function fetchCategories(
       type: c.type,
       scope,
       family_id: familyId || null,
+      macro_category: c.macro_category,
     }))
   }
 }
@@ -87,7 +152,8 @@ export async function createCategory(
   name: string,
   type: CategoryType,
   scope: WalletScope,
-  familyId?: string | null
+  familyId?: string | null,
+  macroCategory?: string | null
 ): Promise<Category> {
   const cleanName = name.trim()
   if (!cleanName) {
@@ -102,7 +168,7 @@ export async function createCategory(
     throw new Error('Usuário não autenticado.')
   }
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     user_id: user.id,
     name: cleanName,
     type,
@@ -110,11 +176,27 @@ export async function createCategory(
     family_id: scope === 'shared' ? familyId || null : null,
   }
 
-  const { data, error } = await supabase
+  if (macroCategory?.trim()) {
+    payload.macro_category = macroCategory.trim()
+  }
+
+  let { data, error } = await supabase
     .from('categories')
     .insert([payload])
     .select()
     .single()
+
+  // Se a coluna macro_category não existir no schema (fallback gracioso)
+  if (error && (error.code === 'PGRST204' || error.message?.includes('macro_category'))) {
+    delete payload.macro_category
+    const retry = await supabase
+      .from('categories')
+      .insert([payload])
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Erro ao criar categoria:', error)
@@ -125,32 +207,56 @@ export async function createCategory(
 }
 
 /**
- * Renomeia uma categoria através da RPC rename_category,
- * propagando a alteração para todos os lançamentos passados.
+ * Atualiza uma categoria no Supabase (nome e macro_category),
+ * propagando alteração de nome para os lançamentos passados via RPC rename_category se houver.
  */
 export async function updateCategory(
   id: string,
   oldName: string,
   newName: string,
   scope: WalletScope,
-  familyId?: string | null
+  familyId?: string | null,
+  macroCategory?: string | null
 ): Promise<void> {
   const cleanNewName = newName.trim()
   if (!cleanNewName) {
     throw new Error('O novo nome da categoria não pode ficar vazio.')
   }
 
-  const { error } = await supabase.rpc('rename_category', {
-    p_category_id: id,
-    p_old_name: oldName.trim(),
-    p_new_name: cleanNewName,
-    p_scope: scope,
-    p_family_id: familyId || null,
-  })
+  // 1. Atualizar macro_category se informado
+  if (macroCategory !== undefined) {
+    try {
+      await supabase
+        .from('categories')
+        .update({ macro_category: macroCategory?.trim() || null })
+        .eq('id', id)
+    } catch (err) {
+      console.warn('Could not update macro_category:', err)
+    }
+  }
 
-  if (error) {
-    console.error('Erro ao renomear categoria via RPC rename_category:', error)
-    throw new Error(error.message || 'Erro ao renomear categoria.')
+  // 2. Se o nome mudou, executa a renomeação de lançamentos via RPC
+  if (cleanNewName !== oldName.trim()) {
+    const { error } = await supabase.rpc('rename_category', {
+      p_category_id: id,
+      p_old_name: oldName.trim(),
+      p_new_name: cleanNewName,
+      p_scope: scope,
+      p_family_id: familyId || null,
+    })
+
+    if (error) {
+      // Fallback: se a RPC der erro ou não existir, atualiza diretamente o nome na tabela
+      const { error: directErr } = await supabase
+        .from('categories')
+        .update({ name: cleanNewName })
+        .eq('id', id)
+
+      if (directErr) {
+        console.error('Erro ao renomear categoria:', error)
+        throw new Error(error.message || directErr.message || 'Erro ao renomear categoria.')
+      }
+    }
   }
 }
 

@@ -5,6 +5,7 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  DEFAULT_MACRO_PRESETS,
 } from '../lib/categoryService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
@@ -19,6 +20,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   AlertTriangle,
+  Folder,
 } from 'lucide-react'
 
 interface CategoryManagerModalProps {
@@ -45,12 +47,14 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   // New Category form state
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<CategoryType>('expense')
+  const [newMacro, setNewMacro] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
 
   // In-place edit state
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
+  const [editingMacro, setEditingMacro] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -102,8 +106,9 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     setIsAdding(true)
     setAddError(null)
     try {
-      await createCategory(trimmed, newType, scope, familyId)
+      await createCategory(trimmed, newType, scope, familyId, newMacro.trim() || null)
       setNewName('')
+      setNewMacro('')
       setVersion((v) => v + 1)
       onCategoriesChanged?.()
     } catch (err: unknown) {
@@ -117,6 +122,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const handleStartEdit = (cat: Category) => {
     setEditingId(cat.id)
     setEditingName(cat.name)
+    setEditingMacro(cat.macro_category || '')
     setEditError(null)
     setConfirmDeleteId(null)
   }
@@ -128,7 +134,8 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
       return
     }
 
-    if (trimmed === cat.name) {
+    const trimmedMacro = editingMacro.trim()
+    if (trimmed === cat.name && trimmedMacro === (cat.macro_category || '')) {
       setEditingId(null)
       return
     }
@@ -136,7 +143,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     setIsSavingEdit(true)
     setEditError(null)
     try {
-      await updateCategory(cat.id, cat.name, trimmed, scope, familyId)
+      await updateCategory(cat.id, cat.name, trimmed, scope, familyId, trimmedMacro || null)
       setEditingId(null)
       setVersion((v) => v + 1)
       onCategoriesChanged?.()
@@ -252,6 +259,47 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
             </div>
           </div>
 
+          {/* Macro-categoria / Grupo & Sugestões */}
+          <div className="space-y-1.5 pt-1.5 border-t border-slate-800/60">
+            <div className="flex items-center justify-between text-[11px] text-slate-400">
+              <span className="flex items-center gap-1 font-medium text-slate-300">
+                <Folder className="w-3 h-3 text-indigo-400" />
+                {t('categoryManager.macroCategory')}
+              </span>
+              <span className="text-[10px] text-slate-500">
+                {t('categoryManager.presets')}:
+              </span>
+            </div>
+
+            <input
+              type="text"
+              value={newMacro}
+              onChange={(e) => setNewMacro(e.target.value)}
+              placeholder={t('categoryManager.macroCategoryPlaceholder')}
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {DEFAULT_MACRO_PRESETS.map((preset) => {
+                const isSelected = newMacro.trim().toLowerCase() === preset.toLowerCase()
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setNewMacro(isSelected ? '' : preset)}
+                    className={`cursor-pointer px-2 py-0.5 rounded-lg text-[10px] font-medium border transition-colors ${
+                      isSelected
+                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                        : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {addError && (
             <p className="text-[11px] text-rose-400 font-medium">{addError}</p>
           )}
@@ -351,6 +399,42 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
+
+                    <div className="space-y-1 pt-1 border-t border-slate-800">
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span className="flex items-center gap-1 font-medium text-slate-300">
+                          <Folder className="w-3 h-3 text-indigo-400" />
+                          {t('categoryManager.macroCategory')}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={editingMacro}
+                        onChange={(e) => setEditingMacro(e.target.value)}
+                        placeholder={t('categoryManager.macroCategoryPlaceholder')}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      />
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {DEFAULT_MACRO_PRESETS.map((preset) => {
+                          const isSelected = editingMacro.trim().toLowerCase() === preset.toLowerCase()
+                          return (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setEditingMacro(isSelected ? '' : preset)}
+                              className={`cursor-pointer px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
+                                isSelected
+                                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
                     {editError && (
                       <p className="text-[10px] text-rose-400 font-medium">{editError}</p>
                     )}
@@ -408,11 +492,18 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 flex-shrink-0">
                       <Tag className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">
-                      {t(`categories.${cat.name}`, cat.name)}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                      <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">
+                        {t(`categories.${cat.name}`, cat.name)}
+                      </span>
+                      {cat.macro_category && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
+                          {cat.macro_category}
+                        </span>
+                      )}
+                    </div>
                     <span
-                      className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border ${
+                      className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border flex-shrink-0 ${
                         cat.type === 'expense'
                           ? 'bg-rose-500/10 text-rose-300 border-rose-500/20'
                           : cat.type === 'income'

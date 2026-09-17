@@ -114,12 +114,20 @@ export interface Category {
   type: CategoryType
   scope: WalletScope
   family_id?: string | null
+  macro_category?: string | null
 }
 
 export interface CategoryExpenseItem {
   category: string
   amount: number
   percentage: number
+}
+
+export interface MacroCategoryExpenseItem {
+  macroCategory: string
+  amount: number
+  percentage: number
+  subcategories: CategoryExpenseItem[]
 }
 
 export interface CurrencyCategoryBreakdown {

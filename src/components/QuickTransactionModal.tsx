@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import type {
   Wallet,
   Transaction,
@@ -10,7 +10,7 @@ import type {
   WalletScope,
 } from '../lib/types'
 import { createTransaction, updateTransaction } from '../lib/accountingService'
-import { fetchCategories } from '../lib/categoryService'
+import { fetchCategories, DEFAULT_MACRO_MAP } from '../lib/categoryService'
 import { CategoryManagerModal } from './CategoryManagerModal'
 import { formatExchangeRate } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -182,6 +182,24 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
     if (type === 'income') return cat.type === 'income' || cat.type === 'both'
     return true
   })
+
+  const groupedCategories = useMemo(() => {
+    const groups: Record<string, Category[]> = {}
+
+    for (const cat of displayedCategories) {
+      const macro =
+        cat.macro_category?.trim() ||
+        DEFAULT_MACRO_MAP[cat.name] ||
+        'Outros'
+
+      if (!groups[macro]) {
+        groups[macro] = []
+      }
+      groups[macro].push(cat)
+    }
+
+    return groups
+  }, [displayedCategories])
 
   const isCrossCurrencyTransfer =
     type === 'transfer' &&
@@ -625,26 +643,57 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
-                  {displayedCategories.map((cat) => {
-                    const Icon = CATEGORY_ICON_MAP[cat.name] || Tag
-                    const isSelected = category === cat.name
-                    return (
-                      <button
-                        key={cat.id || cat.name}
-                        type="button"
-                        onClick={() => setCategory(cat.name)}
-                        className={`cursor-pointer px-2.5 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all ${
-                          isSelected
-                            ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200'
-                            : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
-                        }`}
+                <div className="space-y-2">
+                  {/* Select com <optgroup> por Macro-categoria */}
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none cursor-pointer"
+                  >
+                    {!displayedCategories.some((c) => c.name === category) && category && (
+                      <option value={category}>{category}</option>
+                    )}
+                    {Object.entries(groupedCategories).map(([macroName, cats]) => (
+                      <optgroup
+                        key={macroName}
+                        label={macroName}
+                        className="bg-slate-900 text-indigo-300 font-semibold"
                       >
-                        <Icon className="w-3.5 h-3.5" />
-                        <span>{t(`categories.${cat.name}`, cat.name)}</span>
-                      </button>
-                    )
-                  })}
+                        {cats.map((cat) => (
+                          <option
+                            key={cat.id || cat.name}
+                            value={cat.name}
+                            className="bg-slate-950 text-slate-100 font-normal"
+                          >
+                            {t(`categories.${cat.name}`, cat.name)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+
+                  {/* Pills rápidas para seleção instantânea */}
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-0.5">
+                    {displayedCategories.map((cat) => {
+                      const Icon = CATEGORY_ICON_MAP[cat.name] || Tag
+                      const isSelected = category === cat.name
+                      return (
+                        <button
+                          key={cat.id || cat.name}
+                          type="button"
+                          onClick={() => setCategory(cat.name)}
+                          className={`cursor-pointer px-2 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-all ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200 shadow-sm'
+                              : 'border-slate-800/80 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                          }`}
+                        >
+                          <Icon className="w-3 h-3" />
+                          <span>{t(`categories.${cat.name}`, cat.name)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
