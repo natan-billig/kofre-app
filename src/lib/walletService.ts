@@ -202,3 +202,33 @@ export async function updateWalletName(walletId: string, name: string): Promise<
   return data as Wallet
 }
 
+export async function updateWallet(
+  walletId: string,
+  payload: {
+    name?: string
+    credit_limit?: number | null
+    closing_day?: number | null
+    due_day?: number | null
+  }
+): Promise<Wallet> {
+  const updateData: Record<string, unknown> = {}
+  if (payload.name !== undefined) updateData.name = payload.name.trim()
+  if (payload.credit_limit !== undefined) updateData.credit_limit = payload.credit_limit
+  if (payload.closing_day !== undefined) updateData.closing_day = payload.closing_day
+  if (payload.due_day !== undefined) updateData.due_day = payload.due_day
+
+  const { data, error } = await supabase
+    .from('wallets')
+    .update(updateData)
+    .eq('id', walletId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating wallet:', error)
+    throw error
+  }
+
+  return data as Wallet
+}
+

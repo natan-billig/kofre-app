@@ -159,6 +159,18 @@ export const pt = {
     close: 'Fechar',
     archivedBadge: 'Arquivada',
   },
+  creditCard: {
+    closingDay: 'Dia de Fechamento',
+    dueDay: 'Dia de Vencimento',
+    currentInvoice: 'Fatura Atual',
+    nextInvoice: 'Próxima Fatura',
+    closesDay: 'Fecha dia',
+    dueOnDay: 'Vence dia',
+    invalidDay: 'Informe um dia válido entre 1 e 31.',
+    saveCardSettings: 'Salvar Fatura e Limite',
+    cardSettingsTitle: 'Ciclo de Fatura e Limite',
+    cardUpdated: 'Configurações do cartão atualizadas com sucesso!',
+  },
   familyModal: {
     title: 'Gestão da Família',
     subtitle: 'Caixa Compartilhado e Acesso Familiar',

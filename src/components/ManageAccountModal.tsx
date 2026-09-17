@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { Wallet, Transaction } from '../lib/types'
-import { deleteWallet, archiveWallet, updateWalletName } from '../lib/walletService'
+import { deleteWallet, archiveWallet, updateWalletName, updateWallet } from '../lib/walletService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
@@ -40,6 +40,14 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
   const [isUpdatingName, setIsUpdatingName] = useState(false)
   const [nameError, setNameError] = useState<string | null>(null)
   const [nameSuccess, setNameSuccess] = useState(false)
+
+  // Credit card invoice cycle & limit state
+  const [closingDay, setClosingDay] = useState(wallet?.closing_day?.toString() || '')
+  const [dueDay, setDueDay] = useState(wallet?.due_day?.toString() || '')
+  const [creditLimit, setCreditLimit] = useState(wallet?.credit_limit?.toString() || '')
+  const [isUpdatingCard, setIsUpdatingCard] = useState(false)
+  const [cardError, setCardError] = useState<string | null>(null)
+  const [cardSuccess, setCardSuccess] = useState(false)
 
   if (!isOpen || !wallet) return null
 
@@ -112,6 +120,57 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
       setNameError(err instanceof Error ? err.message : 'Erro ao atualizar nome da conta.')
     } finally {
       setIsUpdatingName(false)
+    }
+  }
+
+  const handleSaveCardSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wallet) return
+
+    setCardError(null)
+    setCardSuccess(false)
+
+    let parsedClosing: number | null = null
+    let parsedDue: number | null = null
+    let parsedLimit: number | null = null
+
+    if (closingDay.trim()) {
+      parsedClosing = parseInt(closingDay.trim(), 10)
+      if (isNaN(parsedClosing) || parsedClosing < 1 || parsedClosing > 31) {
+        setCardError(t('creditCard.invalidDay'))
+        return
+      }
+    }
+
+    if (dueDay.trim()) {
+      parsedDue = parseInt(dueDay.trim(), 10)
+      if (isNaN(parsedDue) || parsedDue < 1 || parsedDue > 31) {
+        setCardError(t('creditCard.invalidDay'))
+        return
+      }
+    }
+
+    if (creditLimit.trim()) {
+      parsedLimit = Number(creditLimit.trim())
+      if (isNaN(parsedLimit) || parsedLimit < 0) {
+        parsedLimit = null
+      }
+    }
+
+    setIsUpdatingCard(true)
+    try {
+      await updateWallet(wallet.id, {
+        closing_day: parsedClosing,
+        due_day: parsedDue,
+        credit_limit: parsedLimit,
+      })
+      setCardSuccess(true)
+      onAccountUpdated()
+    } catch (err: unknown) {
+      console.error('Error updating card settings:', err)
+      setCardError(err instanceof Error ? err.message : 'Erro ao atualizar configurações do cartão.')
+    } finally {
+      setIsUpdatingCard(false)
     }
   }
 
@@ -203,6 +262,106 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = ({
             </p>
           )}
         </form>
+
+        {/* Credit Card Cycle and Limit Settings */}
+        {wallet.account_type === 'credit_card' && (
+          <form
+            onSubmit={handleSaveCardSettings}
+            className="space-y-3 p-3.5 rounded-2xl bg-purple-950/20 border border-purple-500/20"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold text-purple-300 uppercase tracking-wider">
+              <CreditCard className="w-4 h-4 text-purple-400" />
+              <span>{t('creditCard.cardSettingsTitle')}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-slate-300">
+                  {t('creditCard.closingDay')} (1-31)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={closingDay}
+                  onChange={(e) => {
+                    setClosingDay(e.target.value)
+                    setCardSuccess(false)
+                    setCardError(null)
+                  }}
+                  placeholder="Ex: 20"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-slate-300">
+                  {t('creditCard.dueDay')} (1-31)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={dueDay}
+                  onChange={(e) => {
+                    setDueDay(e.target.value)
+                    setCardSuccess(false)
+                    setCardError(null)
+                  }}
+                  placeholder="Ex: 28"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-slate-300">
+                {t('createAccount.creditLimit')} ({wallet.currency})
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={creditLimit}
+                onChange={(e) => {
+                  setCreditLimit(e.target.value)
+                  setCardSuccess(false)
+                  setCardError(null)
+                }}
+                placeholder="Ex: 5000000"
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex-1 pr-2">
+                {cardError && (
+                  <p className="text-[11px] text-rose-400 font-medium">{cardError}</p>
+                )}
+                {cardSuccess && (
+                  <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t('creditCard.cardUpdated')}</span>
+                  </p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={isUpdatingCard}
+                className="cursor-pointer px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                {isUpdatingCard ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t('creditCard.saveCardSettings')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Status and Integrity Info */}
         {hasTransactions ? (

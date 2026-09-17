@@ -232,3 +232,5 @@ export function calculateCategoryExpenses(
 }
 
 export const calculateExpensesByCategory = calculateCategoryExpenses
+
+export { getCreditCardInvoiceDetails } from './creditCardService'

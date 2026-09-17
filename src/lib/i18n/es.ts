@@ -161,6 +161,18 @@ export const es: TranslationDictionary = {
     close: 'Cerrar',
     archivedBadge: 'Archivada',
   },
+  creditCard: {
+    closingDay: 'Día de Cierre',
+    dueDay: 'Día de Vencimiento',
+    currentInvoice: 'Factura Actual',
+    nextInvoice: 'Próxima Factura',
+    closesDay: 'Cierra el',
+    dueOnDay: 'Vence el',
+    invalidDay: 'Ingrese un día válido entre 1 y 31.',
+    saveCardSettings: 'Guardar Factura y Límite',
+    cardSettingsTitle: 'Ciclo de Factura y Límite',
+    cardUpdated: '¡Configuración de la tarjeta actualizada con éxito!',
+  },
   familyModal: {
     title: 'Gestión de la Familia',
     subtitle: 'Caja Compartida y Acceso Familiar',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import type { Wallet, Transaction, WalletScope } from '../lib/types'
 import { calculateAccountBalance } from '../lib/accountingService'
+import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
@@ -192,13 +193,15 @@ export const AccountList: React.FC<AccountListProps> = ({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                 {creditWallets.map((w) => {
-                  const invoice = calculateAccountBalance(w, transactions)
+                  const details = getCreditCardInvoiceDetails(w, transactions)
+                  const hasCycleDates = details.closingDay != null || details.dueDay != null
+
                   return (
                     <div
                       key={w.id}
                       className="p-3 rounded-xl bg-slate-950/60 border border-purple-500/20 flex items-center justify-between hover:border-purple-500/40 transition-all group"
                     >
-                      <div className="space-y-0.5 min-w-0 pr-2">
+                      <div className="space-y-1 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-sm font-semibold text-slate-100 truncate">
                             {w.name}
@@ -209,21 +212,48 @@ export const AccountList: React.FC<AccountListProps> = ({
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] text-purple-300 uppercase font-mono block">
-                          {t('dashboard.currentInvoice')}: {w.currency}
+
+                        {/* Badge discreto com as datas: "Fecha dia X • Vence dia Y" */}
+                        {hasCycleDates && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
+                              {details.closingDay != null && `${t('creditCard.closesDay')} ${details.closingDay}`}
+                              {details.closingDay != null && details.dueDay != null && ' • '}
+                              {details.dueDay != null && `${t('creditCard.dueOnDay')} ${details.dueDay}`}
+                            </span>
+                          </div>
+                        )}
+
+                        <span className="text-[11px] text-purple-300/80 uppercase font-mono block">
+                          {t('creditCard.currentInvoice')}: {w.currency}
                         </span>
                       </div>
+
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-purple-300">
-                            {formatCurrency(invoice, w.currency)}
+                        <div className="text-right space-y-0.5">
+                          {/* Fatura Atual destacada */}
+                          <div className="text-sm font-bold text-purple-300 font-mono">
+                            {formatCurrency(details.currentInvoiceAmount, w.currency)}
                           </div>
+
+                          {/* Próxima Fatura se houver compras pós-fechamento */}
+                          {details.nextInvoiceAmount > 0 && (
+                            <div className="text-[10px] text-slate-400 font-medium font-mono">
+                              <span className="text-slate-500">{t('creditCard.nextInvoice')}:</span>{' '}
+                              <span className="text-slate-300">
+                                {formatCurrency(details.nextInvoiceAmount, w.currency)}
+                              </span>
+                            </div>
+                          )}
+
                           {w.credit_limit && (
                             <div className="text-[10px] text-slate-400">
-                              {t('dashboard.availableLimit')}: {formatCurrency(Number(w.credit_limit), w.currency)}
+                              {t('dashboard.availableLimit')}:{' '}
+                              {formatCurrency(Math.max(0, Number(w.credit_limit) - details.totalDebt), w.currency)}
                             </div>
                           )}
                         </div>
+
                         {onManageAccount && (
                           <button
                             type="button"

@@ -124,3 +124,15 @@ export interface CurrencyCategoryBreakdown {
   total: number
   items: CategoryExpenseItem[]
 }
+
+export interface CreditCardInvoiceDetails {
+  wallet: Wallet
+  currentInvoiceAmount: number
+  nextInvoiceAmount: number
+  totalDebt: number
+  closingDay: number | null
+  dueDay: number | null
+  currentClosingDate: Date | null
+  dueDate: Date | null
+  isClosed: boolean
+}

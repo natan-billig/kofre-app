@@ -40,6 +40,23 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       return
     }
 
+    if (accountType === 'credit_card') {
+      if (closingDay) {
+        const cDay = parseInt(closingDay, 10)
+        if (isNaN(cDay) || cDay < 1 || cDay > 31) {
+          setErrorMsg(t('creditCard.invalidDay'))
+          return
+        }
+      }
+      if (dueDay) {
+        const dDay = parseInt(dueDay, 10)
+        if (isNaN(dDay) || dDay < 1 || dDay > 31) {
+          setErrorMsg(t('creditCard.invalidDay'))
+          return
+        }
+      }
+    }
+
     setLoading(true)
 
     try {
