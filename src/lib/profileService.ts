@@ -43,15 +43,33 @@ export async function updateUserProfile(
     }
   }
 
-  const { data: updated, error } = await supabase
+  // Tenta realizar upsert com updated_at
+  let { data: updated, error } = await supabase
     .from('profiles')
-    .upsert(payload, { onConflict: 'id' })
+    .upsert(
+      {
+        ...payload,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    )
     .select()
     .single()
 
+  // Se a coluna updated_at não existir no schema cache, faz fallback sem updated_at
+  if (error && (error.code === 'PGRST204' || error.message?.includes('updated_at'))) {
+    const retry = await supabase
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
+      .select()
+      .single()
+    updated = retry.data
+    error = retry.error
+  }
+
   if (error) {
-    console.error('Error updating user profile:', error)
-    throw error
+    console.error('Supabase profile error:', error)
+    throw new Error(error.message || 'Falha ao salvar perfil')
   }
 
   return updated as Profile

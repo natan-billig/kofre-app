@@ -52,7 +52,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
 
     const trimmedName = fullName.trim()
     if (!trimmedName) {
-      setErrorMsg(t('authModal.fillName'))
+      setErrorMsg(t('auth.fillName'))
       return
     }
 
@@ -71,7 +71,12 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
       }, 3000)
     } catch (err: unknown) {
       console.error('Erro ao atualizar perfil:', err)
-      const msg = err instanceof Error ? err.message : t('profile.error')
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : t('profile.error')
       setErrorMsg(msg)
     } finally {
       setIsSaving(false)
@@ -111,9 +116,18 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
           </div>
         )}
         {errorMsg && (
-          <div className="mx-6 mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-400 text-xs">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
+          <div className="mx-6 mt-4 p-3 bg-rose-500/15 border border-rose-500/30 rounded-xl flex items-start justify-between gap-2 text-rose-400 text-xs font-medium">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="leading-relaxed">{errorMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMsg(null)}
+              className="text-rose-400/70 hover:text-rose-300 p-0.5 rounded cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 
