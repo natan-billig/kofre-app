@@ -331,6 +331,7 @@ export default function App() {
                   wallets={wallets}
                   currentScope={currentScope}
                   currentUserId={sessionUser.id}
+                  selectedDate={selectedDate}
                   onEditTransaction={handleEditTransaction}
                   onTransactionDeleted={() => refreshData()}
                 />

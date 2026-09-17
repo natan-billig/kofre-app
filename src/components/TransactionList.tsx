@@ -23,13 +23,17 @@ import {
   Trash2,
   Loader2,
   AlertTriangle,
+  Download,
+  CheckCircle2,
 } from 'lucide-react'
+import { exportTransactionsToCSV } from '../lib/exportService'
 
 interface TransactionListProps {
   transactions: Transaction[]
   wallets: Wallet[]
   currentScope: WalletScope | 'all'
   currentUserId: string
+  selectedDate?: Date
   onEditTransaction: (transaction: Transaction) => void
   onTransactionDeleted: () => void
 }
@@ -52,6 +56,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   wallets,
   currentScope,
   currentUserId,
+  selectedDate,
   onEditTransaction,
   onTransactionDeleted,
 }) => {
@@ -60,6 +65,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [downloadSuccess, setDownloadSuccess] = useState(false)
 
   // Fetch author profiles for all transaction user_ids
   useEffect(() => {
@@ -94,6 +100,25 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     return true
   })
 
+  const handleExportCSV = () => {
+    if (filteredTransactions.length === 0) return
+
+    const targetDate = selectedDate || new Date()
+    const year = targetDate.getFullYear()
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0')
+    const filename = `kofre_extrato_${year}_${month}.csv`
+
+    exportTransactionsToCSV(filteredTransactions, wallets, filename, {
+      language,
+      profilesMap,
+    })
+
+    setDownloadSuccess(true)
+    setTimeout(() => {
+      setDownloadSuccess(false)
+    }, 3500)
+  }
+
   const handleConfirmDelete = async () => {
     if (!txToDelete) return
 
@@ -123,6 +148,26 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
             {filteredTransactions.length}
           </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {downloadSuccess && (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">{t('transactions.exportSuccess')}</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            disabled={filteredTransactions.length === 0}
+            title={t('transactions.exportExcel')}
+            className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/80 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 hover:text-white border border-slate-700/60 rounded-xl text-xs font-medium transition-all shadow-sm active:scale-95"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{t('transactions.exportCsv')}</span>
+          </button>
         </div>
       </div>
 

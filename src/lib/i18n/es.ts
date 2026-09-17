@@ -107,6 +107,9 @@ export const es: TranslationDictionary = {
     cancel: 'Cancelar',
     edit: 'Editar',
     delete: 'Eliminar',
+    exportCsv: 'Exportar CSV',
+    exportExcel: 'Exportar a Planilla (CSV/Excel)',
+    exportSuccess: 'Extracto descargado con éxito.',
   },
   quickModal: {
     newTitle: 'Nuevo Movimiento',

@@ -105,6 +105,9 @@ export const pt = {
     cancel: 'Cancelar',
     edit: 'Editar',
     delete: 'Excluir',
+    exportCsv: 'Exportar CSV',
+    exportExcel: 'Exportar para Planilha (CSV/Excel)',
+    exportSuccess: 'Extrato baixado com sucesso.',
   },
   quickModal: {
     newTitle: 'Novo Lançamento',
