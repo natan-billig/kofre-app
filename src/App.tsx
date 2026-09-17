@@ -8,12 +8,14 @@ import type {
   RecurringBill,
   Profile,
   DebtItem,
+  CurrencyCode,
 } from './lib/types'
 import { ensureInitialWallets } from './lib/walletService'
 import {
   fetchTransactions,
   calculateBalances,
   calculateCardInvoices,
+  getActiveCurrencies,
 } from './lib/accountingService'
 import { fetchRecurringBills } from './lib/recurringService'
 import { fetchUserProfile } from './lib/profileService'
@@ -188,6 +190,11 @@ export default function App() {
   const balances = calculateBalances(wallets, transactions, currentScope)
   const cardInvoices = calculateCardInvoices(wallets, transactions, currentScope)
 
+  // Active currencies based on user preference and active wallets
+  const preferredCurrency: CurrencyCode = userProfile?.preferred_currency || 'PYG'
+  const scopedWallets = currentScope === 'all' ? wallets : wallets.filter((w) => w.type === currentScope)
+  const activeCurrencies = getActiveCurrencies(scopedWallets, preferredCurrency)
+
   // Filter transactions for the selected month (UTC-safe via YYYY-MM substring)
   const selectedYear = selectedDate.getFullYear()
   const selectedMonth = selectedDate.getMonth()
@@ -216,6 +223,18 @@ export default function App() {
     setIsQuickTxOpen(true)
   }
 
+  // Quick Action: Pagar Conta Fixa
+  const handlePayBill = (bill: RecurringBill) => {
+    setEditingTransaction(null)
+    setQuickTxType('expense')
+    setQuickTxSourceId(bill.wallet_id)
+    setQuickTxDestId(undefined)
+    setQuickTxAmount(bill.amount)
+    setQuickTxCategory(bill.category)
+    setQuickTxDescription(bill.name)
+    setIsQuickTxOpen(true)
+  }
+
   // Open default Quick Transaction (+)
   const handleOpenDefaultQuickTx = () => {
     setEditingTransaction(null)
@@ -237,18 +256,6 @@ export default function App() {
     setQuickTxAmount(Number(tx.amount))
     setQuickTxCategory(tx.category)
     setQuickTxDescription(tx.description || undefined)
-    setIsQuickTxOpen(true)
-  }
-
-  // 1-Click Pay Recurring Bill
-  const handlePayBill = (bill: RecurringBill) => {
-    setEditingTransaction(null)
-    setQuickTxType('expense')
-    setQuickTxSourceId(bill.wallet_id)
-    setQuickTxDestId(undefined)
-    setQuickTxAmount(bill.amount)
-    setQuickTxCategory(bill.category)
-    setQuickTxDescription(bill.name)
     setIsQuickTxOpen(true)
   }
 
@@ -295,13 +302,13 @@ export default function App() {
           setWallets([])
           setTransactions([])
           setRecurringBills([])
+          setDebts([])
           setUserProfile(null)
         }}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24">
-        {/* Scope Switcher: Minhas Contas / Caixa da Família / Consolidado */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Scope Filter Bar (Minhas Contas / Caixa da Família / Consolidado) */}
         <ScopeFilter
           currentScope={currentScope}
           onSelectScope={setCurrentScope}
@@ -320,6 +327,7 @@ export default function App() {
             <CurrencyDashboard
               balances={balances}
               cardInvoices={cardInvoices}
+              activeCurrencies={activeCurrencies}
               onPayCardInvoice={handlePayCardInvoice}
             />
 
@@ -338,6 +346,7 @@ export default function App() {
                   transactions={monthlyTransactions}
                   wallets={wallets}
                   currentScope={currentScope}
+                  preferredCurrency={preferredCurrency}
                 />
 
                 {/* Monthly Category Spending Breakdown */}
@@ -345,6 +354,7 @@ export default function App() {
                   transactions={monthlyTransactions}
                   wallets={wallets}
                   currentScope={currentScope}
+                  preferredCurrency={preferredCurrency}
                 />
 
                 {/* Chronological Transactions Feed */}

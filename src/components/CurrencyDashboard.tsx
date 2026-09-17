@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { CurrencyBalances, CardInvoiceSummary, Wallet } from '../lib/types'
+import type { CurrencyBalances, CardInvoiceSummary, Wallet, CurrencyCode } from '../lib/types'
 import { formatCurrency } from '../lib/formatters'
 import { CreditCard, Eye, EyeOff, Calendar, ArrowUpRight, Sparkles } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -7,16 +7,63 @@ import { useTranslation } from '../lib/i18n/LanguageContext'
 interface CurrencyDashboardProps {
   balances: CurrencyBalances
   cardInvoices: CardInvoiceSummary[]
+  activeCurrencies?: CurrencyCode[]
   onPayCardInvoice: (cardWallet: Wallet, invoiceAmount: number) => void
+}
+
+const CURRENCY_CONFIG: Record<
+  CurrencyCode,
+  {
+    nameKey: string
+    bgClass: string
+    textClass: string
+    badgeClass: string
+    hiddenMask: string
+  }
+> = {
+  PYG: {
+    nameKey: 'dashboard.pygName',
+    bgClass: 'from-slate-900 via-slate-900 to-indigo-950/40 border-slate-800',
+    textClass: 'text-indigo-300',
+    badgeClass: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+    hiddenMask: '₲ •••••••',
+  },
+  USD: {
+    nameKey: 'dashboard.usdName',
+    bgClass: 'from-slate-900 via-slate-900 to-emerald-950/40 border-slate-800',
+    textClass: 'text-emerald-300',
+    badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    hiddenMask: '$ ••••',
+  },
+  BRL: {
+    nameKey: 'dashboard.brlName',
+    bgClass: 'from-slate-900 via-slate-900 to-amber-950/40 border-slate-800',
+    textClass: 'text-amber-300',
+    badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    hiddenMask: 'R$ ••••',
+  },
 }
 
 export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
   balances,
   cardInvoices,
+  activeCurrencies,
   onPayCardInvoice,
 }) => {
   const { t } = useTranslation()
   const [showValues, setShowValues] = useState(true)
+
+  const displayedCurrencies =
+    activeCurrencies && activeCurrencies.length > 0
+      ? activeCurrencies
+      : (['PYG', 'USD', 'BRL'] as CurrencyCode[])
+
+  const gridColsClass =
+    displayedCurrencies.length === 1
+      ? 'grid-cols-1'
+      : displayedCurrencies.length === 2
+      ? 'grid-cols-1 sm:grid-cols-2'
+      : 'grid-cols-1 sm:grid-cols-3'
 
   return (
     <div className="space-y-4">
@@ -41,55 +88,33 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
         </button>
       </div>
 
-      {/* 3 Currency Balance Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* PYG */}
-        <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-slate-800 shadow-md">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-indigo-300">
-              {t('dashboard.total')} PYG ({t('dashboard.pygName')})
-            </span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              PYG
-            </span>
-          </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-            {showValues ? formatCurrency(balances.PYG, 'PYG') : '₲ •••••••'}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
-        </div>
-
-        {/* USD */}
-        <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 shadow-md">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-emerald-300">
-              {t('dashboard.total')} USD ({t('dashboard.usdName')})
-            </span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              USD
-            </span>
-          </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-            {showValues ? formatCurrency(balances.USD, 'USD') : '$ ••••'}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
-        </div>
-
-        {/* BRL */}
-        <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-slate-800 shadow-md">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-amber-300">
-              {t('dashboard.total')} BRL ({t('dashboard.brlName')})
-            </span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              BRL
-            </span>
-          </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-            {showValues ? formatCurrency(balances.BRL, 'BRL') : 'R$ ••••'}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
-        </div>
+      {/* Dynamic Currency Balance Cards Grid */}
+      <div className={`grid ${gridColsClass} gap-3`}>
+        {displayedCurrencies.map((curr) => {
+          const cfg = CURRENCY_CONFIG[curr]
+          if (!cfg) return null
+          return (
+            <div
+              key={curr}
+              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${cfg.bgClass} border shadow-md`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-xs font-semibold ${cfg.textClass}`}>
+                  {t('dashboard.total')} {curr} ({t(cfg.nameKey)})
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded border font-mono ${cfg.badgeClass}`}
+                >
+                  {curr}
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight font-mono">
+                {showValues ? formatCurrency(balances[curr] || 0, curr) : cfg.hiddenMask}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
+            </div>
+          )
+        })}
       </div>
 
       {/* Credit Card Invoices Block */}

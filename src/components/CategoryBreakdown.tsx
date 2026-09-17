@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import type { Transaction, Wallet, CurrencyCode, WalletScope } from '../lib/types'
-import { calculateCategoryExpenses } from '../lib/accountingService'
+import { calculateCategoryExpenses, getActiveCurrencies } from '../lib/accountingService'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
@@ -23,6 +23,7 @@ interface CategoryBreakdownProps {
   transactions: Transaction[]
   wallets: Wallet[]
   currentScope?: WalletScope | 'all'
+  preferredCurrency?: CurrencyCode
 }
 
 const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
@@ -40,12 +41,11 @@ const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
   Outros: MoreHorizontal,
 }
 
-const ALL_CURRENCIES: CurrencyCode[] = ['PYG', 'USD', 'BRL']
-
 export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
   transactions,
   wallets,
   currentScope = 'all',
+  preferredCurrency = 'PYG',
 }) => {
   const { t } = useTranslation()
 
@@ -54,15 +54,33 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
   }, [transactions, wallets, currentScope])
 
   const activeCurrencies = useMemo(() => {
-    return ALL_CURRENCIES.filter((curr) => breakdown[curr]?.items.length > 0)
-  }, [breakdown])
+    const candidateCurrencies = getActiveCurrencies(wallets, preferredCurrency)
+    const currenciesWithExpenses = candidateCurrencies.filter(
+      (curr) => breakdown[curr]?.items.length > 0
+    )
+
+    // Se nenhuma moeda teve despesa, retorna vazio para renderizar o estado vazio
+    if (currenciesWithExpenses.length === 0) return []
+
+    // Caso contrário, lista as moedas ativas que tiveram despesa ou a moeda preferida
+    return candidateCurrencies.filter(
+      (curr) =>
+        breakdown[curr]?.items.length > 0 ||
+        (curr === preferredCurrency &&
+          wallets.some(
+            (w) => w.currency === curr && !w.is_archived && (currentScope === 'all' || w.type === currentScope)
+          ))
+    )
+  }, [breakdown, wallets, currentScope, preferredCurrency])
 
   const [userSelectedCurrency, setUserSelectedCurrency] = useState<CurrencyCode | null>(null)
 
   const selectedCurrency: CurrencyCode =
     userSelectedCurrency && activeCurrencies.includes(userSelectedCurrency)
       ? userSelectedCurrency
-      : activeCurrencies[0] || 'PYG'
+      : activeCurrencies.includes(preferredCurrency)
+      ? preferredCurrency
+      : activeCurrencies[0] || preferredCurrency
 
   if (activeCurrencies.length === 0) {
     return (

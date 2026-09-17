@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Transaction, Wallet, CurrencyCode, WalletScope } from '../lib/types'
 import { formatCurrency } from '../lib/formatters'
+import { getActiveCurrencies } from '../lib/accountingService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { ArrowDownLeft, ArrowUpRight, Scale } from 'lucide-react'
 
@@ -8,12 +9,14 @@ interface MonthlySummaryProps {
   transactions: Transaction[]
   wallets: Wallet[]
   currentScope?: WalletScope | 'all'
+  preferredCurrency?: CurrencyCode
 }
 
 export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
   transactions,
   wallets,
   currentScope = 'all',
+  preferredCurrency = 'PYG',
 }) => {
   const { t } = useTranslation()
 
@@ -51,10 +54,15 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
     }
   }
 
-  const currencies: CurrencyCode[] = ['PYG', 'USD', 'BRL']
-  const activeCurrencies = currencies.filter(
-    (c) => totals[c].income > 0 || totals[c].expense > 0
-  )
+  // Moedas ativas baseadas nas carteiras configuradas e na moeda preferida
+  const candidateCurrencies = getActiveCurrencies(wallets, preferredCurrency)
+  const activeCurrencies = candidateCurrencies.filter((c) => {
+    const hasActivity = totals[c] && (totals[c].income > 0 || totals[c].expense > 0)
+    const hasConfiguredWallet = wallets.some(
+      (w) => w.currency === c && !w.is_archived && (currentScope === 'all' || w.type === currentScope)
+    )
+    return hasActivity || hasConfiguredWallet
+  })
 
   if (activeCurrencies.length === 0) {
     return (

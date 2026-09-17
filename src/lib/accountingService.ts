@@ -234,3 +234,25 @@ export function calculateCategoryExpenses(
 export const calculateExpensesByCategory = calculateCategoryExpenses
 
 export { getCreditCardInvoiceDetails } from './creditCardService'
+
+/**
+ * Retorna a lista estável de moedas ativas que devem ser exibidas no dashboard:
+ * - Começa com a preferredCurrency do perfil do usuário logado.
+ * - Adiciona qualquer moeda que possua ao menos uma carteira cadastrada (mesmo que com saldo zerado).
+ * - Remove duplicatas mantendo a moeda preferida na primeira posição.
+ */
+export function getActiveCurrencies(
+  wallets: Wallet[],
+  preferredCurrency: CurrencyCode = 'PYG'
+): CurrencyCode[] {
+  const result: CurrencyCode[] = [preferredCurrency]
+
+  for (const w of wallets) {
+    if (w.currency && !result.includes(w.currency)) {
+      result.push(w.currency)
+    }
+  }
+
+  return result
+}
+
