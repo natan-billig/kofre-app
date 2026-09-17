@@ -86,7 +86,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                 <Banknote className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{t('accounts.cash')}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                 {cashWallets.map((w) => {
                   const bal = calculateAccountBalance(w, transactions)
                   return (
@@ -138,7 +138,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                 <Landmark className="w-3.5 h-3.5 text-sky-400" />
                 <span>{t('accounts.checking')}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                 {checkingWallets.map((w) => {
                   const bal = calculateAccountBalance(w, transactions)
                   return (
@@ -190,7 +190,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                 <CreditCard className="w-3.5 h-3.5 text-purple-400" />
                 <span>{t('accounts.credit_card')}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                 {creditWallets.map((w) => {
                   const invoice = calculateAccountBalance(w, transactions)
                   return (
@@ -266,7 +266,7 @@ export const AccountList: React.FC<AccountListProps> = ({
               </button>
 
               {showArchived && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 mt-2">
                   {archivedWallets.map((w) => {
                     const bal = calculateAccountBalance(w, transactions)
                     return (

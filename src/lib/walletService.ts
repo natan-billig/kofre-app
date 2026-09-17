@@ -186,3 +186,19 @@ export async function archiveWallet(walletId: string, isArchived: boolean): Prom
   }
 }
 
+export async function updateWalletName(walletId: string, name: string): Promise<Wallet> {
+  const { data, error } = await supabase
+    .from('wallets')
+    .update({ name: name.trim() })
+    .eq('id', walletId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating wallet name:', error)
+    throw error
+  }
+
+  return data as Wallet
+}
+

@@ -46,7 +46,9 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
         {/* PYG */}
         <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-slate-800 shadow-md">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-indigo-300">Total PYG (Guaranis)</span>
+            <span className="text-xs font-semibold text-indigo-300">
+              {t('dashboard.total')} PYG ({t('dashboard.pygName')})
+            </span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               PYG
             </span>
@@ -54,13 +56,15 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
           <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
             {showValues ? formatCurrency(balances.PYG, 'PYG') : '₲ •••••••'}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Disponível em caixa e contas</p>
+          <p className="text-[11px] text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
         </div>
 
         {/* USD */}
         <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 shadow-md">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-emerald-300">Total USD (Dólares)</span>
+            <span className="text-xs font-semibold text-emerald-300">
+              {t('dashboard.total')} USD ({t('dashboard.usdName')})
+            </span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               USD
             </span>
@@ -68,13 +72,15 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
           <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
             {showValues ? formatCurrency(balances.USD, 'USD') : '$ ••••'}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Disponível em caixa e contas</p>
+          <p className="text-[11px] text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
         </div>
 
         {/* BRL */}
         <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-slate-800 shadow-md">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-amber-300">Total BRL (Reais)</span>
+            <span className="text-xs font-semibold text-amber-300">
+              {t('dashboard.total')} BRL ({t('dashboard.brlName')})
+            </span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
               BRL
             </span>
@@ -82,7 +88,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
           <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
             {showValues ? formatCurrency(balances.BRL, 'BRL') : 'R$ ••••'}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Disponível em caixa e contas</p>
+          <p className="text-[11px] text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
         </div>
       </div>
 

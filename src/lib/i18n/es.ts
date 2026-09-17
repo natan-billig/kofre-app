@@ -20,6 +20,10 @@ export const es: TranslationDictionary = {
   dashboard: {
     liquidBalances: 'Saldos Disponibles (Líquido)',
     total: 'Total',
+    availableInAccounts: 'Disponible en caja y cuentas',
+    pygName: 'Guaraníes',
+    usdName: 'Dólares',
+    brlName: 'Reales',
     cardInvoices: 'Tarjetas de Crédito',
     currentInvoice: 'Extracto Actual',
     availableLimit: 'Límite Disp.',
@@ -97,6 +101,12 @@ export const es: TranslationDictionary = {
   },
   manageAccount: {
     title: 'Gestión de la Cuenta',
+    editNameLabel: 'Nombre de la Cuenta',
+    editNamePlaceholder: 'Ej: Efectivo, Billetera, Banco...',
+    saveName: 'Guardar Nombre',
+    savingName: 'Guardando...',
+    nameUpdated: '¡Nombre actualizado con éxito!',
+    nameRequired: 'El nombre de la cuenta no puede estar vacío.',
     archive: 'Archivar Cuenta',
     archiveDesc:
       'Esta cuenta posee historial de movimientos y no puede eliminarse. Archívala para ocultarla de las operaciones diarias sin perder el historial contable.',

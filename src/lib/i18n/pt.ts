@@ -18,6 +18,10 @@ export const pt = {
   dashboard: {
     liquidBalances: 'Saldos Disponíveis (Líquido)',
     total: 'Total',
+    availableInAccounts: 'Disponível em caixa e contas',
+    pygName: 'Guaranis',
+    usdName: 'Dólares',
+    brlName: 'Reais',
     cardInvoices: 'Faturas de Cartão',
     currentInvoice: 'Fatura Atual',
     availableLimit: 'Limite Disp.',
@@ -95,6 +99,12 @@ export const pt = {
   },
   manageAccount: {
     title: 'Gestão da Conta',
+    editNameLabel: 'Nome da Conta',
+    editNamePlaceholder: 'Ex: Carteira, Itaú, Banco...',
+    saveName: 'Salvar Nome',
+    savingName: 'Salvando...',
+    nameUpdated: 'Nome atualizado com sucesso!',
+    nameRequired: 'O nome da conta não pode ficar vazio.',
     archive: 'Arquivar Conta',
     archiveDesc:
       'Esta conta possui histórico de transações e não pode ser apagada. Arquive-a para ocultá-la das operações diárias sem perder o histórico contábil.',

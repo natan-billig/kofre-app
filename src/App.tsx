@@ -219,7 +219,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6 pb-24">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24">
         {/* Scope Switcher: Minhas Contas / Caixa da Família / Consolidado */}
         <ScopeFilter
           currentScope={currentScope}
@@ -242,24 +242,31 @@ export default function App() {
               onPayCardInvoice={handlePayCardInvoice}
             />
 
-            {/* Accounts and Institutions list */}
-            <AccountList
-              wallets={wallets}
-              transactions={transactions}
-              currentScope={currentScope}
-              onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
-              onManageAccount={(wallet) => setManagingWallet(wallet)}
-            />
+            {/* Desktop 2-column layout / Mobile vertical stack */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Main Column: TransactionList */}
+              <div className="lg:col-span-8 order-2 lg:order-1">
+                <TransactionList
+                  transactions={transactions}
+                  wallets={wallets}
+                  currentScope={currentScope}
+                  currentUserId={sessionUser.id}
+                  onEditTransaction={handleEditTransaction}
+                  onTransactionDeleted={() => refreshData()}
+                />
+              </div>
 
-            {/* Chronological Transactions Feed */}
-            <TransactionList
-              transactions={transactions}
-              wallets={wallets}
-              currentScope={currentScope}
-              currentUserId={sessionUser.id}
-              onEditTransaction={handleEditTransaction}
-              onTransactionDeleted={() => refreshData()}
-            />
+              {/* Sidebar Column: AccountList */}
+              <div className="lg:col-span-4 order-1 lg:order-2">
+                <AccountList
+                  wallets={wallets}
+                  transactions={transactions}
+                  currentScope={currentScope}
+                  onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
+                  onManageAccount={(wallet) => setManagingWallet(wallet)}
+                />
+              </div>
+            </div>
           </>
         )}
       </main>
@@ -307,6 +314,7 @@ export default function App() {
 
       {/* Manage / Archive / Delete Account Modal */}
       <ManageAccountModal
+        key={managingWallet?.id}
         wallet={managingWallet}
         isOpen={Boolean(managingWallet)}
         transactions={transactions}
