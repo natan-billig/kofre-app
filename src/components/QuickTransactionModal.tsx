@@ -9,6 +9,7 @@ import type {
 } from '../lib/types'
 import { createTransaction, updateTransaction } from '../lib/accountingService'
 import { formatExchangeRate } from '../lib/formatters'
+import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
   Loader2,
@@ -70,6 +71,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   onClose,
   onTransactionCreated,
 }) => {
+  const { t, language } = useTranslation()
   // Filter selectable active wallets
   const selectableWallets = wallets.filter(
     (w) =>
@@ -153,27 +155,27 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
     setErrorMsg(null)
 
     if (!sourceWalletId) {
-      setErrorMsg('Selecione a conta.')
+      setErrorMsg(t('quickModal.fillRequired'))
       return
     }
 
     const numAmount = parseFloat(amount)
     if (!numAmount || numAmount <= 0) {
-      setErrorMsg('Informe um valor válido maior que zero.')
+      setErrorMsg(t('quickModal.fillRequired'))
       return
     }
 
     let numDestAmount: number | null = null
     if (type === 'transfer') {
       if (!destWalletId || destWalletId === sourceWalletId) {
-        setErrorMsg('Selecione uma conta de destino diferente da conta de origem.')
+        setErrorMsg(t('quickModal.diffAccounts'))
         return
       }
 
       if (isCrossCurrencyTransfer) {
         const parsedDest = parseFloat(destAmount)
         if (!parsedDest || parsedDest <= 0) {
-          setErrorMsg('Informe o valor creditado na conta de destino.')
+          setErrorMsg(t('quickModal.fillRequired'))
           return
         }
         numDestAmount = parsedDest
@@ -242,7 +244,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       onClose()
     } catch (err: unknown) {
       console.error('Error saving transaction:', err)
-      const msg = err instanceof Error ? err.message : 'Erro ao salvar transação.'
+      const msg = err instanceof Error ? err.message : (language === 'es' ? 'Error al guardar movimiento.' : 'Erro ao salvar transação.')
       setErrorMsg(msg)
     } finally {
       setLoading(false)
@@ -261,7 +263,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               </div>
             ) : null}
             <h2 className="text-lg font-bold text-white">
-              {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
+              {editingTransaction ? t('quickModal.editTitle') : t('quickModal.newTitle')}
             </h2>
           </div>
           <button
@@ -287,7 +289,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             }`}
           >
             <ArrowDownCircle className="w-4 h-4" />
-            <span>Despesa</span>
+            <span>{t('quickModal.expense')}</span>
           </button>
 
           <button
@@ -303,7 +305,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             }`}
           >
             <ArrowUpCircle className="w-4 h-4" />
-            <span>Receita</span>
+            <span>{t('quickModal.income')}</span>
           </button>
 
           <button
@@ -319,7 +321,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             }`}
           >
             <ArrowRightLeft className="w-4 h-4" />
-            <span>Transferência</span>
+            <span>{t('quickModal.transfer')}</span>
           </button>
         </div>
 
@@ -337,7 +339,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 {/* Conta Origem */}
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase">
-                    Conta de Origem (Debitar)
+                    {t('quickModal.sourceAccount')} {language === 'es' ? '(Debitar)' : '(Debitar)'}
                   </label>
                   <select
                     value={sourceWalletId}
@@ -346,7 +348,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   >
                     {selectableWallets.map((w) => (
                       <option key={w.id} value={w.id}>
-                        {w.name} ({w.currency}) - {w.type === 'shared' ? 'Família' : 'Pessoal'}
+                        {w.name} ({w.currency}) - {w.type === 'shared' ? t('nav.family') : (language === 'es' ? 'Personal' : 'Pessoal')}
                       </option>
                     ))}
                   </select>
@@ -355,7 +357,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 {/* Conta Destino */}
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase">
-                    Conta de Destino (Creditar)
+                    {t('quickModal.destAccount')} {language === 'es' ? '(Acreditar)' : '(Creditar)'}
                   </label>
                   <select
                     value={destWalletId}
@@ -367,7 +369,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                       .map((w) => (
                         <option key={w.id} value={w.id}>
                           {w.account_type === 'credit_card' ? '💳 ' : ''}
-                          {w.name} ({w.currency}) - {w.type === 'shared' ? 'Família' : 'Pessoal'}
+                          {w.name} ({w.currency}) - {w.type === 'shared' ? t('nav.family') : (language === 'es' ? 'Personal' : 'Pessoal')}
                         </option>
                       ))}
                   </select>
@@ -379,7 +381,10 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/30 flex items-center gap-2 text-purple-200 text-xs">
                   <CreditCard className="w-4 h-4 text-purple-400 flex-shrink-0" />
                   <span>
-                    <strong>Pagamento de Fatura:</strong> Reduz o saldo da conta de origem e amortiza a fatura do cartão sem duplicar despesas.
+                    <strong>{t('categories.Pagamento de Fatura')}:</strong>{' '}
+                    {language === 'es'
+                      ? 'Reduce el saldo de la cuenta de origen y amortiza el extracto de la tarjeta sin duplicar gastos.'
+                      : 'Reduz o saldo da conta de origem e amortiza a fatura do cartão sem duplicar despesas.'}
                   </span>
                 </div>
               )}
@@ -389,7 +394,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 /* Mesma Moeda: Input Único */
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase">
-                    Valor da Transferência ({sourceWallet?.currency})
+                    {language === 'es' ? 'Monto de la Transferencia' : 'Valor da Transferência'} ({sourceWallet?.currency})
                   </label>
                   <input
                     type="number"
@@ -407,13 +412,15 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-500/20 space-y-3">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
                     <Globe2 className="w-4 h-4 text-indigo-400" />
-                    <span>Operação de Câmbio ({sourceWallet?.currency} ➔ {destWallet?.currency})</span>
+                    <span>
+                      {language === 'es' ? 'Operación de Cambio' : 'Operação de Câmbio'} ({sourceWallet?.currency} ➔ {destWallet?.currency})
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-[11px] font-semibold text-slate-400 uppercase">
-                        Debitar na Origem ({sourceWallet?.currency})
+                        {t('quickModal.debitedAmount')} ({sourceWallet?.currency})
                       </label>
                       <input
                         type="number"
@@ -422,14 +429,14 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                         required
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        placeholder={`Valor em ${sourceWallet?.currency}`}
+                        placeholder={language === 'es' ? `Monto en ${sourceWallet?.currency}` : `Valor em ${sourceWallet?.currency}`}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
                       />
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[11px] font-semibold text-slate-400 uppercase">
-                        Creditar no Destino ({destWallet?.currency})
+                        {t('quickModal.creditedAmount')} ({destWallet?.currency})
                       </label>
                       <input
                         type="number"
@@ -438,7 +445,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                         required
                         value={destAmount}
                         onChange={(e) => setDestAmount(e.target.value)}
-                        placeholder={`Valor em ${destWallet?.currency}`}
+                        placeholder={language === 'es' ? `Monto en ${destWallet?.currency}` : `Valor em ${destWallet?.currency}`}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
                       />
                     </div>
@@ -447,7 +454,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   {/* Cotação implícita */}
                   {parseFloat(amount) > 0 && parseFloat(destAmount) > 0 && sourceWallet && destWallet && (
                     <div className="text-center pt-1 text-xs text-indigo-300/80 font-mono">
-                      Cotação: {formatExchangeRate(
+                      {t('quickModal.exchangeRate')}: {formatExchangeRate(
                         parseFloat(amount),
                         sourceWallet.currency,
                         parseFloat(destAmount),
@@ -465,7 +472,9 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 {/* Seleção de Conta */}
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase">
-                    {type === 'expense' ? 'Conta Debitada' : 'Conta Creditada'}
+                    {type === 'expense'
+                      ? (language === 'es' ? 'Cuenta Debitada' : 'Conta Debitada')
+                      : (language === 'es' ? 'Cuenta Acreditada' : 'Conta Creditada')}
                   </label>
                   <select
                     value={sourceWalletId}
@@ -475,7 +484,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                     {selectableWallets.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.account_type === 'credit_card' ? '💳 ' : ''}
-                        {w.name} ({w.currency}) - {w.type === 'shared' ? 'Família' : 'Pessoal'}
+                        {w.name} ({w.currency}) - {w.type === 'shared' ? t('nav.family') : (language === 'es' ? 'Personal' : 'Pessoal')}
                       </option>
                     ))}
                   </select>
@@ -484,7 +493,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 {/* Valor Efetivamente Cobrado */}
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-400 uppercase">
-                    Valor ({sourceWallet?.currency})
+                    {t('quickModal.amount')} ({sourceWallet?.currency})
                   </label>
                   <input
                     type="number"
@@ -508,13 +517,17 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                     className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
                   >
                     <Globe2 className="w-3.5 h-3.5" />
-                    <span>{isBimonetary ? 'Remover valor internacional' : 'Compra em outra moeda? (Bimoeda)'}</span>
+                    <span>
+                      {isBimonetary
+                        ? (language === 'es' ? 'Quitar monto internacional' : 'Remover valor internacional')
+                        : (language === 'es' ? '¿Compra en otra moneda? (Bimoneda)' : 'Compra em outra moeda? (Bimoeda)')}
+                    </span>
                   </button>
 
                   {isBimonetary && (
                     <div className="mt-2 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
                       <span className="text-[11px] font-semibold text-slate-400 uppercase block">
-                        Valor Original da Compra (Fronteira)
+                        {language === 'es' ? 'Monto Original de la Compra (Frontera)' : 'Valor Original da Compra (Fronteira)'}
                       </span>
                       <div className="grid grid-cols-2 gap-2">
                         <input
@@ -537,7 +550,9 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                         </select>
                       </div>
                       <p className="text-[10px] text-slate-500">
-                        O valor debitado da sua conta continua sendo o campo principal acima.
+                        {language === 'es'
+                          ? 'El monto debitado de su cuenta sigue siendo el campo principal arriba.'
+                          : 'O valor debitado da sua conta continua sendo o campo principal acima.'}
                       </p>
                     </div>
                   )}
@@ -549,7 +564,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           {/* Categorias (Despesa / Receita) */}
           {type !== 'transfer' && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 uppercase">Categoria</label>
+              <label className="text-xs font-semibold text-slate-400 uppercase">{t('quickModal.category')}</label>
               <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
                 {(type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map((cat) => {
                   const Icon = cat.icon
@@ -566,7 +581,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      <span>{cat.name}</span>
+                      <span>{t(`categories.${cat.name}`, cat.name)}</span>
                     </button>
                   )
                 })}
@@ -577,7 +592,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           {/* Data e Descrição */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase">Data</label>
+              <label className="text-xs font-semibold text-slate-400 uppercase">{t('quickModal.date')}</label>
               <input
                 type="date"
                 required
@@ -589,13 +604,13 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-400 uppercase">
-                Descrição (Opcional)
+                {t('quickModal.description')}
               </label>
               <input
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Supermercado, Abastecimento, Farmácia"
+                placeholder={t('quickModal.descriptionPlaceholder')}
                 className="w-full px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-xs focus:border-indigo-500 outline-none"
               />
             </div>
@@ -617,7 +632,11 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <span>{editingTransaction ? 'Salvar Alterações' : 'Confirmar Lançamento'}</span>
+                <span>
+                  {editingTransaction
+                    ? (language === 'es' ? 'Guardar Cambios' : 'Salvar Alterações')
+                    : t('quickModal.save')}
+                </span>
               )}
             </button>
           </div>

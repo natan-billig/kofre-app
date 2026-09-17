@@ -3,6 +3,7 @@ import type { Transaction, Wallet, WalletScope } from '../lib/types'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { fetchProfilesMap } from '../lib/profileService'
 import { deleteTransaction } from '../lib/accountingService'
+import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -54,6 +55,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   onEditTransaction,
   onTransactionDeleted,
 }) => {
+  const { t, language } = useTranslation()
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -116,7 +118,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-            Extrato de Movimentações
+            {t('transactions.title')}
           </h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
             {filteredTransactions.length}
@@ -129,17 +131,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-800/80 text-slate-500 mb-1">
             <MoreHorizontal className="w-5 h-5" />
           </div>
-          <p className="text-sm font-medium text-slate-300">Nenhuma movimentação registrada</p>
-          <p className="text-xs text-slate-500">
-            Clique no botão (+) abaixo para registrar sua primeira despesa, receita ou transferência.
-          </p>
+          <p className="text-sm font-medium text-slate-300">{t('transactions.empty')}</p>
         </div>
       ) : (
         <div className="divide-y divide-slate-800/60">
-          {filteredTransactions.map((t) => {
-            const sourceWallet = walletMap.get(t.wallet_id)
-            const destWallet = t.destination_wallet_id
-              ? walletMap.get(t.destination_wallet_id)
+          {filteredTransactions.map((tItem) => {
+            const sourceWallet = walletMap.get(tItem.wallet_id)
+            const destWallet = tItem.destination_wallet_id
+              ? walletMap.get(tItem.destination_wallet_id)
               : null
 
             // Determine if this transaction touches a shared family account
@@ -148,31 +147,33 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
             // Regra de Permissão: no Caixa da Família, editar/excluir APENAS se transaction.user_id === currentUserId
             const canManage = isSharedTransaction
-              ? t.user_id === currentUserId
+              ? tItem.user_id === currentUserId
               : true
 
-            const authorName = profilesMap[t.user_id] || 'Membro da Família'
+            const authorName = profilesMap[tItem.user_id] || (language === 'es' ? 'Miembro de la Familia' : 'Membro da Família')
 
             const CategoryIcon =
-              CATEGORY_ICON_MAP[t.category] ||
-              (t.type === 'expense'
+              CATEGORY_ICON_MAP[tItem.category] ||
+              (tItem.type === 'expense'
                 ? ArrowDownCircle
-                : t.type === 'income'
+                : tItem.type === 'income'
                 ? ArrowUpCircle
                 : ArrowRightLeft)
 
+            const translatedCategory = t(`categories.${tItem.category}`, tItem.category)
+
             return (
               <div
-                key={t.id}
+                key={tItem.id}
                 className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-800/20 px-2 rounded-2xl transition-all group"
               >
                 {/* Left side: Icon and description */}
                 <div className="flex items-start gap-3 min-w-0">
                   <div
                     className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      t.type === 'expense'
+                      tItem.type === 'expense'
                         ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                        : t.type === 'income'
+                        : tItem.type === 'income'
                         ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                         : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
                     }`}
@@ -184,27 +185,27 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     {/* Title / Description */}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-semibold text-white truncate">
-                        {t.description || t.category}
+                        {tItem.description || translatedCategory}
                       </span>
 
                       {/* Transferred From/To route */}
-                      {t.type === 'transfer' && (
+                      {tItem.type === 'transfer' && (
                         <span className="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-500/30 flex items-center gap-1 font-medium">
-                          <span>{sourceWallet?.name || 'Origem'}</span>
+                          <span>{sourceWallet?.name || (language === 'es' ? 'Origen' : 'Origem')}</span>
                           <span>➔</span>
-                          <span>{destWallet?.name || 'Destino'}</span>
+                          <span>{destWallet?.name || (language === 'es' ? 'Destino' : 'Destino')}</span>
                         </span>
                       )}
                     </div>
 
                     {/* Metadata line: Category, Date, Account, and Author for shared */}
                     <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
-                      <span>{t.category}</span>
+                      <span>{translatedCategory}</span>
                       <span>&bull;</span>
-                      <span>{formatDate(t.transaction_date)}</span>
+                      <span>{formatDate(tItem.transaction_date, language)}</span>
 
                       {/* Account indicator if not transfer */}
-                      {t.type !== 'transfer' && sourceWallet && (
+                      {tItem.type !== 'transfer' && sourceWallet && (
                         <>
                           <span>&bull;</span>
                           <span className="text-slate-300 font-medium">
@@ -217,18 +218,18 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       {isSharedTransaction && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
                           <User className="w-3 h-3" />
-                          <span>Por: {authorName}</span>
+                          <span>{t('transactions.by')}: {authorName}</span>
                         </span>
                       )}
                     </div>
 
                     {/* Bimonetary display for frontier expenses */}
-                    {t.original_amount && t.original_currency && (
+                    {tItem.original_amount && tItem.original_currency && (
                       <div className="flex items-center gap-1 text-[11px] text-amber-400 font-mono">
                         <Globe2 className="w-3 h-3" />
                         <span>
-                          Valor original:{' '}
-                          {formatCurrency(Number(t.original_amount), t.original_currency)}
+                          {language === 'es' ? 'Monto original: ' : 'Valor original: '}
+                          {formatCurrency(Number(tItem.original_amount), tItem.original_currency)}
                         </span>
                       </div>
                     )}
@@ -240,26 +241,27 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   <div className="text-right space-y-0.5">
                     <div
                       className={`text-sm sm:text-base font-bold tracking-tight ${
-                        t.type === 'expense'
+                        tItem.type === 'expense'
                           ? 'text-rose-400'
-                          : t.type === 'income'
+                          : tItem.type === 'income'
                           ? 'text-emerald-400'
                           : 'text-indigo-300'
                       }`}
                     >
-                      {t.type === 'expense' && '- '}
-                      {t.type === 'income' && '+ '}
-                      {formatCurrency(Number(t.amount), sourceWallet?.currency || 'PYG')}
+                      {tItem.type === 'expense' && '- '}
+                      {tItem.type === 'income' && '+ '}
+                      {formatCurrency(Number(tItem.amount), sourceWallet?.currency || 'PYG')}
                     </div>
 
                     {/* If cross-currency transfer, show credited amount */}
-                    {t.type === 'transfer' &&
+                    {tItem.type === 'transfer' &&
                       destWallet &&
                       sourceWallet &&
                       sourceWallet.currency !== destWallet.currency &&
-                      t.destination_amount && (
+                      tItem.destination_amount && (
                         <div className="text-[11px] text-emerald-400/90 font-mono">
-                          Recebe: +{formatCurrency(Number(t.destination_amount), destWallet.currency)}
+                          {language === 'es' ? 'Recibe: +' : 'Recebe: +'}
+                          {formatCurrency(Number(tItem.destination_amount), destWallet.currency)}
                         </div>
                       )}
                   </div>
@@ -269,17 +271,17 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     <div className="flex items-center gap-1 pl-1 border-l border-slate-800/80">
                       <button
                         type="button"
-                        onClick={() => onEditTransaction(t)}
+                        onClick={() => onEditTransaction(tItem)}
                         className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
-                        title="Editar lançamento"
+                        title={t('transactions.edit')}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => setTxToDelete(t)}
+                        onClick={() => setTxToDelete(tItem)}
                         className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                        title="Excluir lançamento"
+                        title={t('transactions.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -300,19 +302,21 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-white text-base">Excluir Lançamento</h3>
+              <h3 className="font-bold text-white text-base">{t('transactions.deleteConfirmTitle')}</h3>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Tem certeza que deseja excluir este lançamento?
+              {t('transactions.deleteConfirmDesc')}
             </p>
 
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs space-y-1">
               <div className="font-medium text-white">
-                {txToDelete.description || txToDelete.category}
+                {txToDelete.description || t(`categories.${txToDelete.category}`, txToDelete.category)}
               </div>
               <div className="text-slate-400 flex items-center justify-between">
-                <span>{txToDelete.category} &bull; {formatDate(txToDelete.transaction_date)}</span>
+                <span>
+                  {t(`categories.${txToDelete.category}`, txToDelete.category)} &bull; {formatDate(txToDelete.transaction_date, language)}
+                </span>
                 <span className="font-bold text-slate-200">
                   {formatCurrency(Number(txToDelete.amount), walletMap.get(txToDelete.wallet_id)?.currency || 'PYG')}
                 </span>
@@ -331,7 +335,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 onClick={() => setTxToDelete(null)}
                 className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer transition-colors"
               >
-                Cancelar
+                {t('transactions.cancel')}
               </button>
               <button
                 type="button"
@@ -342,7 +346,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 {isDeleting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <span>Confirmar Exclusão</span>
+                  <span>{t('transactions.confirm')}</span>
                 )}
               </button>
             </div>

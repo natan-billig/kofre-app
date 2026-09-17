@@ -30,34 +30,41 @@ export function formatCurrency(amount: number, currency: CurrencyCode): string {
   return `${currency} ${safeAmount.toFixed(2)}`
 }
 
-export function formatDate(dateString: string): string {
+export function formatDate(
+  dateString: string,
+  locale: 'pt' | 'es' | string = 'pt'
+): string {
   if (!dateString) return ''
 
   try {
     // Handle both YYYY-MM-DD and full ISO strings
     const [year, month, day] = dateString.substring(0, 10).split('-').map(Number)
     const date = new Date(year, month - 1, day)
-    
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
 
     const dateZero = new Date(date)
     dateZero.setHours(0, 0, 0, 0)
 
+    const isEs = locale === 'es' || locale.toLowerCase().startsWith('es')
+
     if (dateZero.getTime() === today.getTime()) {
-      return 'Hoje'
+      return isEs ? 'Hoy' : 'Hoje'
     }
     if (dateZero.getTime() === yesterday.getTime()) {
-      return 'Ontem'
+      return isEs ? 'Ayer' : 'Ontem'
     }
 
-    return date.toLocaleDateString('pt-BR', {
+    const intlLocale = isEs ? 'es-PY' : 'pt-BR'
+
+    return date.toLocaleDateString(intlLocale, {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     })
   } catch {
     return dateString

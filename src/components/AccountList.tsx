@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { Wallet, Transaction, WalletScope } from '../lib/types'
 import { calculateAccountBalance } from '../lib/accountingService'
 import { formatCurrency } from '../lib/formatters'
+import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   Banknote,
   Landmark,
@@ -28,6 +29,7 @@ export const AccountList: React.FC<AccountListProps> = ({
   onOpenCreateAccount,
   onManageAccount,
 }) => {
+  const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
@@ -48,7 +50,7 @@ export const AccountList: React.FC<AccountListProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-            Contas e Instituições
+            {t('accounts.title')}
           </h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
             {activeWallets.length}
@@ -62,7 +64,7 @@ export const AccountList: React.FC<AccountListProps> = ({
             className="cursor-pointer inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 transition-all font-medium"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Adicionar</span>
+            <span>{t('accounts.newAccountButton')}</span>
           </button>
           <button
             type="button"
@@ -82,7 +84,7 @@ export const AccountList: React.FC<AccountListProps> = ({
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                 <Banknote className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Efetivo / Dinheiro Físico</span>
+                <span>{t('accounts.cash')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {cashWallets.map((w) => {
@@ -99,7 +101,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                           </span>
                           {w.type === 'shared' && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                              Família
+                              {t('nav.family')}
                             </span>
                           )}
                         </div>
@@ -116,7 +118,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                             type="button"
                             onClick={() => onManageAccount(w)}
                             className="cursor-pointer p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-                            title="Gerenciar conta"
+                            title={t('accounts.settings')}
                           >
                             <Settings className="w-3.5 h-3.5" />
                           </button>
@@ -134,7 +136,7 @@ export const AccountList: React.FC<AccountListProps> = ({
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                 <Landmark className="w-3.5 h-3.5 text-sky-400" />
-                <span>Contas Bancárias</span>
+                <span>{t('accounts.checking')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {checkingWallets.map((w) => {
@@ -151,7 +153,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                           </span>
                           {w.type === 'shared' && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                              Família
+                              {t('nav.family')}
                             </span>
                           )}
                         </div>
@@ -168,7 +170,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                             type="button"
                             onClick={() => onManageAccount(w)}
                             className="cursor-pointer p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-                            title="Gerenciar conta"
+                            title={t('accounts.settings')}
                           >
                             <Settings className="w-3.5 h-3.5" />
                           </button>
@@ -186,7 +188,7 @@ export const AccountList: React.FC<AccountListProps> = ({
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                 <CreditCard className="w-3.5 h-3.5 text-purple-400" />
-                <span>Cartões de Crédito</span>
+                <span>{t('accounts.credit_card')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {creditWallets.map((w) => {
@@ -203,12 +205,12 @@ export const AccountList: React.FC<AccountListProps> = ({
                           </span>
                           {w.type === 'shared' && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                              Família
+                              {t('nav.family')}
                             </span>
                           )}
                         </div>
                         <span className="text-[11px] text-purple-300 uppercase font-mono block">
-                          Fatura: {w.currency}
+                          {t('dashboard.currentInvoice')}: {w.currency}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -218,7 +220,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                           </div>
                           {w.credit_limit && (
                             <div className="text-[10px] text-slate-400">
-                              Lim: {formatCurrency(Number(w.credit_limit), w.currency)}
+                              {t('dashboard.availableLimit')}: {formatCurrency(Number(w.credit_limit), w.currency)}
                             </div>
                           )}
                         </div>
@@ -227,7 +229,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                             type="button"
                             onClick={() => onManageAccount(w)}
                             className="cursor-pointer p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-                            title="Gerenciar cartão"
+                            title={t('accounts.settings')}
                           >
                             <Settings className="w-3.5 h-3.5" />
                           </button>
@@ -242,7 +244,7 @@ export const AccountList: React.FC<AccountListProps> = ({
 
           {activeWallets.length === 0 && (
             <div className="text-center py-6 text-slate-500 text-xs">
-              Nenhuma conta ativa encontrada neste filtro.
+              {t('accounts.empty')}
             </div>
           )}
 
@@ -255,7 +257,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                 className="cursor-pointer inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 font-medium transition-colors"
               >
                 <Archive className="w-3.5 h-3.5 text-amber-400" />
-                <span>Contas Arquivadas ({archivedWallets.length})</span>
+                <span>{t('accounts.archived')} ({archivedWallets.length})</span>
                 {showArchived ? (
                   <ChevronUp className="w-3.5 h-3.5" />
                 ) : (
@@ -278,7 +280,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                               {w.name}
                             </span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                              Arquivada
+                              {t('manageAccount.archivedBadge')}
                             </span>
                           </div>
                           <span className="text-[11px] text-slate-500 uppercase font-mono">
@@ -294,7 +296,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                               type="button"
                               onClick={() => onManageAccount(w)}
                               className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                              title="Restaurar ou gerenciar conta"
+                              title={t('accounts.settings')}
                             >
                               <Settings className="w-3.5 h-3.5" />
                             </button>

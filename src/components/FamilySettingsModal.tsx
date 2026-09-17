@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { JoinFamilyResult } from '../lib/types'
 import { getFamilyCode, joinFamilyByCode } from '../lib/familyService'
+import { useTranslation } from '../lib/i18n/LanguageContext'
 
 interface FamilySettingsModalProps {
   isOpen: boolean
@@ -31,6 +32,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
   onClose,
   onFamilyLinked,
 }) => {
+  const { t } = useTranslation()
   const [currentCode, setCurrentCode] = useState<string | null>(null)
   const [loadingCode, setLoadingCode] = useState(true)
   const [codeError, setCodeError] = useState<string | null>(null)
@@ -130,10 +132,10 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                Gestão da Família
+                {t('familyModal.title')}
               </h2>
               <p className="text-xs text-slate-400">
-                Caixa Compartilhado e Acesso Familiar
+                {t('familyModal.subtitle')}
               </p>
             </div>
           </div>
@@ -152,11 +154,11 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
             <div className="flex items-center gap-2 text-emerald-400">
               <QrCode className="w-4 h-4" />
               <h3 className="text-sm font-semibold tracking-wide uppercase">
-                Convidar para a Família
+                {t('familyModal.inviteTitle')}
               </h3>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Passe este código para quem você deseja adicionar ao seu Caixa da Família. As movimentações desse caixa serão sincronizadas em tempo real.
+              {t('familyModal.inviteDesc')}
             </p>
 
             {loadingCode ? (
@@ -167,7 +169,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
               <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs space-y-1">
                 <div className="flex items-center gap-1.5 font-semibold text-rose-400">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>Erro ao carregar código da família:</span>
+                  <span>{t('familyModal.errorCode')}</span>
                 </div>
                 <p className="font-mono text-[11px] break-words text-rose-200">
                   {codeError}
@@ -177,7 +179,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-slate-900/90 border border-emerald-500/30 rounded-xl">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-500 uppercase font-medium">
-                    Código:
+                    {t('familyModal.code')}:
                   </span>
                   <span className="font-mono text-xl sm:text-2xl font-bold tracking-widest text-emerald-400">
                     {currentCode}
@@ -191,19 +193,19 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
                   {copied ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-white" />
-                      <span>Copiado!</span>
+                      <span>{t('familyModal.copied')}</span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5" />
-                      <span>Copiar Código</span>
+                      <span>{t('familyModal.copyCode')}</span>
                     </>
                   )}
                 </button>
               </div>
             ) : (
               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs">
-                Nenhum código de convite ativo encontrado no momento.
+                {t('familyModal.noCode')}
               </div>
             )}
           </section>
@@ -212,7 +214,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
           <div className="relative flex items-center justify-center">
             <div className="border-t border-slate-800 w-full" />
             <span className="bg-slate-900 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-              Ou
+              {t('familyModal.or')}
             </span>
           </div>
 
@@ -221,23 +223,23 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
             <div className="flex items-center gap-2 text-indigo-400">
               <Link2 className="w-4 h-4" />
               <h3 className="text-sm font-semibold tracking-wide uppercase">
-                Entrar em Outra Família
+                {t('familyModal.joinTitle')}
               </h3>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Recebeu um código de um familiar? Digite abaixo para vincular sua conta e compartilhar o mesmo Caixa da Família.
+              {t('familyModal.joinDesc')}
             </p>
 
             <form onSubmit={handleJoinSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Código de Convite Recebido
+                  {t('familyModal.joinLabel')}
                 </label>
                 <input
                   type="text"
                   value={inputCode}
                   onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-                  placeholder="ex: KFR-8A2F"
+                  placeholder={t('familyModal.inputPlaceholder')}
                   maxLength={12}
                   disabled={joining}
                   className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono text-center sm:text-left text-sm tracking-widest uppercase placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all disabled:opacity-50"
@@ -270,12 +272,12 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
                 {joining ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Vinculando...</span>
+                    <span>{t('familyModal.joining')}</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Vincular por Código</span>
+                    <span>{t('familyModal.joinButton')}</span>
                   </>
                 )}
               </button>
@@ -290,7 +292,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
             onClick={onClose}
             className="cursor-pointer px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors"
           >
-            Fechar
+            {t('familyModal.close')}
           </button>
         </div>
       </div>

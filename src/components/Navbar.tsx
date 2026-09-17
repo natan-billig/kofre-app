@@ -1,6 +1,7 @@
 import React from 'react'
 import { supabase } from '../lib/supabase'
 import { ShieldCheck, LogOut, PlusCircle, UserCircle2, Users2 } from 'lucide-react'
+import { useTranslation } from '../lib/i18n/LanguageContext'
 
 interface NavbarProps {
   userEmail?: string | null
@@ -17,12 +18,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenFamilySettings,
   onSignOut,
 }) => {
+  const { t, language, setLanguage } = useTranslation()
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     onSignOut()
   }
 
-  const displayName = userName || userEmail?.split('@')[0] || 'Usuário'
+  const displayName = userName || userEmail?.split('@')[0] || t('nav.user')
 
   return (
     <header className="w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
@@ -35,30 +38,58 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <span className="text-lg font-bold text-white tracking-tight">Kofre</span>
             <span className="hidden sm:inline-block ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-              Fronteira Multi-Moeda
+              {t('nav.subtitle')}
             </span>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Language Switcher PT | ES */}
+          <div className="flex items-center bg-slate-950/60 p-0.5 rounded-xl border border-slate-800 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => setLanguage('pt')}
+              className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                language === 'pt'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Português"
+            >
+              PT
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('es')}
+              className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                language === 'es'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Español"
+            >
+              ES
+            </button>
+          </div>
+
           {/* Family Sharing Modal Button */}
           <button
             onClick={onOpenFamilySettings}
             className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs sm:text-sm font-medium text-emerald-300 hover:text-emerald-200 transition-all"
-            title="Gestão da Família e Código de Compartilhamento"
+            title={t('nav.familyTitle')}
           >
             <Users2 className="w-4 h-4 text-emerald-400" />
-            <span className="hidden xs:inline sm:inline">Família</span>
+            <span className="hidden xs:inline sm:inline">{t('nav.family')}</span>
           </button>
 
           <button
             onClick={onOpenCreateAccount}
             className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-xs sm:text-sm font-medium text-slate-200 hover:text-white transition-all"
-            title="Criar nova conta ou cartão"
+            title={t('nav.newAccountTitle')}
           >
             <PlusCircle className="w-4 h-4 text-indigo-400" />
-            <span className="hidden sm:inline">Nova Conta</span>
+            <span className="hidden sm:inline">{t('nav.newAccount')}</span>
           </button>
 
           {/* User Profile */}
@@ -73,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={handleLogout}
             className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all"
-            title="Sair da conta"
+            title={t('nav.signOut')}
           >
             <LogOut className="w-4 h-4" />
           </button>

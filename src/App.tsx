@@ -23,8 +23,10 @@ import { ManageAccountModal } from './components/ManageAccountModal'
 import { FamilySettingsModal } from './components/FamilySettingsModal'
 import { AuthModal } from './components/auth/AuthModal'
 import { Plus, Loader2 } from 'lucide-react'
+import { useTranslation } from './lib/i18n/LanguageContext'
 
 export default function App() {
+  const { t } = useTranslation()
   const [sessionUser, setSessionUser] = useState<{
     id: string
     email?: string | null
@@ -268,7 +270,7 @@ export default function App() {
           type="button"
           onClick={handleOpenDefaultQuickTx}
           className="cursor-pointer flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/40 hover:scale-105 active:scale-95 transition-all"
-          title="Novo lançamento rápido"
+          title={t('quickModal.newTitle')}
         >
           <Plus className="w-7 h-7" />
         </button>

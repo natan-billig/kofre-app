@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { CurrencyBalances, CardInvoiceSummary, Wallet } from '../lib/types'
 import { formatCurrency } from '../lib/formatters'
 import { CreditCard, Eye, EyeOff, Calendar, ArrowUpRight, Sparkles } from 'lucide-react'
+import { useTranslation } from '../lib/i18n/LanguageContext'
 
 interface CurrencyDashboardProps {
   balances: CurrencyBalances
@@ -14,6 +15,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
   cardInvoices,
   onPayCardInvoice,
 }) => {
+  const { t } = useTranslation()
   const [showValues, setShowValues] = useState(true)
 
   return (
@@ -22,20 +24,20 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Saldo Líquido Disponível
+            {t('dashboard.liquidBalances')}
           </span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-            Efetivo + Bancos
+            {t('accounts.cash')} + {t('accounts.checking')}
           </span>
         </div>
         <button
           type="button"
           onClick={() => setShowValues(!showValues)}
           className="cursor-pointer flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-          title={showValues ? 'Ocultar valores' : 'Mostrar valores'}
+          title={showValues ? 'Ocultar' : 'Exibir'}
         >
           {showValues ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-          <span>{showValues ? 'Ocultar' : 'Exibir'}</span>
+          <span>{showValues ? '••••' : '👁'}</span>
         </button>
       </div>
 
@@ -91,10 +93,9 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
             <div className="flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-purple-400" />
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Faturas de Cartão de Crédito
+                {t('dashboard.cardInvoices')}
               </span>
             </div>
-            <span className="text-[10px] text-slate-500">Saldo devedor acumulado</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -117,11 +118,11 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                         </span>
                         {wallet.type === 'shared' && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                            Família
+                            {t('nav.family')}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">Fatura atual</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{t('dashboard.currentInvoice')}</p>
                     </div>
 
                     {/* Pay Invoice Action */}
@@ -130,7 +131,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                       onClick={() => onPayCardInvoice(wallet, invoiceAmount)}
                       className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-xs font-medium text-purple-200 transition-all"
                     >
-                      <span>Pagar</span>
+                      <span>{t('dashboard.payInvoice')}</span>
                       <ArrowUpRight className="w-3 h-3" />
                     </button>
                   </div>
@@ -142,7 +143,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                     </div>
                     {hasLimit && availableLimit !== null && (
                       <span className="text-xs text-slate-400">
-                        Disponível: {showValues ? formatCurrency(availableLimit, wallet.currency) : '••••'}
+                        {t('dashboard.availableLimit')}: {showValues ? formatCurrency(availableLimit, wallet.currency) : '••••'}
                       </span>
                     )}
                   </div>
@@ -159,8 +160,8 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                         />
                       </div>
                       <div className="flex justify-between text-[10px] text-slate-400">
-                        <span>Limite: {formatCurrency(limit, wallet.currency)}</span>
-                        <span>{pctUsed.toFixed(0)}% usado</span>
+                        <span>{t('createAccount.creditLimit')}: {formatCurrency(limit, wallet.currency)}</span>
+                        <span>{pctUsed.toFixed(0)}%</span>
                       </div>
                     </div>
                   )}
@@ -171,13 +172,13 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                       {wallet.closing_day && (
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>Fecha dia {wallet.closing_day}</span>
+                          <span>{t('dashboard.closesOn')} {wallet.closing_day}</span>
                         </div>
                       )}
                       {wallet.due_day && (
                         <div className="flex items-center gap-1">
                           <Sparkles className="w-3 h-3 text-slate-400" />
-                          <span>Vence dia {wallet.due_day}</span>
+                          <span>{t('dashboard.dueOn')} {wallet.due_day}</span>
                         </div>
                       )}
                     </div>

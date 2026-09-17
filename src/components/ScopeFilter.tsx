@@ -1,6 +1,7 @@
 import React from 'react'
 import type { WalletScope } from '../lib/types'
 import { User, Users2, Layers } from 'lucide-react'
+import { useTranslation } from '../lib/i18n/LanguageContext'
 
 interface ScopeFilterProps {
   currentScope: WalletScope | 'all'
@@ -17,6 +18,8 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
   sharedCount,
   onOpenFamilySettings,
 }) => {
+  const { t } = useTranslation()
+
   return (
     <div className="w-full">
       <div className="flex rounded-2xl bg-slate-900/90 p-1.5 border border-slate-800 shadow-sm">
@@ -30,7 +33,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           }`}
         >
           <User className="w-3.5 h-3.5" />
-          <span>Minhas Contas</span>
+          <span>{t('scope.myAccounts')}</span>
           <span
             className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
               currentScope === 'personal'
@@ -52,7 +55,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           }`}
         >
           <Users2 className="w-3.5 h-3.5" />
-          <span>Caixa da Família</span>
+          <span>{t('scope.familyBox')}</span>
           <span
             className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
               currentScope === 'shared'
@@ -74,7 +77,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Consolidado</span>
+          <span>{t('scope.consolidated')}</span>
         </button>
       </div>
 
@@ -82,14 +85,14 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
         <div className="mt-2.5 flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
           <div className="flex items-center gap-2">
             <Users2 className="w-4 h-4 text-emerald-400" />
-            <span className="font-medium">Caixa Compartilhado da Família</span>
+            <span className="font-medium">{t('scope.sharedBanner')}</span>
           </div>
           <button
             type="button"
             onClick={onOpenFamilySettings}
             className="cursor-pointer font-semibold underline underline-offset-2 hover:text-white transition-colors"
           >
-            Gerenciar / Convidar
+            {t('scope.manageInvite')}
           </button>
         </div>
       )}
