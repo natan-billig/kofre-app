@@ -93,6 +93,14 @@ export interface JoinFamilyResult {
   message?: string
 }
 
+export interface FamilyMemberItem {
+  user_id: string
+  full_name: string | null
+  role: 'admin' | 'owner' | 'member' | string
+  joined_at?: string
+  is_current_user: boolean
+}
+
 export type CategoryType = 'expense' | 'income' | 'both'
 
 export interface Category {

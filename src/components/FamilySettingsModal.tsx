@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Users2,
   X,
@@ -10,9 +10,16 @@ import {
   Loader2,
   QrCode,
   ShieldCheck,
+  UserMinus,
+  AlertTriangle,
 } from 'lucide-react'
-import type { JoinFamilyResult } from '../lib/types'
-import { getFamilyCode, joinFamilyByCode } from '../lib/familyService'
+import type { JoinFamilyResult, FamilyMemberItem } from '../lib/types'
+import {
+  getFamilyCode,
+  joinFamilyByCode,
+  fetchFamilyMembers,
+  removeFamilyMember,
+} from '../lib/familyService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 
 interface FamilySettingsModalProps {
@@ -32,16 +39,104 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
   onClose,
   onFamilyLinked,
 }) => {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [currentCode, setCurrentCode] = useState<string | null>(null)
   const [loadingCode, setLoadingCode] = useState(true)
   const [codeError, setCodeError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  // Members state
+  const [members, setMembers] = useState<FamilyMemberItem[]>([])
+  const [loadingMembers, setLoadingMembers] = useState(true)
+  const [membersError, setMembersError] = useState<string | null>(null)
+  const [memberToRemove, setMemberToRemove] = useState<FamilyMemberItem | null>(null)
+  const [removingMember, setRemovingMember] = useState(false)
+  const [memberActionMsg, setMemberActionMsg] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
+
   // Join block state
   const [inputCode, setInputCode] = useState('')
   const [joining, setJoining] = useState(false)
   const [feedback, setFeedback] = useState<JoinFamilyResult | null>(null)
+
+  const refreshMembers = useCallback(async () => {
+    setLoadingMembers(true)
+    setMembersError(null)
+    try {
+      const list = await fetchFamilyMembers()
+      setMembers(list)
+    } catch (err: unknown) {
+      console.error('Erro ao carregar membros da família:', err)
+      const errObj = err as Record<string, unknown> | null
+      const msg =
+        (typeof errObj?.message === 'string' && errObj.message) ||
+        (err instanceof Error ? err.message : 'Erro ao carregar membros da família.')
+      setMembersError(msg)
+    } finally {
+      setLoadingMembers(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    fetchFamilyMembers()
+      .then((list) => {
+        if (isMounted) {
+          setMembers(list)
+          setMembersError(null)
+          setLoadingMembers(false)
+        }
+      })
+      .catch((err: unknown) => {
+        if (isMounted) {
+          console.error('Erro ao carregar membros da família:', err)
+          const errObj = err as Record<string, unknown> | null
+          const msg =
+            (typeof errObj?.message === 'string' && errObj.message) ||
+            (err instanceof Error ? err.message : 'Erro ao carregar membros da família.')
+          setMembersError(msg)
+          setLoadingMembers(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const isCurrentUserAdmin = members.some(
+    (m) => m.is_current_user && (m.role === 'admin' || m.role === 'owner')
+  )
+
+  const handleConfirmRemoveMember = async () => {
+    if (!memberToRemove) return
+    setRemovingMember(true)
+    setMemberActionMsg(null)
+    try {
+      const res = await removeFamilyMember(memberToRemove.user_id)
+      setMemberActionMsg({
+        success: true,
+        message: res.message || t('familyModal.memberRemovedSuccess'),
+      })
+      setMemberToRemove(null)
+      await refreshMembers()
+    } catch (err: unknown) {
+      console.error('Erro ao remover membro:', err)
+      const errObj = err as Record<string, unknown> | null
+      const msg =
+        (typeof errObj?.message === 'string' && errObj.message) ||
+        (err instanceof Error ? err.message : 'Erro ao remover membro da família.')
+      setMemberActionMsg({
+        success: false,
+        message: msg,
+      })
+    } finally {
+      setRemovingMember(false)
+    }
+  }
 
   // Load family invite code when mounted
   useEffect(() => {
@@ -206,6 +301,168 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
             ) : (
               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs">
                 {t('familyModal.noCode')}
+              </div>
+            )}
+          </section>
+
+          {/* Bloco 2: Membros Conectados */}
+          <section className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-indigo-400">
+                <Users2 className="w-4 h-4" />
+                <h3 className="text-sm font-semibold tracking-wide uppercase">
+                  {t('familyModal.membersTitle')}
+                </h3>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono">
+                {members.length}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {t('familyModal.membersSubtitle')}
+            </p>
+
+            {/* Feedback de remoção */}
+            {memberActionMsg && (
+              <div
+                className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs leading-relaxed ${
+                  memberActionMsg.success
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                }`}
+              >
+                {memberActionMsg.success ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                )}
+                <span>{memberActionMsg.message}</span>
+              </div>
+            )}
+
+            {/* Confirmação inline de remoção */}
+            {memberToRemove && (
+              <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-xl space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-rose-200 uppercase tracking-wide">
+                      {t('familyModal.removeConfirmTitle')}
+                    </h4>
+                    <p className="text-xs text-rose-300/90 leading-relaxed">
+                      {t('familyModal.removeConfirmDesc')}
+                    </p>
+                    <div className="pt-1 text-xs font-medium text-white">
+                      {memberToRemove.full_name || (language === 'es' ? 'Miembro de la Familia' : 'Membro da Família')}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={removingMember}
+                    onClick={() => setMemberToRemove(null)}
+                    className="cursor-pointer px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors"
+                  >
+                    {t('familyModal.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={removingMember}
+                    onClick={handleConfirmRemoveMember}
+                    className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-sm shadow-rose-600/30 transition-all disabled:opacity-50"
+                  >
+                    {removingMember ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>{t('familyModal.removing')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserMinus className="w-3.5 h-3.5" />
+                        <span>{t('familyModal.removeMember')}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {loadingMembers ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+              </div>
+            ) : membersError ? (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs">
+                {membersError}
+              </div>
+            ) : members.length === 0 ? (
+              <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 text-xs text-center">
+                {t('familyModal.noMembers')}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {members.map((member) => {
+                  const isAdmin = member.role === 'admin' || member.role === 'owner'
+                  const initial = (member.full_name?.trim() || '?')[0].toUpperCase()
+
+                  return (
+                    <div
+                      key={member.user_id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700/80 transition-all"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                            isAdmin
+                              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                          }`}
+                        >
+                          {initial}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs sm:text-sm font-semibold text-white truncate">
+                              {member.full_name || (language === 'es' ? 'Miembro de la Familia' : 'Membro da Família')}
+                            </span>
+                            {member.is_current_user && (
+                              <span className="text-[11px] font-medium text-emerald-400">
+                                ({t('familyModal.you')})
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span
+                              className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                                isAdmin
+                                  ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                                  : 'bg-slate-800 text-slate-400 border border-slate-700'
+                              }`}
+                            >
+                              {isAdmin ? t('familyModal.adminBadge') : t('familyModal.memberBadge')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Ação de remover: visível apenas se admin logado e não for a própria linha */}
+                      {isCurrentUserAdmin && !member.is_current_user && (
+                        <button
+                          type="button"
+                          onClick={() => setMemberToRemove(member)}
+                          className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0"
+                          title={t('familyModal.removeMember')}
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </section>

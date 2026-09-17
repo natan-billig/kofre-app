@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { JoinFamilyResult } from './types'
+import type { JoinFamilyResult, FamilyMemberItem } from './types'
 
 /**
  * Busca ou cria o invite_code da família ativa do usuário via RPC get_or_create_my_family.
@@ -105,5 +105,51 @@ export async function joinFamilyByCode(code: string): Promise<JoinFamilyResult> 
       success: false,
       message: errObj.message || 'Erro inesperado ao vincular família.',
     }
+  }
+}
+
+/**
+ * Busca a lista de membros conectados na família ativa do usuário via RPC get_family_members.
+ */
+export async function fetchFamilyMembers(): Promise<FamilyMemberItem[]> {
+  const { data, error } = await supabase.rpc('get_family_members')
+
+  if (error) {
+    console.error('Erro na RPC get_family_members:', error)
+    throw new Error(error.message || 'Erro ao carregar membros da família.')
+  }
+
+  return (data as FamilyMemberItem[]) || []
+}
+
+/**
+ * Remove um membro da família ativa via RPC remove_family_member.
+ */
+export async function removeFamilyMember(
+  targetUserId: string
+): Promise<{ success: boolean; message: string }> {
+  const { data, error } = await supabase.rpc('remove_family_member', {
+    p_target_user_id: targetUserId,
+  })
+
+  if (error) {
+    console.error('Erro na RPC remove_family_member:', error)
+    throw new Error(error.message || 'Erro ao remover membro da família.')
+  }
+
+  if (data && typeof data === 'object') {
+    const res = data as { success?: boolean; message?: string }
+    if (res.success === false) {
+      throw new Error(res.message || 'Falha ao remover membro da família.')
+    }
+    return {
+      success: true,
+      message: res.message || 'Membro removido com sucesso.',
+    }
+  }
+
+  return {
+    success: true,
+    message: 'Membro removido com sucesso.',
   }
 }
