@@ -150,6 +150,33 @@ export const pt = {
     creating: 'Criando...',
     fillName: 'Informe o nome da conta ou instituição.',
   },
+  auth: {
+    title: 'Kofre',
+    loginSubtitle: 'Acesse suas contas e transações da fronteira',
+    registerSubtitle: 'Crie sua conta para gerenciar finanças e carteira familiar',
+    loginTab: 'Entrar',
+    registerTab: 'Criar Conta',
+    fullName: 'Nome Completo',
+    fullNamePlaceholder: 'Ex: Carlos Silva',
+    email: 'E-mail',
+    emailPlaceholder: 'seu@email.com',
+    password: 'Senha',
+    passwordPlaceholder: 'Mínimo 6 caracteres',
+    confirmPassword: 'Confirmar Senha',
+    confirmPasswordPlaceholder: 'Repita sua senha',
+    passwordMismatch: 'As senhas não coincidem.',
+    fillRequired: 'Por favor, preencha todos os campos obrigatórios.',
+    fillName: 'Por favor, informe seu nome completo.',
+    minPasswordLength: 'A senha deve conter pelo menos 6 caracteres.',
+    loginSuccess: 'Entrar no Kofre',
+    registerSuccess: 'Criar Minha Conta',
+    registerCheckEmail:
+      'Conta criada com sucesso! Verifique seu e-mail para confirmar seu cadastro se necessário.',
+    invalidCredentials: 'E-mail ou senha incorretos.',
+    authError: 'Erro ao processar autenticação.',
+    showPassword: 'Ver senha',
+    hidePassword: 'Ocultar senha',
+  },
 }
 
 export type TranslationDictionary = typeof pt
