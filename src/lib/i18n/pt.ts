@@ -52,6 +52,11 @@ export const pt = {
     balance: 'Balanço',
     empty: 'Nenhum movimento neste mês',
   },
+  categoryBreakdown: {
+    title: 'Gastos por Categoria',
+    empty: 'Nenhuma despesa registrada neste mês',
+    periodTotal: 'Total do período',
+  },
   transactions: {
     title: 'Histórico de Lançamentos',
     empty: 'Nenhuma transação encontrada.',

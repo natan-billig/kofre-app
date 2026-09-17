@@ -19,6 +19,7 @@ import { AccountList } from './components/AccountList'
 import { TransactionList } from './components/TransactionList'
 import { MonthSelector } from './components/MonthSelector'
 import { MonthlySummary } from './components/MonthlySummary'
+import { CategoryBreakdown } from './components/CategoryBreakdown'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
 import { ManageAccountModal } from './components/ManageAccountModal'
@@ -268,6 +269,13 @@ export default function App() {
 
                 {/* Monthly Operational Summary */}
                 <MonthlySummary
+                  transactions={monthlyTransactions}
+                  wallets={wallets}
+                  currentScope={currentScope}
+                />
+
+                {/* Monthly Category Spending Breakdown */}
+                <CategoryBreakdown
                   transactions={monthlyTransactions}
                   wallets={wallets}
                   currentScope={currentScope}

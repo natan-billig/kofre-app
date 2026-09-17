@@ -7,6 +7,9 @@ import type {
   CurrencyBalances,
   CardInvoiceSummary,
   WalletScope,
+  CurrencyCode,
+  CategoryExpenseItem,
+  CurrencyCategoryBreakdown,
 } from './types'
 
 export async function fetchTransactions(walletIds: string[]): Promise<Transaction[]> {
@@ -163,3 +166,69 @@ export function calculateCardInvoices(
     }
   })
 }
+
+export function calculateCategoryExpenses(
+  transactions: Transaction[],
+  wallets: Wallet[] = [],
+  scopeFilter: WalletScope | 'all' = 'all'
+): Record<CurrencyCode, CurrencyCategoryBreakdown> {
+  const walletMap = new Map<string, Wallet>()
+  for (const w of wallets) {
+    walletMap.set(w.id, w)
+  }
+
+  const result: Record<CurrencyCode, CurrencyCategoryBreakdown> = {
+    PYG: { currency: 'PYG', total: 0, items: [] },
+    USD: { currency: 'USD', total: 0, items: [] },
+    BRL: { currency: 'BRL', total: 0, items: [] },
+  }
+
+  const categoryTotals: Record<CurrencyCode, Record<string, number>> = {
+    PYG: {},
+    USD: {},
+    BRL: {},
+  }
+
+  for (const tx of transactions) {
+    if (tx.type !== 'expense') continue
+
+    const wallet = walletMap.get(tx.wallet_id)
+    if (scopeFilter !== 'all' && wallet && wallet.type !== scopeFilter) {
+      continue
+    }
+
+    const currency = (wallet?.currency || tx.original_currency || 'PYG') as CurrencyCode
+    if (!result[currency]) {
+      result[currency] = { currency, total: 0, items: [] }
+      categoryTotals[currency] = {}
+    }
+
+    const amount = Number(tx.amount) || 0
+    if (amount <= 0) continue
+
+    const category = tx.category?.trim() || 'Outros'
+    categoryTotals[currency][category] = (categoryTotals[currency][category] || 0) + amount
+    result[currency].total += amount
+  }
+
+  for (const curr of Object.keys(result) as CurrencyCode[]) {
+    const total = result[curr].total
+    const catObj = categoryTotals[curr] || {}
+    const items: CategoryExpenseItem[] = Object.entries(catObj).map(([category, amount]) => {
+      const percentage = total > 0 ? (amount / total) * 100 : 0
+      return {
+        category,
+        amount,
+        percentage,
+      }
+    })
+
+    // Sort from highest expense to lowest
+    items.sort((a, b) => b.amount - a.amount)
+    result[curr].items = items
+  }
+
+  return result
+}
+
+export const calculateExpensesByCategory = calculateCategoryExpenses

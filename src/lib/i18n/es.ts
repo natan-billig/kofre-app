@@ -54,6 +54,11 @@ export const es: TranslationDictionary = {
     balance: 'Balance',
     empty: 'No hay movimientos en este mes',
   },
+  categoryBreakdown: {
+    title: 'Gastos por Categoría',
+    empty: 'No hay gastos registrados en este mes',
+    periodTotal: 'Total del período',
+  },
   transactions: {
     title: 'Historial de Movimientos',
     empty: 'No hay movimientos registrados.',

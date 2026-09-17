@@ -104,3 +104,15 @@ export interface Category {
   scope: WalletScope
   family_id?: string | null
 }
+
+export interface CategoryExpenseItem {
+  category: string
+  amount: number
+  percentage: number
+}
+
+export interface CurrencyCategoryBreakdown {
+  currency: CurrencyCode
+  total: number
+  items: CategoryExpenseItem[]
+}
