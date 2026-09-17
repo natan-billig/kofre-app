@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import type {
   Wallet,
   Transaction,
@@ -6,8 +6,12 @@ import type {
   CurrencyCode,
   CreateTransactionDTO,
   UpdateTransactionDTO,
+  Category,
+  WalletScope,
 } from '../lib/types'
 import { createTransaction, updateTransaction } from '../lib/accountingService'
+import { fetchCategories } from '../lib/categoryService'
+import { CategoryManagerModal } from './CategoryManagerModal'
 import { formatExchangeRate } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
@@ -28,6 +32,8 @@ import {
   PiggyBank,
   MoreHorizontal,
   Edit3,
+  Settings2,
+  Tag,
 } from 'lucide-react'
 
 interface QuickTransactionModalProps {
@@ -43,22 +49,19 @@ interface QuickTransactionModalProps {
   onTransactionCreated: () => void
 }
 
-const EXPENSE_CATEGORIES = [
-  { name: 'Alimentação', icon: Utensils },
-  { name: 'Transporte', icon: Car },
-  { name: 'Moradia', icon: Home },
-  { name: 'Lazer', icon: Gamepad2 },
-  { name: 'Saúde', icon: HeartPulse },
-  { name: 'Compras', icon: ShoppingBag },
-  { name: 'Outros', icon: MoreHorizontal },
-]
-
-const INCOME_CATEGORIES = [
-  { name: 'Salário', icon: Briefcase },
-  { name: 'Investimentos', icon: PiggyBank },
-  { name: 'Transferência', icon: ArrowRightLeft },
-  { name: 'Outros', icon: MoreHorizontal },
-]
+const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
+  Alimentação: Utensils,
+  Supermercado: ShoppingBag,
+  Transporte: Car,
+  Moradia: Home,
+  Lazer: Gamepad2,
+  Saúde: HeartPulse,
+  Compras: ShoppingBag,
+  Salário: Briefcase,
+  Investimentos: PiggyBank,
+  Transferência: ArrowRightLeft,
+  Outros: MoreHorizontal,
+}
 
 const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   userId,
@@ -140,6 +143,40 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
   const sourceWallet = selectableWallets.find((w) => w.id === sourceWalletId)
   const destWallet = selectableWallets.find((w) => w.id === destWalletId)
+
+  const currentScope: WalletScope = sourceWallet?.type || 'personal'
+  const familyId = sourceWallet?.family_id
+
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
+  const [categoryVersion, setCategoryVersion] = useState(0)
+
+  useEffect(() => {
+    let isMounted = true
+    queueMicrotask(() => {
+      if (isMounted) setLoadingCategories(true)
+    })
+    fetchCategories(currentScope, familyId)
+      .then((data) => {
+        if (isMounted) setCategories(data)
+      })
+      .catch((err) => {
+        console.error('Erro ao carregar categorias:', err)
+      })
+      .finally(() => {
+        if (isMounted) setLoadingCategories(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [currentScope, familyId, categoryVersion])
+
+  const displayedCategories = categories.filter((cat) => {
+    if (type === 'expense') return cat.type === 'expense' || cat.type === 'both'
+    if (type === 'income') return cat.type === 'income' || cat.type === 'both'
+    return true
+  })
 
   const isCrossCurrencyTransfer =
     type === 'transfer' &&
@@ -564,28 +601,47 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           {/* Categorias (Despesa / Receita) */}
           {type !== 'transfer' && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 uppercase">{t('quickModal.category')}</label>
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
-                {(type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map((cat) => {
-                  const Icon = cat.icon
-                  const isSelected = category === cat.name
-                  return (
-                    <button
-                      key={cat.name}
-                      type="button"
-                      onClick={() => setCategory(cat.name)}
-                      className={`cursor-pointer px-2.5 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all ${
-                        isSelected
-                          ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200'
-                          : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{t(`categories.${cat.name}`, cat.name)}</span>
-                    </button>
-                  )
-                })}
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-400 uppercase">
+                  {t('quickModal.category')}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryManagerOpen(true)}
+                  className="cursor-pointer text-[11px] font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  <span>{t('quickModal.manageCategories')}</span>
+                </button>
               </div>
+
+              {loadingCategories && categories.length === 0 ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
+                  {displayedCategories.map((cat) => {
+                    const Icon = CATEGORY_ICON_MAP[cat.name] || Tag
+                    const isSelected = category === cat.name
+                    return (
+                      <button
+                        key={cat.id || cat.name}
+                        type="button"
+                        onClick={() => setCategory(cat.name)}
+                        className={`cursor-pointer px-2.5 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all ${
+                          isSelected
+                            ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200'
+                            : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{t(`categories.${cat.name}`, cat.name)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -641,6 +697,17 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             </button>
           </div>
         </form>
+
+        {/* Category Manager Modal */}
+        <CategoryManagerModal
+          isOpen={isCategoryManagerOpen}
+          onClose={() => setIsCategoryManagerOpen(false)}
+          scope={currentScope}
+          familyId={familyId}
+          onCategoriesChanged={() => {
+            setCategoryVersion((v) => v + 1)
+          }}
+        />
       </div>
     </div>
   )

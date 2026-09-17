@@ -92,3 +92,15 @@ export interface JoinFamilyResult {
   success: boolean
   message?: string
 }
+
+export type CategoryType = 'expense' | 'income' | 'both'
+
+export interface Category {
+  id: string
+  created_at?: string
+  user_id: string
+  name: string
+  type: CategoryType
+  scope: WalletScope
+  family_id?: string | null
+}
