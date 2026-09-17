@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import type { AccountType, CurrencyCode, WalletScope } from '../lib/types'
 import { createWallet } from '../lib/walletService'
+import { getOrCreateMyFamilyId } from '../lib/familyService'
 import { X, Loader2, Building2, Banknote, CreditCard, Users2, User } from 'lucide-react'
 
 interface CreateAccountModalProps {
@@ -40,12 +41,18 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     setLoading(true)
 
     try {
+      let familyId: string | null = null
+      if (scope === 'shared') {
+        familyId = await getOrCreateMyFamilyId()
+      }
+
       await createWallet({
         owner_id: userId,
         name: name.trim(),
         type: scope,
         account_type: accountType,
         currency,
+        family_id: familyId,
         credit_limit: accountType === 'credit_card' && creditLimit ? Number(creditLimit) : null,
         closing_day: accountType === 'credit_card' && closingDay ? parseInt(closingDay, 10) : null,
         due_day: accountType === 'credit_card' && dueDay ? parseInt(dueDay, 10) : null,
@@ -59,7 +66,12 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       onClose()
     } catch (err: unknown) {
       console.error('Error creating account:', err)
-      const msg = err instanceof Error ? err.message : 'Erro ao criar conta.'
+      const errObj = err as Record<string, unknown> | null
+      const msg =
+        (typeof errObj?.message === 'string' && errObj.message) ||
+        (typeof errObj?.error_description === 'string' && errObj.error_description) ||
+        (typeof errObj?.details === 'string' && errObj.details) ||
+        (err instanceof Error ? err.message : 'Erro ao criar conta.')
       setErrorMsg(msg)
     } finally {
       setLoading(false)

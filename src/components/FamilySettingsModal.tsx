@@ -33,6 +33,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
 }) => {
   const [currentCode, setCurrentCode] = useState<string | null>(null)
   const [loadingCode, setLoadingCode] = useState(true)
+  const [codeError, setCodeError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   // Join block state
@@ -48,12 +49,20 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
       .then((code) => {
         if (isMounted) {
           setCurrentCode(code)
+          setCodeError(null)
           setLoadingCode(false)
         }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error('Erro ao carregar código da família:', err)
         if (isMounted) {
+          const errObj = err as Record<string, unknown> | null
+          const msg =
+            (typeof errObj?.message === 'string' && errObj.message) ||
+            (typeof errObj?.error_description === 'string' && errObj.error_description) ||
+            (typeof errObj?.details === 'string' && errObj.details) ||
+            (err instanceof Error ? err.message : 'Erro ao carregar código da família.')
+          setCodeError(msg)
           setLoadingCode(false)
         }
       })
@@ -153,6 +162,16 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
             {loadingCode ? (
               <div className="flex items-center justify-center py-6 bg-slate-900/70 border border-slate-800 rounded-xl">
                 <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+              </div>
+            ) : codeError ? (
+              <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-rose-400">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>Erro ao carregar código da família:</span>
+                </div>
+                <p className="font-mono text-[11px] break-words text-rose-200">
+                  {codeError}
+                </p>
               </div>
             ) : currentCode ? (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-slate-900/90 border border-emerald-500/30 rounded-xl">

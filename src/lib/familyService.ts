@@ -1,122 +1,49 @@
 import { supabase } from './supabase'
-import type { FamilyMember, JoinFamilyResult } from './types'
+import type { JoinFamilyResult } from './types'
 
 /**
- * Gera um código legível de convite no formato KFR-XXXX
+ * Busca ou cria o invite_code da família ativa do usuário via RPC get_or_create_my_family.
+ * Se a chamada falhar ou success for falso, propaga o erro com a mensagem técnica real.
  */
-function generateInviteCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let suffix = ''
-  for (let i = 0; i < 4; i++) {
-    suffix += chars.charAt(Math.floor(Math.random() * chars.length))
+export async function getFamilyCode(_userId?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('get_or_create_my_family')
+
+  if (error) {
+    console.error('Erro na RPC get_or_create_my_family:', error)
+    throw new Error(error.message || 'Erro ao carregar código da família.')
   }
-  return `KFR-${suffix}`
+
+  if (data && typeof data === 'object') {
+    const res = data as { success?: boolean; invite_code?: string; message?: string }
+    if (res.success && res.invite_code) {
+      return res.invite_code
+    }
+    throw new Error(res.message || 'Falha ao obter código da família.')
+  }
+
+  throw new Error('Resposta inválida do servidor ao obter família.')
 }
 
 /**
- * Busca o invite_code da família ativa do usuário.
- * NUNCA utiliza .single() pois um usuário pode ter múltiplos registros em family_members.
- * Prioriza vínculos onde role = 'member' (ingressou por convite) ou ordenação decrescente por data.
+ * Obtém o family_id da família ativa do usuário chamando a RPC get_or_create_my_family.
  */
-export async function getFamilyCode(userId: string): Promise<string | null> {
-  if (!userId) return null
+export async function getOrCreateMyFamilyId(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('get_or_create_my_family')
 
-  try {
-    // 1. Busca todos os vínculos do usuário sem .single()
-    const { data: members, error: membersErr } = await supabase
-      .from('family_members')
-      .select('id, created_at, user_id, family_id, role, families(id, name, invite_code)')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-
-    if (membersErr) {
-      console.warn('Erro ao consultar family_members:', membersErr.message)
-    }
-
-    const membershipList = (members as unknown as FamilyMember[]) || []
-
-    if (membershipList.length > 0) {
-      // Prioriza 'member' (família na qual ingressou por código) ou o registro mais recente
-      const sorted = [...membershipList].sort((a, b) => {
-        if (a.role === 'member' && b.role !== 'member') return -1
-        if (b.role === 'member' && a.role !== 'member') return 1
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
-        return dateB - dateA
-      })
-
-      const chosen = sorted[0]
-      if (chosen.families?.invite_code) {
-        return chosen.families.invite_code
-      }
-
-      // Se o join não veio populado, busca direto na tabela families
-      if (chosen.family_id) {
-        const { data: famData } = await supabase
-          .from('families')
-          .select('invite_code')
-          .eq('id', chosen.family_id)
-          .maybeSingle()
-
-        if (famData?.invite_code) {
-          return famData.invite_code
-        }
-      }
-    }
-
-    // 2. Fallback: verificar se alguma carteira compartilhada do usuário já tem family_id
-    const { data: walletWithFamily } = await supabase
-      .from('wallets')
-      .select('family_id')
-      .eq('owner_id', userId)
-      .not('family_id', 'is', null)
-      .order('created_at', { ascending: false })
-
-    if (walletWithFamily && walletWithFamily.length > 0 && walletWithFamily[0].family_id) {
-      const { data: famData } = await supabase
-        .from('families')
-        .select('invite_code')
-        .eq('id', walletWithFamily[0].family_id)
-        .maybeSingle()
-
-      if (famData?.invite_code) {
-        return famData.invite_code
-      }
-    }
-
-    // 3. Se ainda não possuir família criada, cria automaticamente uma família para o usuário
-    const newCode = generateInviteCode()
-    const { data: newFam, error: newFamErr } = await supabase
-      .from('families')
-      .insert([{ name: 'Caixa da Família', invite_code: newCode }])
-      .select('id, invite_code')
-      .maybeSingle()
-
-    if (!newFamErr && newFam?.id) {
-      // Registra como owner na family_members
-      await supabase.from('family_members').insert([
-        {
-          user_id: userId,
-          family_id: newFam.id,
-          role: 'owner',
-        },
-      ])
-
-      // Vincula ao Caixa da Família existente do usuário, se houver
-      await supabase
-        .from('wallets')
-        .update({ family_id: newFam.id })
-        .eq('owner_id', userId)
-        .eq('type', 'shared')
-
-      return newFam.invite_code || newCode
-    }
-
-    return null
-  } catch (err) {
-    console.error('Erro inesperado em getFamilyCode:', err)
-    return null
+  if (error) {
+    console.error('Erro na RPC get_or_create_my_family (family_id):', error)
+    throw new Error(error.message || 'Erro ao obter identificador da família.')
   }
+
+  if (data && typeof data === 'object') {
+    const res = data as { success?: boolean; family_id?: string; message?: string }
+    if (res.success && res.family_id) {
+      return res.family_id
+    }
+    throw new Error(res.message || 'Falha ao obter identificador da família.')
+  }
+
+  return null
 }
 
 /**

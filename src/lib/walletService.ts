@@ -147,6 +147,7 @@ export async function createWallet(payload: {
   type: WalletScope
   account_type: AccountType
   currency: CurrencyCode
+  family_id?: string | null
   credit_limit?: number | null
   closing_day?: number | null
   due_day?: number | null
