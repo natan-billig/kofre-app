@@ -25,13 +25,6 @@ export async function updateUserProfile(
   userId: string,
   data: Partial<Profile>
 ): Promise<Profile> {
-  const payload: Record<string, unknown> = {
-    id: userId,
-  }
-  if (data.full_name !== undefined) payload.full_name = data.full_name
-  if (data.avatar !== undefined) payload.avatar = data.avatar
-  if (data.preferred_currency !== undefined) payload.preferred_currency = data.preferred_currency
-
   // Update Supabase Auth user metadata if full_name is updated
   if (data.full_name !== undefined) {
     try {
@@ -43,36 +36,39 @@ export async function updateUserProfile(
     }
   }
 
-  // Tenta realizar upsert com updated_at
-  let { data: updated, error } = await supabase
+  // Garantir que a coluna correta 'id' seja enviada com o userId para satisfazer RLS
+  const payload: Record<string, unknown> = {
+    id: userId,
+    full_name: data.full_name,
+    avatar: data.avatar,
+    preferred_currency: data.preferred_currency,
+    updated_at: new Date().toISOString(),
+  }
+
+  let { data: result, error } = await supabase
     .from('profiles')
-    .upsert(
-      {
-        ...payload,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' }
-    )
+    .upsert(payload, { onConflict: 'id' })
     .select()
     .single()
 
   // Se a coluna updated_at não existir no schema cache, faz fallback sem updated_at
   if (error && (error.code === 'PGRST204' || error.message?.includes('updated_at'))) {
+    delete payload.updated_at
     const retry = await supabase
       .from('profiles')
       .upsert(payload, { onConflict: 'id' })
       .select()
       .single()
-    updated = retry.data
+    result = retry.data
     error = retry.error
   }
 
   if (error) {
-    console.error('Supabase profile error:', error)
-    throw new Error(error.message || 'Falha ao salvar perfil')
+    console.error('Erro ao atualizar perfil no Supabase:', error)
+    throw error
   }
 
-  return updated as Profile
+  return result as Profile
 }
 
 export async function upsertProfile(userId: string, fullName: string, email: string) {

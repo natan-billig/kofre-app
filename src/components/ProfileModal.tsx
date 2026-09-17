@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import type { Profile, CurrencyCode } from '../lib/types'
 import { updateUserProfile } from '../lib/profileService'
 import { AVATAR_OPTIONS, AvatarRenderer } from '../lib/avatarHelper'
@@ -58,7 +59,17 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
 
     setIsSaving(true)
     try {
-      const updated = await updateUserProfile(userId, {
+      // Obter o userId diretamente da sessão ativa do Supabase para garantir compatibilidade estrita com RLS (auth.uid() = id)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      const activeUserId = user?.id || userId
+
+      if (!activeUserId) {
+        throw new Error('Sessão expirada ou usuário não autenticado.')
+      }
+
+      const updated = await updateUserProfile(activeUserId, {
         full_name: trimmedName,
         avatar,
         preferred_currency: preferredCurrency,
@@ -71,12 +82,11 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
       }, 3000)
     } catch (err: unknown) {
       console.error('Erro ao atualizar perfil:', err)
+      const errObj = err as Record<string, unknown> | null
       const msg =
-        err instanceof Error
-          ? err.message
-          : typeof err === 'object' && err !== null && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : t('profile.error')
+        (typeof errObj?.message === 'string' && errObj.message) ||
+        (typeof errObj?.error_description === 'string' && errObj.error_description) ||
+        (err instanceof Error ? err.message : t('profile.error'))
       setErrorMsg(msg)
     } finally {
       setIsSaving(false)
@@ -117,14 +127,14 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
         )}
         {errorMsg && (
           <div className="mx-6 mt-4 p-3 bg-rose-500/15 border border-rose-500/30 rounded-xl flex items-start justify-between gap-2 text-rose-400 text-xs font-medium">
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2 min-w-0">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">{errorMsg}</span>
+              <span className="leading-relaxed break-words">{errorMsg}</span>
             </div>
             <button
               type="button"
               onClick={() => setErrorMsg(null)}
-              className="text-rose-400/70 hover:text-rose-300 p-0.5 rounded cursor-pointer"
+              className="text-rose-400/70 hover:text-rose-300 p-0.5 rounded cursor-pointer shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
