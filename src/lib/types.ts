@@ -154,3 +154,24 @@ export interface RecurringBill {
   scope: WalletScope
   family_id?: string | null
 }
+
+export type DebtType = 'i_owe' | 'they_owe'
+export type DebtStatus = 'pending' | 'settled'
+
+export interface DebtItem {
+  id: string
+  user_id: string
+  family_id?: string | null
+  scope: 'personal' | 'shared'
+  type: DebtType
+  contact_name: string
+  target_user_id?: string | null
+  amount: number
+  currency: CurrencyCode
+  description?: string
+  due_date?: string | null
+  status: DebtStatus
+  settled_at?: string | null
+  created_at?: string
+}
+

@@ -7,6 +7,7 @@ import type {
   TransactionType,
   RecurringBill,
   Profile,
+  DebtItem,
 } from './lib/types'
 import { ensureInitialWallets } from './lib/walletService'
 import {
@@ -16,6 +17,7 @@ import {
 } from './lib/accountingService'
 import { fetchRecurringBills } from './lib/recurringService'
 import { fetchUserProfile } from './lib/profileService'
+import { fetchDebts } from './lib/debtService'
 import { Navbar } from './components/Navbar'
 import { ScopeFilter } from './components/ScopeFilter'
 import { CurrencyDashboard } from './components/CurrencyDashboard'
@@ -25,8 +27,10 @@ import { MonthSelector } from './components/MonthSelector'
 import { MonthlySummary } from './components/MonthlySummary'
 import { CategoryBreakdown } from './components/CategoryBreakdown'
 import { MonthlyBillsWidget } from './components/MonthlyBillsWidget'
+import { DebtsWidget } from './components/DebtsWidget'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { RecurringBillsModal } from './components/RecurringBillsModal'
+import { CreateDebtModal } from './components/CreateDebtModal'
 import { ProfileModal } from './components/ProfileModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
 import { ManageAccountModal } from './components/ManageAccountModal'
@@ -48,6 +52,7 @@ export default function App() {
   const [wallets, setWallets] = useState<Wallet[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [recurringBills, setRecurringBills] = useState<RecurringBill[]>([])
+  const [debts, setDebts] = useState<DebtItem[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 
   // Scope filter: 'personal' (Minhas Contas) | 'shared' (Caixa da Família) | 'all' (Consolidado)
@@ -70,6 +75,7 @@ export default function App() {
   const [managingWallet, setManagingWallet] = useState<Wallet | null>(null)
   const [isFamilySettingsOpen, setIsFamilySettingsOpen] = useState(false)
   const [isRecurringBillsModalOpen, setIsRecurringBillsModalOpen] = useState(false)
+  const [isCreateDebtOpen, setIsCreateDebtOpen] = useState(false)
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
 
@@ -117,17 +123,19 @@ export default function App() {
       const sharedWallet = loadedWallets.find((w) => w.type === 'shared' && w.family_id)
       const familyId = sharedWallet?.family_id || null
 
-      const [loadedTxs, loadedBills, loadedProfile] = await Promise.all([
+      const [loadedTxs, loadedBills, loadedProfile, loadedDebts] = await Promise.all([
         loadedWallets.length > 0
           ? fetchTransactions(loadedWallets.map((w) => w.id))
           : Promise.resolve([]),
         fetchRecurringBills('all', familyId).catch(() => []),
         fetchUserProfile(sessionUser.id).catch(() => null),
+        fetchDebts('all', familyId).catch(() => []),
       ])
 
       setTransactions(loadedTxs)
       setRecurringBills(loadedBills)
       if (loadedProfile) setUserProfile(loadedProfile)
+      setDebts(loadedDebts)
     } catch (err) {
       console.error('Error refreshing data:', err)
     }
@@ -147,18 +155,20 @@ export default function App() {
           const sharedWallet = loadedWallets.find((w) => w.type === 'shared' && w.family_id)
           const familyId = sharedWallet?.family_id || null
 
-          const [loadedTxs, loadedBills, loadedProfile] = await Promise.all([
+          const [loadedTxs, loadedBills, loadedProfile, loadedDebts] = await Promise.all([
             loadedWallets.length > 0
               ? fetchTransactions(loadedWallets.map((w) => w.id))
               : Promise.resolve([]),
             fetchRecurringBills('all', familyId).catch(() => []),
             fetchUserProfile(sessionUser.id).catch(() => null),
+            fetchDebts('all', familyId).catch(() => []),
           ])
 
           if (isMounted) {
             setTransactions(loadedTxs)
             setRecurringBills(loadedBills)
             if (loadedProfile) setUserProfile(loadedProfile)
+            setDebts(loadedDebts)
           }
         })
         .catch((err) => {
@@ -361,6 +371,14 @@ export default function App() {
                   onPayBill={handlePayBill}
                 />
 
+                <DebtsWidget
+                  debts={debts}
+                  wallets={wallets}
+                  currentScope={currentScope}
+                  onOpenCreateDebt={() => setIsCreateDebtOpen(true)}
+                  onDebtChanged={() => refreshData()}
+                />
+
                 <AccountList
                   wallets={wallets}
                   transactions={transactions}
@@ -470,8 +488,19 @@ export default function App() {
           setWallets([])
           setTransactions([])
           setRecurringBills([])
+          setDebts([])
           setUserProfile(null)
         }}
+      />
+
+      {/* Create Debt / Loan Modal */}
+      <CreateDebtModal
+        isOpen={isCreateDebtOpen}
+        onClose={() => setIsCreateDebtOpen(false)}
+        userId={sessionUser.id}
+        familyId={wallets.find((w) => w.type === 'shared' && w.family_id)?.family_id}
+        initialScope={currentScope === 'shared' ? 'shared' : 'personal'}
+        onDebtCreated={() => refreshData()}
       />
     </div>
   )
