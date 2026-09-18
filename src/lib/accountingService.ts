@@ -33,6 +33,39 @@ export async function fetchTransactions(walletIds: string[]): Promise<Transactio
   return (data as Transaction[]) || []
 }
 
+export async function fetchTransactionsByDateRange(
+  walletIds: string[],
+  startDate: string,
+  endDate: string
+): Promise<Transaction[]> {
+  if (!walletIds || walletIds.length === 0) return []
+
+  const filter = `wallet_id.in.(${walletIds.join(',')}),destination_wallet_id.in.(${walletIds.join(',')})`
+
+  let query = supabase
+    .from('transactions')
+    .select('*')
+    .or(filter)
+
+  if (startDate) {
+    query = query.gte('transaction_date', startDate)
+  }
+  if (endDate) {
+    query = query.lte('transaction_date', endDate)
+  }
+
+  const { data, error } = await query
+    .order('transaction_date', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching transactions by date range:', error)
+    throw error
+  }
+
+  return (data as Transaction[]) || []
+}
+
 export async function createTransaction(payload: CreateTransactionDTO): Promise<Transaction> {
   const { data, error } = await supabase
     .from('transactions')

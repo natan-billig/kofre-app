@@ -80,6 +80,7 @@ export default function App() {
   const [isCreateDebtOpen, setIsCreateDebtOpen] = useState(false)
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null)
 
   // 1. Supabase Auth Session listener
   useEffect(() => {
@@ -393,6 +394,7 @@ export default function App() {
                   wallets={wallets}
                   currentScope={currentScope}
                   preferredCurrency={preferredCurrency}
+                  onSelectCategory={(catName) => setActiveCategoryFilter(catName)}
                 />
 
                 {/* Chronological Transactions Feed */}
@@ -402,6 +404,8 @@ export default function App() {
                   currentScope={currentScope}
                   currentUserId={sessionUser.id}
                   selectedDate={selectedDate}
+                  selectedCategory={activeCategoryFilter}
+                  onSelectCategory={setActiveCategoryFilter}
                   onEditTransaction={handleEditTransaction}
                   onTransactionDeleted={() => refreshData()}
                 />

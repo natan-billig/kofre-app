@@ -30,8 +30,11 @@ import {
   Search,
   X,
   SlidersHorizontal,
+  Calendar,
+  Tag,
 } from 'lucide-react'
 import { exportTransactionsToCSV } from '../lib/exportService'
+import { fetchTransactionsByDateRange } from '../lib/accountingService'
 
 interface TransactionListProps {
   transactions: Transaction[]
@@ -39,6 +42,8 @@ interface TransactionListProps {
   currentScope: ScopeFilterType
   currentUserId: string
   selectedDate?: Date
+  selectedCategory?: string | null
+  onSelectCategory?: (cat: string | null) => void
   onEditTransaction: (transaction: Transaction) => void
   onTransactionDeleted: () => void
 }
@@ -62,6 +67,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   currentScope,
   currentUserId,
   selectedDate,
+  selectedCategory,
+  onSelectCategory,
   onEditTransaction,
   onTransactionDeleted,
 }) => {
@@ -78,6 +85,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedWalletId, setSelectedWalletId] = useState('')
   const [selectedType, setSelectedType] = useState<'all' | 'expense' | 'income' | 'transfer'>('all')
+
+  // Custom date range state
+  const [isCustomRangeActive, setIsCustomRangeActive] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [rangeTransactions, setRangeTransactions] = useState<Transaction[] | null>(null)
+  const [loadingRange, setLoadingRange] = useState(false)
 
   // Fetch author profiles for all transaction user_ids
   useEffect(() => {
@@ -118,9 +132,55 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     ? selectedWalletId
     : ''
 
+  // Build macro category map for matching categories when filtered by a macro-category name
+  const categoryMacroMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const cat of categories) {
+      if (cat.macro_category && cat.macro_category.trim()) {
+        map.set(cat.name, cat.macro_category.trim())
+      }
+    }
+    return map
+  }, [categories])
+
+  // Trigger server fetch if custom date range is defined
+  useEffect(() => {
+    let isMounted = true
+    if (!isCustomRangeActive || (!startDate && !endDate)) {
+      return
+    }
+
+    const walletIds = wallets.map((w) => w.id)
+    if (walletIds.length === 0) return
+
+    queueMicrotask(() => {
+      if (isMounted) setLoadingRange(true)
+    })
+
+    fetchTransactionsByDateRange(walletIds, startDate, endDate)
+      .then((data) => {
+        if (isMounted) setRangeTransactions(data)
+      })
+      .catch((err) => {
+        console.error('Erro ao buscar transações por intervalo:', err)
+      })
+      .finally(() => {
+        if (isMounted) setLoadingRange(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [isCustomRangeActive, startDate, endDate, wallets])
+
+  // Determine base transactions (from custom date range if active and loaded, or current monthly transactions)
+  const baseTransactions = isCustomRangeActive && (startDate || endDate) && rangeTransactions !== null
+    ? rangeTransactions
+    : transactions
+
   // Filter transactions according to scope
   const scopedTransactions = useMemo(() => {
-    return transactions.filter((t) => {
+    return baseTransactions.filter((t) => {
       const sourceWallet = walletMap.get(t.wallet_id)
       const destWallet = t.destination_wallet_id ? walletMap.get(t.destination_wallet_id) : null
 
@@ -130,9 +190,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
       return sourceWallet?.type === 'personal' || destWallet?.type === 'personal'
     })
-  }, [transactions, currentScope, walletMap])
+  }, [baseTransactions, currentScope, walletMap])
 
-  // Filter 100% client-side by search query, wallet, and type
+  // Filter 100% client-side by search query, wallet, type, and selected category
   const visibleTransactions = useMemo(() => {
     return scopedTransactions.filter((tx) => {
       // Type filter
@@ -145,6 +205,16 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         const matchesWallet =
           tx.wallet_id === effectiveWalletId || tx.destination_wallet_id === effectiveWalletId
         if (!matchesWallet) return false
+      }
+
+      // Selected category filter (direct match or match through macro_category)
+      if (selectedCategory) {
+        const cleanSelected = selectedCategory.trim().toLowerCase()
+        const txCat = (tx.category || '').toLowerCase()
+        const macro = (categoryMacroMap.get(tx.category) || '').toLowerCase()
+        if (txCat !== cleanSelected && macro !== cleanSelected) {
+          return false
+        }
       }
 
       // Text search filter (description, category, author)
@@ -166,16 +236,42 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
       return true
     })
-  }, [scopedTransactions, selectedType, effectiveWalletId, searchQuery, profilesMap, t])
+  }, [scopedTransactions, selectedType, effectiveWalletId, selectedCategory, categoryMacroMap, searchQuery, profilesMap, t])
 
   const isFilterActive =
-    searchQuery.trim() !== '' || effectiveWalletId !== '' || selectedType !== 'all'
+    searchQuery.trim() !== '' ||
+    effectiveWalletId !== '' ||
+    selectedType !== 'all' ||
+    Boolean(selectedCategory) ||
+    isCustomRangeActive
 
   const clearFilters = () => {
     setSearchQuery('')
     setSelectedWalletId('')
     setSelectedType('all')
+    onSelectCategory?.(null)
+    setIsCustomRangeActive(false)
+    setStartDate('')
+    setEndDate('')
+    setRangeTransactions(null)
   }
+
+  // Dynamic sum calculation for filtered transactions
+  const filteredTotalsByCurrency = useMemo(() => {
+    const totals: Record<string, number> = {}
+    for (const tx of visibleTransactions) {
+      const w = walletMap.get(tx.wallet_id)
+      const curr = w?.currency || 'PYG'
+      const amt = Number(tx.amount || 0)
+      if (!totals[curr]) totals[curr] = 0
+      if (tx.type === 'expense') {
+        totals[curr] += amt
+      } else if (tx.type === 'income') {
+        totals[curr] -= amt
+      }
+    }
+    return totals
+  }, [visibleTransactions, walletMap])
 
   const handleExportCSV = () => {
     if (visibleTransactions.length === 0) return
@@ -183,7 +279,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     const targetDate = selectedDate || new Date()
     const year = targetDate.getFullYear()
     const month = String(targetDate.getMonth() + 1).padStart(2, '0')
-    const filename = `kofre_extrato_${year}_${month}.csv`
+    const filename = isCustomRangeActive && (startDate || endDate)
+      ? `kofre_extrato_${startDate || 'inicio'}_a_${endDate || 'fim'}.csv`
+      : `kofre_extrato_${year}_${month}.csv`
 
     exportTransactionsToCSV(visibleTransactions, wallets, filename, {
       language,
@@ -219,7 +317,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   }
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm">
+    <div
+      id="transaction-list"
+      className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm scroll-mt-6"
+    >
       {/* Header & Export Action */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -293,52 +394,144 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           </div>
         </div>
 
-        {/* Type Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-          <span className="text-xs text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline flex-shrink-0">
-            <SlidersHorizontal className="w-3 h-3 inline mr-1" />
-            {t('transactions.filterByType')}:
-          </span>
-          {[
-            { id: 'all', label: t('transactions.allTypes') },
-            { id: 'expense', label: t('transactions.expensesType') },
-            { id: 'income', label: t('transactions.incomesType') },
-            { id: 'transfer', label: t('transactions.transfersType') },
-          ].map((tab) => {
-            const active = selectedType === tab.id
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSelectedType(tab.id as 'all' | 'expense' | 'income' | 'transfer')}
-                className={`cursor-pointer px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                  active
-                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
-                    : 'bg-slate-100 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            )
-          })}
+        {/* Type Filter Chips and Custom Period Toggle */}
+        <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+            <span className="text-xs text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline flex-shrink-0">
+              <SlidersHorizontal className="w-3 h-3 inline mr-1" />
+              {t('transactions.filterByType')}:
+            </span>
+            {[
+              { id: 'all', label: t('transactions.allTypes') },
+              { id: 'expense', label: t('transactions.expensesType') },
+              { id: 'income', label: t('transactions.incomesType') },
+              { id: 'transfer', label: t('transactions.transfersType') },
+            ].map((tab) => {
+              const active = selectedType === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSelectedType(tab.id as 'all' | 'expense' | 'income' | 'transfer')}
+                  className={`cursor-pointer px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+                    active
+                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+                      : 'bg-slate-100 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Toggle Intervalo Personalizado */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsCustomRangeActive((prev) => !prev)
+              if (isCustomRangeActive) {
+                setStartDate('')
+                setEndDate('')
+                setRangeTransactions(null)
+              }
+            }}
+            className={`cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium border transition-all ${
+              isCustomRangeActive
+                ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40 shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/80 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{t('transactions.customPeriod')}</span>
+          </button>
         </div>
 
-        {/* Active Filter Indicator & Clear Button */}
-        {isFilterActive && (
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-xs text-indigo-700 dark:text-indigo-300">
-            <span className="font-medium">
-              {visibleTransactions.length}{' '}
-              {visibleTransactions.length === 1
-                ? t('transactions.singleResultFound')
-                : t('transactions.resultsFound')}
+        {/* Custom Date Range Inputs (when enabled) */}
+        {isCustomRangeActive && (
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-indigo-200 dark:border-indigo-900/40 flex flex-wrap items-center gap-3 text-xs animate-in fade-in duration-150">
+            <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              {t('transactions.customPeriod')}:
             </span>
+            <div className="flex items-center gap-2">
+              <label className="text-slate-500 dark:text-slate-400">{t('transactions.from')}</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-slate-500 dark:text-slate-400">{t('transactions.to')}</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            {loadingRange && (
+              <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Active Filter Indicator & Clear Button with Dynamic Sum */}
+        {isFilterActive && (
+          <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 text-xs text-indigo-900 dark:text-indigo-200 flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Category chip if filtered by category drill-down */}
+              {selectedCategory && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-medium text-[11px] shadow-sm">
+                  <Tag className="w-3 h-3" />
+                  <span>
+                    {t('transactions.filteringBy')}: {t(`categories.${selectedCategory}`, selectedCategory)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onSelectCategory?.(null)}
+                    className="cursor-pointer hover:opacity-80 ml-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {t('transactions.totalFiltered')}:
+              </span>
+
+              {/* Dynamic sum per currency */}
+              <div className="flex items-center gap-2 font-mono font-bold text-slate-900 dark:text-white">
+                {Object.entries(filteredTotalsByCurrency).length > 0 ? (
+                  Object.entries(filteredTotalsByCurrency).map(([curr, amt]) => (
+                    <span key={curr} className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800">
+                      {formatCurrency(amt, curr as any)}
+                    </span>
+                  ))
+                ) : (
+                  <span>0</span>
+                )}
+                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                  ({visibleTransactions.length}{' '}
+                  {visibleTransactions.length === 1
+                    ? t('transactions.singleTransactionCount')
+                    : t('transactions.transactionsCount')})
+                </span>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={clearFilters}
-              className="cursor-pointer flex items-center gap-1 font-semibold hover:underline text-indigo-600 dark:text-indigo-400"
+              className="cursor-pointer inline-flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline ml-auto"
             >
               <X className="w-3.5 h-3.5" />
-              <span>{t('transactions.clearFilters')}</span>
+              <span>{t('transactions.clearFilter')}</span>
             </button>
           </div>
         )}

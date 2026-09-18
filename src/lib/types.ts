@@ -117,7 +117,10 @@ export interface Category {
   scope: WalletScope
   family_id?: string | null
   macro_category?: string | null
+  budget_limit?: number | null
 }
+
+export type CategoryItem = Category
 
 export interface CategoryExpenseItem {
   category: string

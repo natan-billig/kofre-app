@@ -153,7 +153,8 @@ export async function createCategory(
   type: CategoryType,
   scope: WalletScope,
   familyId?: string | null,
-  macroCategory?: string | null
+  macroCategory?: string | null,
+  budgetLimit?: number | null
 ): Promise<Category> {
   const cleanName = name.trim()
   if (!cleanName) {
@@ -180,15 +181,31 @@ export async function createCategory(
     payload.macro_category = macroCategory.trim()
   }
 
+  if (budgetLimit !== undefined && budgetLimit !== null && !isNaN(budgetLimit) && budgetLimit > 0) {
+    payload.budget_limit = budgetLimit
+  } else if (budgetLimit === null) {
+    payload.budget_limit = null
+  }
+
   let { data, error } = await supabase
     .from('categories')
     .insert([payload])
     .select()
     .single()
 
-  // Se a coluna macro_category não existir no schema (fallback gracioso)
-  if (error && (error.code === 'PGRST204' || error.message?.includes('macro_category'))) {
-    delete payload.macro_category
+  // Se a coluna budget_limit ou macro_category não existir no schema (fallback gracioso)
+  if (
+    error &&
+    (error.code === 'PGRST204' ||
+      error.message?.includes('budget_limit') ||
+      error.message?.includes('macro_category'))
+  ) {
+    if (error.message?.includes('budget_limit')) {
+      delete payload.budget_limit
+    }
+    if (error.message?.includes('macro_category')) {
+      delete payload.macro_category
+    }
     const retry = await supabase
       .from('categories')
       .insert([payload])
@@ -207,7 +224,7 @@ export async function createCategory(
 }
 
 /**
- * Atualiza uma categoria no Supabase (nome e macro_category),
+ * Atualiza uma categoria no Supabase (nome, macro_category e budget_limit),
  * propagando alteração de nome para os lançamentos passados via RPC rename_category se houver.
  */
 export async function updateCategory(
@@ -216,22 +233,40 @@ export async function updateCategory(
   newName: string,
   scope: WalletScope,
   familyId?: string | null,
-  macroCategory?: string | null
+  macroCategory?: string | null,
+  budgetLimit?: number | null
 ): Promise<void> {
   const cleanNewName = newName.trim()
   if (!cleanNewName) {
     throw new Error('O novo nome da categoria não pode ficar vazio.')
   }
 
-  // 1. Atualizar macro_category se informado
+  // 1. Atualizar macro_category e budget_limit se informados
+  const updatePayload: Record<string, unknown> = {}
   if (macroCategory !== undefined) {
+    updatePayload.macro_category = macroCategory?.trim() || null
+  }
+  if (budgetLimit !== undefined) {
+    updatePayload.budget_limit = budgetLimit !== null && !isNaN(budgetLimit) && budgetLimit > 0 ? budgetLimit : null
+  }
+
+  if (Object.keys(updatePayload).length > 0) {
     try {
-      await supabase
+      const { error: updErr } = await supabase
         .from('categories')
-        .update({ macro_category: macroCategory?.trim() || null })
+        .update(updatePayload)
         .eq('id', id)
+
+      if (updErr && updErr.code === 'PGRST204') {
+        if (updErr.message?.includes('budget_limit')) {
+          delete updatePayload.budget_limit
+          if (Object.keys(updatePayload).length > 0) {
+            await supabase.from('categories').update(updatePayload).eq('id', id)
+          }
+        }
+      }
     } catch (err) {
-      console.warn('Could not update macro_category:', err)
+      console.warn('Could not update category fields (macro/budget):', err)
     }
   }
 

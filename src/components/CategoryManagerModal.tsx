@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   AlertTriangle,
   Folder,
+  Target,
 } from 'lucide-react'
 
 interface CategoryManagerModalProps {
@@ -48,6 +49,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<CategoryType>('expense')
   const [newMacro, setNewMacro] = useState('')
+  const [newBudgetLimit, setNewBudgetLimit] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
 
@@ -55,6 +57,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [editingMacro, setEditingMacro] = useState('')
+  const [editingBudgetLimit, setEditingBudgetLimit] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -106,9 +109,11 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     setIsAdding(true)
     setAddError(null)
     try {
-      await createCategory(trimmed, newType, scope, familyId, newMacro.trim() || null)
+      const budgetNum = newBudgetLimit.trim() ? parseFloat(newBudgetLimit.replace(/\./g, '').replace(',', '.')) : null
+      await createCategory(trimmed, newType, scope, familyId, newMacro.trim() || null, budgetNum)
       setNewName('')
       setNewMacro('')
+      setNewBudgetLimit('')
       setVersion((v) => v + 1)
       onCategoriesChanged?.()
     } catch (err: unknown) {
@@ -123,6 +128,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     setEditingId(cat.id)
     setEditingName(cat.name)
     setEditingMacro(cat.macro_category || '')
+    setEditingBudgetLimit(cat.budget_limit ? String(cat.budget_limit) : '')
     setEditError(null)
     setConfirmDeleteId(null)
   }
@@ -135,7 +141,10 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     }
 
     const trimmedMacro = editingMacro.trim()
-    if (trimmed === cat.name && trimmedMacro === (cat.macro_category || '')) {
+    const budgetNum = editingBudgetLimit.trim() ? parseFloat(editingBudgetLimit.replace(/\./g, '').replace(',', '.')) : null
+    const oldBudget = cat.budget_limit || null
+
+    if (trimmed === cat.name && trimmedMacro === (cat.macro_category || '') && budgetNum === oldBudget) {
       setEditingId(null)
       return
     }
@@ -143,7 +152,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     setIsSavingEdit(true)
     setEditError(null)
     try {
-      await updateCategory(cat.id, cat.name, trimmed, scope, familyId, trimmedMacro || null)
+      await updateCategory(cat.id, cat.name, trimmed, scope, familyId, trimmedMacro || null, budgetNum)
       setEditingId(null)
       setVersion((v) => v + 1)
       onCategoriesChanged?.()
@@ -300,6 +309,22 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
             </div>
           </div>
 
+          {/* Teto Mensal / Limite de Gastos (Opcional) */}
+          <div className="space-y-1 pt-1.5 border-t border-slate-200 dark:border-slate-800/60">
+            <label className="flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+              <Target className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+              <span>{t('categoryManager.budgetLimit')}</span>
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={newBudgetLimit}
+              onChange={(e) => setNewBudgetLimit(e.target.value)}
+              placeholder={t('categoryManager.budgetLimitPlaceholder')}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
+            />
+          </div>
+
           {addError && (
             <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium">{addError}</p>
           )}
@@ -435,6 +460,21 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                       </div>
                     </div>
 
+                    <div className="space-y-1 pt-1 border-t border-slate-200 dark:border-slate-800">
+                      <label className="flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                        <Target className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                        <span>{t('categoryManager.budgetLimit')}</span>
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editingBudgetLimit}
+                        onChange={(e) => setEditingBudgetLimit(e.target.value)}
+                        placeholder={t('categoryManager.budgetLimitPlaceholder')}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                      />
+                    </div>
+
                     {editError && (
                       <p className="text-xs text-rose-500 dark:text-rose-400 font-medium">{editError}</p>
                     )}
@@ -501,6 +541,12 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           {cat.macro_category}
                         </span>
                       )}
+                      {cat.budget_limit && cat.budget_limit > 0 ? (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 font-medium font-mono flex items-center gap-0.5">
+                          <Target className="w-2.5 h-2.5" />
+                          <span>{cat.budget_limit.toLocaleString()}</span>
+                        </span>
+                      ) : null}
                     </div>
                     <span
                       className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border flex-shrink-0 ${
