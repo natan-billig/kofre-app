@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { RecurringBill, Transaction, Wallet, WalletScope } from '../lib/types'
+import type { RecurringBill, Transaction, Wallet, ScopeFilterType } from '../lib/types'
 import { checkBillPaidInMonth } from '../lib/recurringService'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -17,7 +17,7 @@ interface MonthlyBillsWidgetProps {
   recurringBills: RecurringBill[]
   monthlyTransactions: Transaction[]
   wallets: Wallet[]
-  currentScope: WalletScope | 'all'
+  currentScope: ScopeFilterType
   selectedDate?: Date
   onOpenManage: () => void
   onPayBill: (bill: RecurringBill) => void
@@ -44,7 +44,6 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
     if (bill.start_date && bill.start_date.substring(0, 7) > selectedMonthPrefix) {
       return false
     }
-    if (currentScope === 'all') return true
     return bill.scope === currentScope
   })
 

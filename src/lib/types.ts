@@ -4,6 +4,8 @@ export type AccountType = 'cash' | 'checking' | 'credit_card'
 
 export type WalletScope = 'personal' | 'shared'
 
+export type ScopeFilterType = 'personal' | 'shared'
+
 export type TransactionType = 'expense' | 'income' | 'transfer'
 
 export interface Wallet {

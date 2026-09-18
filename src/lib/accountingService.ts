@@ -6,7 +6,7 @@ import type {
   UpdateTransactionDTO,
   CurrencyBalances,
   CardInvoiceSummary,
-  WalletScope,
+  ScopeFilterType,
   CurrencyCode,
   CategoryExpenseItem,
   CurrencyCategoryBreakdown,
@@ -123,7 +123,7 @@ export function calculateAccountBalance(wallet: Wallet, transactions: Transactio
 export function calculateBalances(
   wallets: Wallet[],
   transactions: Transaction[],
-  scopeFilter: WalletScope | 'all' = 'all'
+  scopeFilter: ScopeFilterType | 'all' = 'personal'
 ): CurrencyBalances {
   const balances: CurrencyBalances = {
     PYG: 0,
@@ -133,7 +133,7 @@ export function calculateBalances(
 
   // Filtra apenas contas de liquidez (cash e checking), excluindo cartões de crédito
   const liquidWallets = wallets.filter((w) => {
-    const matchesScope = scopeFilter === 'all' || w.type === scopeFilter
+    const matchesScope = scopeFilter === 'all' ? true : w.type === scopeFilter
     return matchesScope && (w.account_type === 'cash' || w.account_type === 'checking')
   })
 
@@ -150,10 +150,10 @@ export function calculateBalances(
 export function calculateCardInvoices(
   wallets: Wallet[],
   transactions: Transaction[],
-  scopeFilter: WalletScope | 'all' = 'all'
+  scopeFilter: ScopeFilterType | 'all' = 'personal'
 ): CardInvoiceSummary[] {
   const cards = wallets.filter((w) => {
-    const matchesScope = scopeFilter === 'all' || w.type === scopeFilter
+    const matchesScope = scopeFilter === 'all' ? true : w.type === scopeFilter
     return matchesScope && w.account_type === 'credit_card'
   })
 
@@ -173,7 +173,7 @@ export function calculateCardInvoices(
 export function calculateCategoryExpenses(
   transactions: Transaction[],
   wallets: Wallet[] = [],
-  scopeFilter: WalletScope | 'all' = 'all'
+  scopeFilter: ScopeFilterType | 'all' = 'personal'
 ): Record<CurrencyCode, CurrencyCategoryBreakdown> {
   const walletMap = new Map<string, Wallet>()
   for (const w of wallets) {

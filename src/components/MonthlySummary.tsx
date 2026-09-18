@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Transaction, Wallet, CurrencyCode, WalletScope } from '../lib/types'
+import type { Transaction, Wallet, CurrencyCode, ScopeFilterType } from '../lib/types'
 import { formatCurrency } from '../lib/formatters'
 import { getActiveCurrencies } from '../lib/accountingService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -8,14 +8,14 @@ import { ArrowDownLeft, ArrowUpRight, Scale } from 'lucide-react'
 interface MonthlySummaryProps {
   transactions: Transaction[]
   wallets: Wallet[]
-  currentScope?: WalletScope | 'all'
+  currentScope?: ScopeFilterType
   preferredCurrency?: CurrencyCode
 }
 
 export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
   transactions,
   wallets,
-  currentScope = 'all',
+  currentScope = 'personal',
   preferredCurrency = 'PYG',
 }) => {
   const { t } = useTranslation()
@@ -36,7 +36,7 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
     if (tx.type === 'transfer') continue
 
     const wallet = walletMap.get(tx.wallet_id)
-    if (currentScope !== 'all' && wallet?.type !== currentScope) {
+    if (wallet?.type !== currentScope) {
       continue
     }
 
@@ -73,7 +73,7 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
   const activeCurrencies = candidateCurrencies.filter((c) => {
     const hasActivity = totals[c] && (totals[c].income > 0 || totals[c].expense > 0)
     const hasConfiguredWallet = wallets.some(
-      (w) => w.currency === c && !w.is_archived && (currentScope === 'all' || w.type === currentScope)
+      (w) => w.currency === c && !w.is_archived && w.type === currentScope
     )
     return hasActivity || hasConfiguredWallet
   })

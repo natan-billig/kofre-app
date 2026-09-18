@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react'
-import type { Transaction, Wallet, WalletScope } from '../lib/types'
+import React, { useEffect, useMemo, useState } from 'react'
+import type { Transaction, Wallet, ScopeFilterType, Category } from '../lib/types'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { fetchProfilesMap } from '../lib/profileService'
+import { fetchCategories } from '../lib/categoryService'
 import { deleteTransaction } from '../lib/accountingService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { TransactionDetailsModal } from './TransactionDetailsModal'
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -25,13 +27,16 @@ import {
   AlertTriangle,
   Download,
   CheckCircle2,
+  Search,
+  X,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { exportTransactionsToCSV } from '../lib/exportService'
 
 interface TransactionListProps {
   transactions: Transaction[]
   wallets: Wallet[]
-  currentScope: WalletScope | 'all'
+  currentScope: ScopeFilterType
   currentUserId: string
   selectedDate?: Date
   onEditTransaction: (transaction: Transaction) => void
@@ -62,10 +67,17 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 }) => {
   const { t, language } = useTranslation()
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
+  const [categories, setCategories] = useState<Category[]>([])
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null)
+  const [selectedTxForDetails, setSelectedTxForDetails] = useState<Transaction | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [downloadSuccess, setDownloadSuccess] = useState(false)
+
+  // Search and client-side filters
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedWalletId, setSelectedWalletId] = useState('')
+  const [selectedType, setSelectedType] = useState<'all' | 'expense' | 'income' | 'transfer'>('all')
 
   // Fetch author profiles for all transaction user_ids
   useEffect(() => {
@@ -75,40 +87,105 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     }
   }, [transactions])
 
-  const walletMap = new Map<string, Wallet>()
-  for (const w of wallets) {
-    walletMap.set(w.id, w)
-  }
+  // Fetch categories for macro-category resolution in details modal
+  useEffect(() => {
+    let isMounted = true
+    fetchCategories(currentScope)
+      .then((cats) => {
+        if (isMounted) setCategories(cats)
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
+  }, [currentScope])
+
+  const walletMap = useMemo(() => {
+    const map = new Map<string, Wallet>()
+    for (const w of wallets) {
+      map.set(w.id, w)
+    }
+    return map
+  }, [wallets])
+
+  // Wallets available for filtering in current scope
+  const scopedWallets = useMemo(() => {
+    return wallets.filter((w) => !w.is_archived && w.type === currentScope)
+  }, [wallets, currentScope])
+
+  // Derive effective wallet id (auto-resets if current selection doesn't belong to current scope)
+  const effectiveWalletId = scopedWallets.some((w) => w.id === selectedWalletId)
+    ? selectedWalletId
+    : ''
 
   // Filter transactions according to scope
-  const filteredTransactions = transactions.filter((t) => {
-    if (currentScope === 'all') return true
+  const scopedTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      const sourceWallet = walletMap.get(t.wallet_id)
+      const destWallet = t.destination_wallet_id ? walletMap.get(t.destination_wallet_id) : null
 
-    const sourceWallet = walletMap.get(t.wallet_id)
-    const destWallet = t.destination_wallet_id ? walletMap.get(t.destination_wallet_id) : null
+      if (currentScope === 'shared') {
+        return sourceWallet?.type === 'shared' || destWallet?.type === 'shared'
+      }
 
-    // Se for 'shared' (Caixa da Família), deve envolver carteira shared
-    if (currentScope === 'shared') {
-      return sourceWallet?.type === 'shared' || destWallet?.type === 'shared'
-    }
-
-    // Se for 'personal' (Minhas Contas), deve envolver carteira personal
-    if (currentScope === 'personal') {
       return sourceWallet?.type === 'personal' || destWallet?.type === 'personal'
-    }
+    })
+  }, [transactions, currentScope, walletMap])
 
-    return true
-  })
+  // Filter 100% client-side by search query, wallet, and type
+  const visibleTransactions = useMemo(() => {
+    return scopedTransactions.filter((tx) => {
+      // Type filter
+      if (selectedType !== 'all' && tx.type !== selectedType) {
+        return false
+      }
+
+      // Wallet filter
+      if (effectiveWalletId) {
+        const matchesWallet =
+          tx.wallet_id === effectiveWalletId || tx.destination_wallet_id === effectiveWalletId
+        if (!matchesWallet) return false
+      }
+
+      // Text search filter (description, category, author)
+      if (searchQuery.trim()) {
+        const query = searchQuery.trim().toLowerCase()
+        const desc = (tx.description || '').toLowerCase()
+        const cat = (tx.category || '').toLowerCase()
+        const translatedCat = t(`categories.${tx.category}`, tx.category).toLowerCase()
+        const author = (profilesMap[tx.user_id] || '').toLowerCase()
+
+        const matchesText =
+          desc.includes(query) ||
+          cat.includes(query) ||
+          translatedCat.includes(query) ||
+          author.includes(query)
+
+        if (!matchesText) return false
+      }
+
+      return true
+    })
+  }, [scopedTransactions, selectedType, effectiveWalletId, searchQuery, profilesMap, t])
+
+  const isFilterActive =
+    searchQuery.trim() !== '' || effectiveWalletId !== '' || selectedType !== 'all'
+
+  const clearFilters = () => {
+    setSearchQuery('')
+    setSelectedWalletId('')
+    setSelectedType('all')
+  }
 
   const handleExportCSV = () => {
-    if (filteredTransactions.length === 0) return
+    if (visibleTransactions.length === 0) return
 
     const targetDate = selectedDate || new Date()
     const year = targetDate.getFullYear()
     const month = String(targetDate.getMonth() + 1).padStart(2, '0')
     const filename = `kofre_extrato_${year}_${month}.csv`
 
-    exportTransactionsToCSV(filteredTransactions, wallets, filename, {
+    exportTransactionsToCSV(visibleTransactions, wallets, filename, {
       language,
       profilesMap,
     })
@@ -128,6 +205,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     try {
       await deleteTransaction(txToDelete.id)
       setTxToDelete(null)
+      if (selectedTxForDetails?.id === txToDelete.id) {
+        setSelectedTxForDetails(null)
+      }
       onTransactionDeleted()
     } catch (err: unknown) {
       console.error('Error deleting transaction:', err)
@@ -140,13 +220,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
   return (
     <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm">
-      <div className="flex items-center justify-between">
+      {/* Header & Export Action */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             {t('transactions.title')}
           </h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium">
-            {filteredTransactions.length}
+            {visibleTransactions.length}
           </span>
         </div>
 
@@ -161,7 +242,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           <button
             type="button"
             onClick={handleExportCSV}
-            disabled={filteredTransactions.length === 0}
+            disabled={visibleTransactions.length === 0}
             title={t('transactions.exportExcel')}
             className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs font-medium transition-all shadow-sm active:scale-95"
           >
@@ -171,16 +252,126 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         </div>
       </div>
 
-      {filteredTransactions.length === 0 ? (
+      {/* Toolbar: Search input, Wallet dropdown, and Type chips */}
+      <div className="space-y-2.5 pt-1">
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Text Search Input */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('transactions.searchPlaceholder')}
+              className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Account / Wallet Dropdown */}
+          <div className="sm:w-56 shrink-0">
+            <select
+              value={effectiveWalletId}
+              onChange={(e) => setSelectedWalletId(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 cursor-pointer truncate"
+            >
+              <option value="">{t('transactions.allAccounts')}</option>
+              {scopedWallets.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.currency})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Type Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+          <span className="text-xs text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline flex-shrink-0">
+            <SlidersHorizontal className="w-3 h-3 inline mr-1" />
+            {t('transactions.filterByType')}:
+          </span>
+          {[
+            { id: 'all', label: t('transactions.allTypes') },
+            { id: 'expense', label: t('transactions.expensesType') },
+            { id: 'income', label: t('transactions.incomesType') },
+            { id: 'transfer', label: t('transactions.transfersType') },
+          ].map((tab) => {
+            const active = selectedType === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedType(tab.id as 'all' | 'expense' | 'income' | 'transfer')}
+                className={`cursor-pointer px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+                  active
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+                    : 'bg-slate-100 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Active Filter Indicator & Clear Button */}
+        {isFilterActive && (
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-xs text-indigo-700 dark:text-indigo-300">
+            <span className="font-medium">
+              {visibleTransactions.length}{' '}
+              {visibleTransactions.length === 1
+                ? t('transactions.singleResultFound')
+                : t('transactions.resultsFound')}
+            </span>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="cursor-pointer flex items-center gap-1 font-semibold hover:underline text-indigo-600 dark:text-indigo-400"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>{t('transactions.clearFilters')}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Transaction Feed or Empty State */}
+      {scopedTransactions.length === 0 ? (
         <div className="text-center py-12 space-y-2">
           <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 mb-1">
             <MoreHorizontal className="w-5 h-5" />
           </div>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-300">{t('transactions.empty')}</p>
         </div>
+      ) : visibleTransactions.length === 0 ? (
+        <div className="text-center py-10 space-y-3">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
+            <Search className="w-5 h-5" />
+          </div>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            {t('transactions.noFilteredResults')}
+          </p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="cursor-pointer inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>{t('transactions.clearFilters')}</span>
+          </button>
+        </div>
       ) : (
         <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-          {filteredTransactions.map((tItem) => {
+          {visibleTransactions.map((tItem) => {
             const sourceWallet = walletMap.get(tItem.wallet_id)
             const destWallet = tItem.destination_wallet_id
               ? walletMap.get(tItem.destination_wallet_id)
@@ -190,12 +381,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             const isSharedTransaction =
               sourceWallet?.type === 'shared' || destWallet?.type === 'shared'
 
-            // Regra de Permissão: no Caixa da Família, editar/excluir APENAS se transaction.user_id === currentUserId
+            // Permission rule: in Caixa da Família, edit/delete ONLY if transaction.user_id === currentUserId
             const canManage = isSharedTransaction
               ? tItem.user_id === currentUserId
               : true
 
-            const authorName = profilesMap[tItem.user_id] || (language === 'es' ? 'Miembro de la Familia' : 'Membro da Família')
+            const authorName =
+              profilesMap[tItem.user_id] ||
+              (language === 'es' ? 'Miembro de la Familia' : 'Membro da Família')
 
             const CategoryIcon =
               CATEGORY_ICON_MAP[tItem.category] ||
@@ -210,7 +403,16 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             return (
               <div
                 key={tItem.id}
-                className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/20 px-2 rounded-2xl transition-all group"
+                onClick={() => setSelectedTxForDetails(tItem)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelectedTxForDetails(tItem)
+                  }
+                }}
+                className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 px-2.5 rounded-2xl transition-all group cursor-pointer"
               >
                 {/* Left side: Icon and description */}
                 <div className="flex items-start gap-3 min-w-0">
@@ -259,7 +461,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         </>
                       )}
 
-                      {/* Etiqueta Obrigatória: Por: [Nome do Usuário] em transações do Caixa da Família */}
+                      {/* Author tag in shared family box */}
                       {isSharedTransaction && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[11px] font-semibold">
                           <User className="w-3 h-3" />
@@ -316,7 +518,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     <div className="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-800/80">
                       <button
                         type="button"
-                        onClick={() => onEditTransaction(tItem)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEditTransaction(tItem)
+                        }}
                         className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
                         title={t('transactions.edit')}
                       >
@@ -324,7 +529,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setTxToDelete(tItem)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setTxToDelete(tItem)
+                        }}
                         className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                         title={t('transactions.delete')}
                       >
@@ -338,6 +546,19 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           })}
         </div>
       )}
+
+      {/* Transaction Details Read-Only Modal */}
+      <TransactionDetailsModal
+        isOpen={Boolean(selectedTxForDetails)}
+        onClose={() => setSelectedTxForDetails(null)}
+        transaction={selectedTxForDetails}
+        wallets={wallets}
+        categories={categories}
+        profilesMap={profilesMap}
+        currentUserId={currentUserId}
+        onEdit={(tx) => onEditTransaction(tx)}
+        onDelete={(tx) => setTxToDelete(tx)}
+      />
 
       {/* Confirmation Modal for Transaction Deletion */}
       {txToDelete && (

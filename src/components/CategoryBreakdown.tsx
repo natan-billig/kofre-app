@@ -3,7 +3,7 @@ import type {
   Transaction,
   Wallet,
   CurrencyCode,
-  WalletScope,
+  ScopeFilterType,
   Category,
   MacroCategoryExpenseItem,
   CategoryExpenseItem,
@@ -34,7 +34,7 @@ import {
 interface CategoryBreakdownProps {
   transactions: Transaction[]
   wallets: Wallet[]
-  currentScope?: WalletScope | 'all'
+  currentScope?: ScopeFilterType
   preferredCurrency?: CurrencyCode
   categories?: Category[]
 }
@@ -57,7 +57,7 @@ const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
 export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
   transactions,
   wallets,
-  currentScope = 'all',
+  currentScope = 'personal',
   preferredCurrency = 'PYG',
   categories: propCategories,
 }) => {
@@ -71,7 +71,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
   useEffect(() => {
     let isMounted = true
     if (!propCategories) {
-      fetchCategories(currentScope === 'all' ? 'personal' : currentScope)
+      fetchCategories(currentScope)
         .then((data) => {
           if (isMounted) setLoadedCategories(data)
         })
@@ -113,7 +113,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
         breakdown[curr]?.items.length > 0 ||
         (curr === preferredCurrency &&
           wallets.some(
-            (w) => w.currency === curr && !w.is_archived && (currentScope === 'all' || w.type === currentScope)
+            (w) => w.currency === curr && !w.is_archived && w.type === currentScope
           ))
     )
   }, [breakdown, wallets, currentScope, preferredCurrency])

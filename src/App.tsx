@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase'
 import type {
   Wallet,
   Transaction,
-  WalletScope,
+  ScopeFilterType,
   TransactionType,
   RecurringBill,
   Profile,
@@ -57,8 +57,8 @@ export default function App() {
   const [debts, setDebts] = useState<DebtItem[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 
-  // Scope filter: 'personal' (Minhas Contas) | 'shared' (Caixa da Família) | 'all' (Consolidado)
-  const [currentScope, setCurrentScope] = useState<WalletScope | 'all'>('personal')
+  // Scope filter: 'personal' (Minhas Contas) | 'shared' (Caixa da Família)
+  const [currentScope, setCurrentScope] = useState<ScopeFilterType>('personal')
 
   // Selected Month for Temporal Navigation
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -230,7 +230,7 @@ export default function App() {
 
   // Active currencies based on user preference and active wallets
   const preferredCurrency: CurrencyCode = userProfile?.preferred_currency || 'PYG'
-  const scopedWallets = currentScope === 'all' ? wallets : wallets.filter((w) => w.type === currentScope)
+  const scopedWallets = wallets.filter((w) => w.type === currentScope)
   const activeCurrencies = getActiveCurrencies(scopedWallets, preferredCurrency)
 
   // Filter transactions for the selected month (UTC-safe via YYYY-MM substring)
@@ -549,7 +549,7 @@ export default function App() {
         onClose={() => setIsCreateDebtOpen(false)}
         userId={sessionUser.id}
         familyId={wallets.find((w) => w.type === 'shared' && w.family_id)?.family_id}
-        initialScope={currentScope === 'shared' ? 'shared' : 'personal'}
+        initialScope={currentScope}
         wallets={wallets}
         onDebtCreated={() => refreshData()}
       />

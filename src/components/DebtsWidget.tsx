@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { DebtItem, Wallet, WalletScope } from '../lib/types'
+import type { DebtItem, Wallet, ScopeFilterType } from '../lib/types'
 import { settleDebt, deleteDebt } from '../lib/debtService'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -21,7 +21,7 @@ import {
 interface DebtsWidgetProps {
   debts: DebtItem[]
   wallets: Wallet[]
-  currentScope: WalletScope | 'all'
+  currentScope: ScopeFilterType
   currentUserId?: string
   onOpenCreateDebt: () => void
   onDebtChanged: () => void
@@ -82,10 +82,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Filter debts by current scope
-  const scopedDebts = debts.filter((debt) => {
-    if (currentScope === 'all') return true
-    return debt.scope === currentScope
-  })
+  const scopedDebts = debts.filter((debt) => debt.scope === currentScope)
 
   const pendingDebts = scopedDebts.filter((d) => d.status === 'pending')
   const settledDebts = scopedDebts.filter((d) => d.status === 'settled')

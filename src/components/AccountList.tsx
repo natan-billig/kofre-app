@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { Wallet, Transaction, WalletScope } from '../lib/types'
+import type { Wallet, Transaction, ScopeFilterType } from '../lib/types'
 import { calculateAccountBalance } from '../lib/accountingService'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
 import { formatCurrency } from '../lib/formatters'
@@ -18,7 +18,7 @@ import {
 interface AccountListProps {
   wallets: Wallet[]
   transactions: Transaction[]
-  currentScope: WalletScope | 'all'
+  currentScope: ScopeFilterType
   onOpenCreateAccount: () => void
   onManageAccount?: (wallet: Wallet) => void
 }
@@ -34,9 +34,7 @@ export const AccountList: React.FC<AccountListProps> = ({
   const [collapsed, setCollapsed] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
-  const filteredWallets = wallets.filter(
-    (w) => currentScope === 'all' || w.type === currentScope
-  )
+  const filteredWallets = wallets.filter((w) => w.type === currentScope)
 
   const activeWallets = filteredWallets.filter((w) => !w.is_archived)
   const archivedWallets = filteredWallets.filter((w) => Boolean(w.is_archived))

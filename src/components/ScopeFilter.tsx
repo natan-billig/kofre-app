@@ -1,11 +1,11 @@
 import React from 'react'
-import type { WalletScope } from '../lib/types'
-import { User, Users2, Layers } from 'lucide-react'
+import type { ScopeFilterType } from '../lib/types'
+import { User, Users2 } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 
 interface ScopeFilterProps {
-  currentScope: WalletScope | 'all'
-  onSelectScope: (scope: WalletScope | 'all') => void
+  currentScope: ScopeFilterType
+  onSelectScope: (scope: ScopeFilterType) => void
   personalCount: number
   sharedCount: number
   onOpenFamilySettings?: () => void
@@ -65,19 +65,6 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           >
             {sharedCount}
           </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onSelectScope('all')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-            currentScope === 'all'
-              ? 'bg-slate-800 text-white dark:bg-slate-700 dark:text-white shadow-md'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>{t('scope.consolidated')}</span>
         </button>
       </div>
 
