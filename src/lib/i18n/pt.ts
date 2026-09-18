@@ -612,6 +612,11 @@ export const pt = {
     quickPreferences: 'Preferências Rápidas',
     supportAndHistory: 'Apoio & Histórico',
   },
+  common: {
+    cancel: 'Cancelar',
+    close: 'Fechar',
+    reset: 'Restaurar',
+  },
   dti: {
     title: 'Termômetro DTI (% Endividamento)',
     personalSubtitle: 'Minhas Contas Pessoais',
@@ -628,9 +633,12 @@ export const pt = {
     profileIncome: 'Renda do perfil',
     totalCommitments: 'Comprometimento Total',
     cardInvoices: 'Faturas de Cartão',
+    cards: 'Faturas de Cartão',
     fixedBills: 'Contas Fixas',
     debtsToPay: 'Dívidas a Pagar',
+    debts: 'Dívidas a Pagar',
     configureIncome: 'Definir Renda Base',
+    noIncomePrompt: 'Defina o seu rendimento base no perfil para calcular o índice com precisão.',
   },
   calendar: {
     title: 'Calendário de Vencimentos & Caixa',
@@ -649,6 +657,7 @@ export const pt = {
   notificationParser: {
     title: 'Leitor de Notificações Bancárias',
     subtitle: 'Cole o SMS ou push para preenchimento em 1 toque',
+    buttonShort: 'Colar Notificação',
     pasteLabel: 'Cole o texto do SMS ou notificação do banco:',
     pasteButton: 'Colar da área de transferência',
     detected: 'Dados Identificados com Sucesso',
@@ -667,6 +676,10 @@ export const pt = {
     tabComparator: 'Comparador de Compras',
     marketRates: 'Taxas Base da Fronteira',
     reset: 'Restaurar',
+    fetchLive: 'Buscar Cotação do Dia',
+    fetching: 'Buscando...',
+    liveRateBadge: 'Cotação oficial de mercado:',
+    offline: 'Modo offline',
     cheapest: 'Mais Econômico',
     estimatedSavings: 'Economia estimada',
   },

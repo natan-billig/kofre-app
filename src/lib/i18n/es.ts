@@ -614,6 +614,11 @@ export const es: TranslationDictionary = {
     quickPreferences: 'Preferencias Rápidas',
     supportAndHistory: 'Ayuda e Historial',
   },
+  common: {
+    cancel: 'Cancelar',
+    close: 'Cerrar',
+    reset: 'Restablecer',
+  },
   dti: {
     title: 'Termómetro DTI (% Endeudamiento)',
     personalSubtitle: 'Mis Cuentas Personales',
@@ -630,9 +635,12 @@ export const es: TranslationDictionary = {
     profileIncome: 'Ingreso del perfil',
     totalCommitments: 'Compromiso Total',
     cardInvoices: 'Extractos de Tarjeta',
+    cards: 'Tarjetas de Crédito',
     fixedBills: 'Cuentas Fijas',
     debtsToPay: 'Deudas por Pagar',
+    debts: 'Deudas Pendientes',
     configureIncome: 'Definir Ingreso Base',
+    noIncomePrompt: 'Define tu ingreso base en el perfil para calcular el índice con precisión.',
   },
   calendar: {
     title: 'Calendario de Vencimientos y Caja',
@@ -651,6 +659,7 @@ export const es: TranslationDictionary = {
   notificationParser: {
     title: 'Lector de Notificaciones Bancarias',
     subtitle: 'Pegue el SMS o notificación para completar en 1 toque',
+    buttonShort: 'Pegar Notificación',
     pasteLabel: 'Pegue el texto del SMS o notificación bancaria:',
     pasteButton: 'Pegar del portapapeles',
     detected: 'Datos Detectados con Éxito',
@@ -669,6 +678,10 @@ export const es: TranslationDictionary = {
     tabComparator: 'Comparador de Compras',
     marketRates: 'Tasas Base de la Frontera',
     reset: 'Restaurar',
+    fetchLive: 'Actualizar Cotización',
+    fetching: 'Actualizando...',
+    liveRateBadge: 'Cotización oficial de mercado:',
+    offline: 'Modo sin conexión',
     cheapest: 'Más Económico',
     estimatedSavings: 'Ahorro estimado',
   },

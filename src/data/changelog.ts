@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.0'
+export const CURRENT_APP_VERSION = '1.8.1'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.1',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Cotações Automáticas e Ajustes Visuais v1.8.1',
+      es: 'Cotizaciones Automáticas y Ajustes Visuales v1.8.1',
+    },
+    highlights: [
+      {
+        icon: 'Coins',
+        title: {
+          pt: 'Cotações em Tempo Real via API',
+          es: 'Cotizaciones en Tiempo Real por API',
+        },
+        description: {
+          pt: 'Busca instantânea de taxas oficiais do dia para USD/PYG e USD/BRL no simulador de câmbio, com cache local de 12 horas e modo offline.',
+          es: 'Consulta instantánea de tasas oficiales del día para USD/PYG y USD/BRL en el simulador de cambio, con caché local de 12 horas y modo offline.',
+        },
+      },
+      {
+        icon: 'Sparkles',
+        title: {
+          pt: 'Notificações Restritas a Versões Principais',
+          es: 'Notificaciones Restringidas a Versiones Principales',
+        },
+        description: {
+          pt: 'O modal automático e o badge numérico só alertam sobre lançamentos de funcionalidades (vX.Y.0), mantendo correções menores discretas no histórico.',
+          es: 'El modal automático y el contador solo alertan sobre lanzamientos de funciones (vX.Y.0), manteniendo correcciones menores discretas en el historial.',
+        },
+      },
+      {
+        icon: 'CheckCircle2',
+        title: {
+          pt: 'Correção Integral de Traduções',
+          es: 'Corrección Integral de Traducciones',
+        },
+        description: {
+          pt: 'Ajuste de chaves em falta no termômetro DTI, botão rápido de notificações bancárias e botões de ação em português e espanhol.',
+          es: 'Ajuste de claves faltantes en el termómetro DTI, botón rápido de notificaciones bancarias y botones de acción en portugués y español.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.0',
     releaseDate: '2026-09-18',
@@ -446,19 +489,69 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
   },
 ]
 
-export function getUnseenReleases(): ChangelogRelease[] {
+export function isFeatureVersion(version: string): boolean {
+  const parts = version.split('.')
+  return parts.length >= 3 && parts[2] === '0'
+}
+
+export function getBranchVersion(version: string): string {
+  const parts = version.split('.')
+  return `${parts[0]}.${parts[1] || '0'}.0`
+}
+
+export function getLatestFeatureRelease(): ChangelogRelease {
+  const featureRelease = CHANGELOG_DATA.find((r) => isFeatureVersion(r.version))
+  return featureRelease || CHANGELOG_DATA[0]
+}
+
+export function getLastSeenFeatureVersion(): string | null {
   try {
-    const lastSeen = localStorage.getItem('kofre_last_seen_version')
-    if (!lastSeen) return [CHANGELOG_DATA[0]]
-    if (lastSeen === CURRENT_APP_VERSION) return []
-    const index = CHANGELOG_DATA.findIndex((r) => r.version === lastSeen)
-    if (index === -1) return [CHANGELOG_DATA[0]]
-    return CHANGELOG_DATA.slice(0, index)
+    const featureVer = localStorage.getItem('kofre_last_seen_feature_version')
+    if (featureVer) return featureVer
+
+    const legacyVer = localStorage.getItem('kofre_last_seen_version')
+    if (legacyVer) {
+      return getBranchVersion(legacyVer)
+    }
+  } catch {
+    // Falha ao ler localStorage
+  }
+  return null
+}
+
+export function getUnseenFeatureReleases(): ChangelogRelease[] {
+  try {
+    const lastSeen = getLastSeenFeatureVersion()
+    const featureReleases = CHANGELOG_DATA.filter((r) => isFeatureVersion(r.version))
+    if (featureReleases.length === 0) return []
+
+    const latestFeature = featureReleases[0]
+
+    // Se nunca viu antes, exibe o destaque da versão de funcionalidades atual
+    if (!lastSeen) {
+      return [latestFeature]
+    }
+
+    // Se já viu a versão de funcionalidades do ramo atual (ou posterior)
+    if (lastSeen === latestFeature.version) {
+      return []
+    }
+
+    const index = featureReleases.findIndex((r) => r.version === lastSeen)
+    if (index === -1) {
+      return [latestFeature]
+    }
+
+    return featureReleases.slice(0, index)
   } catch {
     return []
   }
 }
 
+export function getUnseenReleases(): ChangelogRelease[] {
+  return getUnseenFeatureReleases()
+}
+
 export function getUnseenCount(): number {
-  return getUnseenReleases().length
+  return getUnseenFeatureReleases().length
 }

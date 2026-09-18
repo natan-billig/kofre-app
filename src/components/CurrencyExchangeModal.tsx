@@ -10,18 +10,18 @@ import {
   Sparkles,
   RefreshCw,
   ShoppingBag,
+  Globe,
 } from 'lucide-react'
+import {
+  fetchLiveRates,
+  getCachedExchangeRates,
+  DEFAULT_EXCHANGE_RATES,
+} from '../lib/exchangeRateService'
 
 interface CurrencyExchangeModalProps {
   isOpen: boolean
   onClose: () => void
   preferredCurrency?: CurrencyCode
-}
-
-// Taxas de mercado de referência na Tríplice Fronteira (PYG, USD, BRL)
-const DEFAULT_RATES = {
-  usdToPyg: 7850,
-  usdToBrl: 5.75,
 }
 
 export const CurrencyExchangeModal: React.FC<CurrencyExchangeModalProps> = ({
@@ -34,13 +34,28 @@ export const CurrencyExchangeModal: React.FC<CurrencyExchangeModalProps> = ({
   // Aba ativa: 'converter' (Conversor Triplo) | 'comparator' (Comparador de Compras)
   const [activeTab, setActiveTab] = useState<'converter' | 'comparator'>('converter')
 
-  // Taxas configuráveis
-  const [usdToPyg, setUsdToPyg] = useState(DEFAULT_RATES.usdToPyg)
-  const [usdToBrl, setUsdToBrl] = useState(DEFAULT_RATES.usdToBrl)
+  // Taxas configuráveis (iniciadas com cache ou padrão)
+  const initialCache = getCachedExchangeRates()
+  const [usdToPyg, setUsdToPyg] = useState(initialCache?.usdToPyg ?? DEFAULT_EXCHANGE_RATES.usdToPyg)
+  const [usdToBrl, setUsdToBrl] = useState(initialCache?.usdToBrl ?? DEFAULT_EXCHANGE_RATES.usdToBrl)
+  const [liveRatesInfo, setLiveRatesInfo] = useState<string | null>(initialCache?.lastUpdatedText ?? null)
+  const [isLoadingLive, setIsLoadingLive] = useState(false)
 
   // Valores do conversor simultâneo
   const [activeInput, setActiveInput] = useState<CurrencyCode>(preferredCurrency)
   const [inputValue, setInputValue] = useState<string>('100')
+
+  const handleFetchLiveRates = async () => {
+    setIsLoadingLive(true)
+    try {
+      const res = await fetchLiveRates(true)
+      setUsdToPyg(res.usdToPyg)
+      setUsdToBrl(res.usdToBrl)
+      setLiveRatesInfo(res.lastUpdated)
+    } finally {
+      setIsLoadingLive(false)
+    }
+  }
 
   // Valores do Comparador de Compras
   const [purchaseAmount, setPurchaseAmount] = useState<string>('100')
@@ -231,17 +246,34 @@ export const CurrencyExchangeModal: React.FC<CurrencyExchangeModalProps> = ({
                   <span className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
                     {t('currencyExchange.marketRates') || 'Taxas Base da Fronteira'}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUsdToPyg(DEFAULT_RATES.usdToPyg)
-                      setUsdToBrl(DEFAULT_RATES.usdToBrl)
-                    }}
-                    className="cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline text-[10px] flex items-center gap-1 font-semibold"
-                  >
-                    <RefreshCw className="w-2.5 h-2.5" />
-                    <span>{t('common.reset') || 'Restaurar'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isLoadingLive}
+                      onClick={handleFetchLiveRates}
+                      className="cursor-pointer text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-[10px] flex items-center gap-1 font-bold disabled:opacity-50"
+                      title={t('currencyExchange.fetchLive') || 'Buscar Cotação do Dia'}
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isLoadingLive ? 'animate-spin' : ''}`} />
+                      <span>
+                        {isLoadingLive
+                          ? (t('currencyExchange.fetching') || 'Buscando...')
+                          : (t('currencyExchange.fetchLive') || 'Buscar Cotação do Dia')}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUsdToPyg(DEFAULT_EXCHANGE_RATES.usdToPyg)
+                        setUsdToBrl(DEFAULT_EXCHANGE_RATES.usdToBrl)
+                        setLiveRatesInfo(null)
+                      }}
+                      className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-[10px] flex items-center gap-0.5"
+                      title={t('common.reset') || 'Restaurar'}
+                    >
+                      <span>{t('common.reset') || 'Restaurar'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -269,9 +301,28 @@ export const CurrencyExchangeModal: React.FC<CurrencyExchangeModalProps> = ({
                     />
                   </div>
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium">
-                  Taxa implícita: 1 BRL ≈ {brlToPyg.toLocaleString('es-PY')} PYG
+                <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 font-medium gap-1">
+                  <span>Taxa implícita: 1 BRL ≈ {brlToPyg.toLocaleString('es-PY')} PYG</span>
+                  {liveRatesInfo && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 shrink-0" />
+                      <span>{liveRatesInfo}</span>
+                    </span>
+                  )}
                 </div>
+
+                {/* Etiqueta informativa com a cotação oficial */}
+                {liveRatesInfo && (
+                  <div className="p-2 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-[11px] text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>
+                      {t('currencyExchange.liveRateBadge') || 'Cotação oficial de mercado:'}{' '}
+                      <strong>
+                        1 USD = Gs. {usdToPyg.toLocaleString('es-PY')} | R$ {usdToBrl.toFixed(2)}
+                      </strong>
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Três Caixas de Conversão Simultânea */}

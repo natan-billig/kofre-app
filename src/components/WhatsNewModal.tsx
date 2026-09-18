@@ -4,6 +4,7 @@ import {
   CHANGELOG_DATA,
   type ChangelogRelease,
   getUnseenReleases,
+  getLatestFeatureRelease,
 } from '../data/changelog'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { formatDate } from '../lib/formatters'
@@ -83,7 +84,8 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
   if (!isOpen) return null
 
   const unseenReleases = getUnseenReleases()
-  const displayReleases = unseenReleases.length > 0 ? unseenReleases : [CHANGELOG_DATA[0]]
+  const latestFeature = getLatestFeatureRelease()
+  const displayReleases = unseenReleases.length > 0 ? unseenReleases : [latestFeature]
   const hasAccumulated = unseenReleases.length >= 2
 
   const pastReleases = CHANGELOG_DATA.filter(
@@ -92,6 +94,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
   const handleAcknowledge = () => {
     try {
+      localStorage.setItem('kofre_last_seen_feature_version', latestFeature.version)
       localStorage.setItem('kofre_last_seen_version', CURRENT_APP_VERSION)
     } catch {
       // Ignora falhas de quota ou navegação anônima
@@ -260,8 +263,8 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             {displayReleases.map((release) =>
               renderReleaseCard(
                 release,
-                release.version === CURRENT_APP_VERSION,
-                hasAccumulated && release.version !== CURRENT_APP_VERSION
+                release.version === latestFeature.version || release.version === CURRENT_APP_VERSION,
+                hasAccumulated && release.version !== latestFeature.version
               )
             )}
           </div>
