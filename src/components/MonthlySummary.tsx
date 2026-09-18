@@ -47,8 +47,22 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
     }
 
     const amount = Number(tx.amount) || 0
+    const catLower = tx.category?.trim().toLowerCase() || ''
+    const isLoan =
+      catLower === 'empréstimo' ||
+      catLower === 'emprestimo' ||
+      catLower === 'empréstimos' ||
+      catLower === 'emprestimos' ||
+      catLower === 'préstamo' ||
+      catLower === 'prestamo' ||
+      catLower === 'préstamos' ||
+      catLower === 'prestamos'
+
     if (tx.type === 'income') {
-      totals[currency].income += amount
+      // REGRA: Movimentações de empréstimo não somam em receitas operacionais mensais
+      if (!isLoan) {
+        totals[currency].income += amount
+      }
     } else if (tx.type === 'expense') {
       totals[currency].expense += amount
     }

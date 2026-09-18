@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import type { CurrencyCode, DebtType, FamilyMemberItem, WalletScope } from '../lib/types'
+import React, { useState, useEffect, useMemo } from 'react'
+import type { CurrencyCode, DebtType, FamilyMemberItem, Wallet, WalletScope } from '../lib/types'
 import { createDebt } from '../lib/debtService'
 import { fetchFamilyMembers } from '../lib/familyService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -15,6 +15,9 @@ import {
   DollarSign,
   FileText,
   AlertCircle,
+  CreditCard,
+  CheckSquare,
+  Square,
 } from 'lucide-react'
 
 interface CreateDebtModalProps {
@@ -23,6 +26,7 @@ interface CreateDebtModalProps {
   userId: string
   familyId?: string | null
   initialScope?: WalletScope
+  wallets?: Wallet[]
   onDebtCreated: () => void
 }
 
@@ -32,16 +36,18 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
   userId,
   familyId,
   initialScope = 'personal',
+  wallets = [],
   onDebtCreated,
 }) => {
   const { t } = useTranslation()
 
   const [type, setType] = useState<DebtType>('i_owe')
-  const [contactMode, setContactMode] = useState<'family' | 'external'>('family')
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('')
+  const [selectedContactKey, setSelectedContactKey] = useState<string>('other')
   const [externalName, setExternalName] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<CurrencyCode>('PYG')
+  const [moveWalletBalance, setMoveWalletBalance] = useState(false)
+  const [selectedWalletId, setSelectedWalletId] = useState<string>('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [scope, setScope] = useState<'personal' | 'shared'>(
@@ -52,6 +58,19 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Filter available active wallets matching the chosen currency
+  const matchingWallets = useMemo(() => {
+    return wallets.filter((w) => !w.is_archived && w.currency === currency)
+  }, [wallets, currency])
+
+  // Derive effective wallet id directly during render
+  const effectiveWalletId = useMemo(() => {
+    if (selectedWalletId && matchingWallets.some((w) => w.id === selectedWalletId)) {
+      return selectedWalletId
+    }
+    return matchingWallets[0]?.id || ''
+  }, [selectedWalletId, matchingWallets])
 
   // Reset and load members on open
   useEffect(() => {
@@ -64,12 +83,13 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
         setDescription('')
         setDueDate('')
         setExternalName('')
+        setMoveWalletBalance(false)
         setErrorMessage(null)
         setScope(initialScope === 'shared' && familyId ? 'shared' : 'personal')
         if (familyId) {
           setLoadingMembers(true)
         } else {
-          setContactMode('external')
+          setSelectedContactKey('other')
         }
       })
 
@@ -81,15 +101,14 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
             const otherMembers = members.filter((m) => m.user_id !== userId)
             setFamilyMembers(otherMembers)
             if (otherMembers.length > 0) {
-              setSelectedMemberId(otherMembers[0].user_id)
-              setContactMode('family')
+              setSelectedContactKey(`member_${otherMembers[0].user_id}`)
             } else {
-              setContactMode('external')
+              setSelectedContactKey('other')
             }
           })
           .catch((err) => {
             console.error('Erro ao buscar membros da família:', err)
-            if (isMounted) setContactMode('external')
+            if (isMounted) setSelectedContactKey('other')
           })
           .finally(() => {
             if (isMounted) setLoadingMembers(false)
@@ -102,6 +121,8 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
   }, [isOpen, familyId, initialScope, userId])
 
   if (!isOpen) return null
+
+  const isOtherContact = selectedContactKey === 'other'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -116,15 +137,7 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
     let contactName = ''
     let targetUserId: string | null = null
 
-    if (contactMode === 'family') {
-      const member = familyMembers.find((m) => m.user_id === selectedMemberId)
-      if (!member) {
-        setErrorMessage(t('debts.selectContact'))
-        return
-      }
-      contactName = member.full_name || t('familyModal.memberBadge')
-      targetUserId = member.user_id
-    } else {
+    if (isOtherContact) {
       const cleanName = externalName.trim()
       if (!cleanName) {
         setErrorMessage(t('debts.fillContactName'))
@@ -132,23 +145,41 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
       }
       contactName = cleanName
       targetUserId = null
+    } else {
+      const memberId = selectedContactKey.replace('member_', '')
+      const member = familyMembers.find((m) => m.user_id === memberId)
+      if (!member) {
+        setErrorMessage(t('debts.selectContact'))
+        return
+      }
+      contactName = member.full_name || t('debts.familyMember')
+      targetUserId = member.user_id
+    }
+
+    if (moveWalletBalance && !effectiveWalletId) {
+      setErrorMessage(t('debts.selectWallet'))
+      return
     }
 
     setIsSubmitting(true)
     try {
-      await createDebt({
-        user_id: userId,
-        family_id: scope === 'shared' ? familyId || null : null,
-        scope,
-        type,
-        contact_name: contactName,
-        target_user_id: targetUserId,
-        amount: parsedAmount,
-        currency,
-        description: description.trim() || undefined,
-        due_date: dueDate || null,
-        status: 'pending',
-      })
+      await createDebt(
+        {
+          user_id: userId,
+          family_id: scope === 'shared' ? familyId || null : null,
+          scope,
+          type,
+          contact_name: contactName,
+          target_user_id: targetUserId,
+          amount: parsedAmount,
+          currency,
+          wallet_id: moveWalletBalance ? effectiveWalletId || null : null,
+          description: description.trim() || undefined,
+          due_date: dueDate || null,
+          status: 'pending',
+        },
+        moveWalletBalance
+      )
 
       onDebtCreated()
       onClose()
@@ -229,66 +260,50 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
             </div>
           </div>
 
-          {/* Contact / Person */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
-                {t('debts.contact')}
-              </label>
-              {familyId && familyMembers.length > 0 && (
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-0.5 rounded-lg text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setContactMode('family')}
-                    className={`cursor-pointer px-2 py-0.5 rounded-md transition-colors ${
-                      contactMode === 'family'
-                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-medium'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {t('debts.familyMember')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setContactMode('external')}
-                    className={`cursor-pointer px-2 py-0.5 rounded-md transition-colors ${
-                      contactMode === 'external'
-                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-medium'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {t('debts.otherExternal')}
-                  </button>
-                </div>
-              )}
+          {/* Seletor de Contato Híbrido (Campo Único) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
+              {t('debts.contact')}
+            </label>
+
+            <div className="relative">
+              <Users className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={selectedContactKey}
+                onChange={(e) => {
+                  setSelectedContactKey(e.target.value)
+                  setErrorMessage(null)
+                }}
+                disabled={loadingMembers}
+                className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors cursor-pointer"
+              >
+                {familyMembers.length > 0 && (
+                  <optgroup label={t('debts.familyMembersGroup')}>
+                    {familyMembers.map((member) => (
+                      <option key={member.user_id} value={`member_${member.user_id}`}>
+                        {member.full_name || t('debts.familyMember')}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <option value="other">
+                  {t('debts.otherExternalOption')}
+                </option>
+              </select>
             </div>
 
-            {contactMode === 'family' && familyId && familyMembers.length > 0 ? (
-              <div className="relative">
-                <Users className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <select
-                  value={selectedMemberId}
-                  onChange={(e) => setSelectedMemberId(e.target.value)}
-                  disabled={loadingMembers}
-                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors cursor-pointer"
-                >
-                  {familyMembers.map((member) => (
-                    <option key={member.user_id} value={member.user_id}>
-                      {member.full_name || t('familyModal.memberBadge')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="relative">
+            {/* Quando seleciona 'Outro', exibe input para digitar livremente */}
+            {isOtherContact && (
+              <div className="relative mt-2 animate-in fade-in duration-150">
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={externalName}
                   onChange={(e) => setExternalName(e.target.value)}
                   placeholder={t('debts.contactNamePlaceholder')}
-                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
-                  required
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+                  required={isOtherContact}
+                  autoFocus={isOtherContact && familyMembers.length > 0}
                 />
               </div>
             )}
@@ -308,7 +323,7 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors font-mono"
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors font-mono"
                   required
                 />
               </div>
@@ -321,13 +336,71 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-                className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors cursor-pointer"
+                className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors cursor-pointer"
               >
                 <option value="PYG">PYG (₲ Guaraní)</option>
                 <option value="USD">USD ($ Dólar)</option>
                 <option value="BRL">BRL (R$ Real)</option>
               </select>
             </div>
+          </div>
+
+          {/* Checkbox: Movimentar Saldo da Conta Agora */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
+            <button
+              type="button"
+              onClick={() => setMoveWalletBalance(!moveWalletBalance)}
+              className="w-full flex items-center justify-between text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5">
+                {moveWalletBalance ? (
+                  <CheckSquare className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400 shrink-0" />
+                ) : (
+                  <Square className="w-4.5 h-4.5 text-slate-400 shrink-0" />
+                )}
+                <div>
+                  <span className="text-xs font-semibold text-slate-900 dark:text-white block group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                    {t('debts.moveBalanceNow')}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+                    {type === 'i_owe'
+                      ? t('debts.receiveInAccount')
+                      : t('debts.debitFromAccount')}
+                  </span>
+                </div>
+              </div>
+            </button>
+
+            {moveWalletBalance && (
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 space-y-1.5 animate-in fade-in duration-150">
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-violet-500" />
+                  <span>
+                    {type === 'i_owe'
+                      ? t('debts.destinationWallet')
+                      : t('debts.originWallet')}
+                  </span>
+                </label>
+
+                {matchingWallets.length > 0 ? (
+                  <select
+                    value={effectiveWalletId}
+                    onChange={(e) => setSelectedWalletId(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 cursor-pointer"
+                  >
+                    {matchingWallets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name} ({w.currency})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 italic">
+                    {t('debts.noWalletAvailable')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Description & Due Date Grid */}

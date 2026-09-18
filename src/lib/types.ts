@@ -178,6 +178,7 @@ export interface DebtItem {
   target_user_id?: string | null
   amount: number
   currency: CurrencyCode
+  wallet_id?: string | null
   description?: string
   due_date?: string | null
   status: DebtStatus

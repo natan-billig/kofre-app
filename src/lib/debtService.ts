@@ -38,9 +38,11 @@ export async function fetchDebts(
 
 /**
  * Cadastra uma nova dívida ou empréstimo.
+ * Se creditWallet for true e wallet_id for informado, cria automaticamente a transação vinculada.
  */
 export async function createDebt(
-  debt: Omit<DebtItem, 'id' | 'created_at' | 'settled_at'>
+  debt: Omit<DebtItem, 'id' | 'created_at' | 'settled_at'>,
+  creditWallet: boolean = false
 ): Promise<DebtItem> {
   let userId = debt.user_id
   if (!userId) {
@@ -65,19 +67,39 @@ export async function createDebt(
     throw error
   }
 
-  return data as DebtItem
+  const createdDebt = data as DebtItem
+
+  // Se creditWallet === true e debt.wallet_id existir, cria a movimentação de caixa correspondente
+  if (creditWallet && debt.wallet_id) {
+    const isIOwe = debt.type === 'i_owe'
+    // Se "i_owe" (eu peguei emprestado): entra dinheiro na conta -> income
+    // Se "they_owe" (eu emprestei): sai dinheiro da conta -> expense
+    await createTransaction({
+      user_id: userId,
+      wallet_id: debt.wallet_id,
+      type: isIOwe ? 'income' : 'expense',
+      amount: Number(debt.amount),
+      category: 'Empréstimo',
+      description: isIOwe
+        ? `Empréstimo recebido: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`
+        : `Empréstimo concedido: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`,
+      transaction_date: new Date().toISOString(),
+    })
+  }
+
+  return createdDebt
 }
 
 /**
  * Marca uma dívida como liquidada.
- * Se walletIdToDebit for informado, gera automaticamente a transação de despesa ou receita correspondente.
+ * Se debitWalletId for informado, gera automaticamente a transação de despesa ou receita correspondente.
  */
 export async function settleDebt(
   debtId: string,
-  walletIdToDebit?: string
+  debitWalletId?: string
 ): Promise<DebtItem> {
   // 1. Se informada a carteira, busca os dados da dívida para gerar a transação contábil
-  if (walletIdToDebit) {
+  if (debitWalletId) {
     const { data: debt, error: fetchErr } = await supabase
       .from('debts')
       .select('*')
@@ -89,17 +111,17 @@ export async function settleDebt(
       const userId = authData?.user?.id || debt.user_id
 
       const isIOwe = debt.type === 'i_owe'
-      // Se eu devo (i_owe), liquidar significa pagar -> despesa
-      // Se me devem (they_owe), liquidar significa receber -> receita
+      // Se eu devo (i_owe), liquidar significa pagar -> despesa na carteira
+      // Se me devem (they_owe), liquidar significa receber o valor -> receita na carteira
       await createTransaction({
         user_id: userId,
-        wallet_id: walletIdToDebit,
+        wallet_id: debitWalletId,
         type: isIOwe ? 'expense' : 'income',
         amount: Number(debt.amount),
-        category: isIOwe ? 'Empréstimos' : 'Receitas',
+        category: 'Empréstimo',
         description: isIOwe
-          ? `Pagamento: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`
-          : `Recebimento: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`,
+          ? `Quitação de empréstimo: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`
+          : `Recebimento de empréstimo: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`,
         transaction_date: new Date().toISOString(),
       })
     }

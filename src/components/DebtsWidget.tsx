@@ -158,7 +158,11 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
         <div className="text-center py-6 px-4 border border-dashed border-slate-200 dark:border-slate-800/70 rounded-2xl">
           <HandCoins className="w-8 h-8 text-slate-400 dark:text-slate-600 mx-auto mb-2" />
           <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">
-            {activeTab === 'pending' ? t('debts.emptyPending') : t('debts.emptySettled')}
+            {scopedDebts.length === 0
+              ? t('debts.noDebtsRegistered')
+              : activeTab === 'pending'
+              ? t('debts.emptyPending')
+              : t('debts.emptySettled')}
           </p>
           {activeTab === 'pending' && (
             <button
@@ -205,20 +209,31 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold text-slate-900 dark:text-white tracking-tight">
-                        {isIOwe ? (
-                          <span>
-                            {t('debts.youOwe')
-                              .replace('{amount}', formattedVal)
-                              .replace('{name}', debt.contact_name)}
-                          </span>
-                        ) : (
-                          <span>
-                            {t('debts.owesYou')
-                              .replace('{amount}', formattedVal)
-                              .replace('{name}', debt.contact_name)}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                            isIOwe
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30'
+                              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30'
+                          }`}
+                        >
+                          {isIOwe ? t('debts.iOwe') : t('debts.theyOwe')}
+                        </span>
+                        <div className="text-xs font-semibold text-slate-900 dark:text-white tracking-tight">
+                          {isIOwe ? (
+                            <span>
+                              {t('debts.youOwe')
+                                .replace('{amount}', formattedVal)
+                                .replace('{name}', debt.contact_name)}
+                            </span>
+                          ) : (
+                            <span>
+                              {t('debts.owesYou')
+                                .replace('{amount}', formattedVal)
+                                .replace('{name}', debt.contact_name)}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {debt.description && (

@@ -536,6 +536,7 @@ export default function App() {
         userId={sessionUser.id}
         familyId={wallets.find((w) => w.type === 'shared' && w.family_id)?.family_id}
         initialScope={currentScope === 'shared' ? 'shared' : 'personal'}
+        wallets={wallets}
         onDebtCreated={() => refreshData()}
       />
     </div>
