@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import type { CurrencyCode, DebtType, FamilyMemberItem, Wallet, WalletScope } from '../lib/types'
 import { createDebt } from '../lib/debtService'
-import { fetchFamilyMembers } from '../lib/familyService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { supabase } from '../lib/supabase'
 import {
   X,
   Loader2,
@@ -30,7 +30,7 @@ interface CreateDebtModalProps {
   onDebtCreated: () => void
 }
 
-export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
+export function CreateDebtModal({
   isOpen,
   onClose,
   userId,
@@ -38,30 +38,30 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
   initialScope = 'personal',
   wallets = [],
   onDebtCreated,
-}) => {
+}: CreateDebtModalProps) {
   const { t } = useTranslation()
 
   const [type, setType] = useState<DebtType>('i_owe')
-  const [selectedContactKey, setSelectedContactKey] = useState<string>('other')
-  const [externalName, setExternalName] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<CurrencyCode>('PYG')
-  const [moveWalletBalance, setMoveWalletBalance] = useState(false)
-  const [selectedWalletId, setSelectedWalletId] = useState<string>('')
+  const [scope, setScope] = useState<WalletScope>('personal')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const [scope, setScope] = useState<'personal' | 'shared'>(
-    initialScope === 'shared' && familyId ? 'shared' : 'personal'
-  )
+  const [selectedWalletId, setSelectedWalletId] = useState<string>('')
+  const [moveWalletBalance, setMoveWalletBalance] = useState(false)
 
+  // Contacts state
+  const [selectedContactKey, setSelectedContactKey] = useState<string>('other')
+  const [externalName, setExternalName] = useState('')
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberItem[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Filter available active wallets matching the chosen currency
+  // Filter available wallets by current currency and scope
   const matchingWallets = useMemo(() => {
-    return wallets.filter((w) => !w.is_archived && w.currency === currency)
+    return wallets.filter((w) => w.currency === currency)
   }, [wallets, currency])
 
   // Derive effective wallet id directly during render
@@ -86,34 +86,68 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
         setMoveWalletBalance(false)
         setErrorMessage(null)
         setScope(initialScope === 'shared' && familyId ? 'shared' : 'personal')
-        if (familyId) {
-          setLoadingMembers(true)
-        } else {
-          setSelectedContactKey('other')
-        }
+        setLoadingMembers(true)
       })
 
-      if (familyId) {
-        fetchFamilyMembers()
-          .then((members) => {
-            if (!isMounted) return
-            // Filter other members (different from current user)
-            const otherMembers = members.filter((m) => m.user_id !== userId)
-            setFamilyMembers(otherMembers)
-            if (otherMembers.length > 0) {
-              setSelectedContactKey(`member_${otherMembers[0].user_id}`)
-            } else {
-              setSelectedContactKey('other')
+      const loadMembers = async () => {
+        try {
+          // 1. Obter a(s) família(s) do usuário ativo
+          let targetFamilyIds: string[] = []
+          if (familyId) {
+            targetFamilyIds = [familyId]
+          } else {
+            const { data: myMemberships } = await supabase
+              .from('family_members')
+              .select('family_id')
+              .eq('user_id', userId)
+
+            targetFamilyIds = (myMemberships?.map((m) => m.family_id).filter(Boolean) || []) as string[]
+          }
+
+          // 2. Se houver família, buscar os outros integrantes com os dados de perfil
+          let membersList: FamilyMemberItem[] = []
+
+          if (targetFamilyIds.length > 0) {
+            const { data: members, error } = await supabase
+              .from('family_members')
+              .select('user_id, role, profiles:user_id(full_name, avatar)')
+              .in('family_id', targetFamilyIds)
+              .neq('user_id', userId)
+
+            if (!error && members) {
+              const seen = new Set<string>()
+              membersList = members
+                .filter((m: any) => {
+                  if (seen.has(m.user_id)) return false
+                  seen.add(m.user_id)
+                  return true
+                })
+                .map((m: any) => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || 'Membro da Família',
+                  role: m.role || 'member',
+                  is_current_user: false,
+                }))
             }
-          })
-          .catch((err) => {
-            console.error('Erro ao buscar membros da família:', err)
-            if (isMounted) setSelectedContactKey('other')
-          })
-          .finally(() => {
-            if (isMounted) setLoadingMembers(false)
-          })
+          }
+
+          if (!isMounted) return
+
+          setFamilyMembers(membersList)
+          if (membersList.length > 0) {
+            setSelectedContactKey(`member_${membersList[0].user_id}`)
+          } else {
+            setSelectedContactKey('other')
+          }
+        } catch (err) {
+          console.error('Erro ao buscar membros da família:', err)
+          if (isMounted) setSelectedContactKey('other')
+        } finally {
+          if (isMounted) setLoadingMembers(false)
+        }
       }
+
+      loadMembers()
     }
     return () => {
       isMounted = false

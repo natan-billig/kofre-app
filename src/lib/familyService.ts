@@ -109,17 +109,60 @@ export async function joinFamilyByCode(code: string): Promise<JoinFamilyResult> 
 }
 
 /**
- * Busca a lista de membros conectados na família ativa do usuário via RPC get_family_members.
+ * Busca a lista de membros conectados na família ativa do usuário.
+ * Tenta primeiro via RPC get_family_members e, se falhar ou retornar vazio com membros na tabela, busca diretamente via Supabase.
  */
-export async function fetchFamilyMembers(): Promise<FamilyMemberItem[]> {
-  const { data, error } = await supabase.rpc('get_family_members')
-
-  if (error) {
-    console.error('Erro na RPC get_family_members:', error)
-    throw new Error(error.message || 'Erro ao carregar membros da família.')
+export async function fetchFamilyMembers(currentUserId?: string): Promise<FamilyMemberItem[]> {
+  try {
+    const { data, error } = await supabase.rpc('get_family_members')
+    if (!error && data && Array.isArray(data) && data.length > 0) {
+      return data as FamilyMemberItem[]
+    }
+  } catch (err) {
+    console.warn('RPC get_family_members indisponível ou falhou, usando fallback direto:', err)
   }
 
-  return (data as FamilyMemberItem[]) || []
+  // Fallback direto nas tabelas family_members e profiles
+  try {
+    let resolvedUserId = currentUserId
+    if (!resolvedUserId) {
+      const { data: authData } = await supabase.auth.getUser()
+      resolvedUserId = authData?.user?.id
+    }
+
+    if (!resolvedUserId) return []
+
+    // 1. Obter a família do usuário ativo
+    const { data: myMemberships } = await supabase
+      .from('family_members')
+      .select('family_id')
+      .eq('user_id', resolvedUserId)
+
+    const familyIds = myMemberships?.map((m) => m.family_id).filter(Boolean) || []
+
+    if (familyIds.length === 0) return []
+
+    // 2. Buscar integrantes das famílias com os dados de perfil
+    const { data: members, error } = await supabase
+      .from('family_members')
+      .select('user_id, role, family_id, profiles:user_id(full_name, avatar)')
+      .in('family_id', familyIds)
+
+    if (error || !members) {
+      console.error('Erro ao buscar membros via fallback:', error)
+      return []
+    }
+
+    return members.map((m: any) => ({
+      user_id: m.user_id,
+      full_name: m.profiles?.full_name || 'Membro da Família',
+      role: m.role || 'member',
+      is_current_user: m.user_id === resolvedUserId,
+    }))
+  } catch (fallbackErr) {
+    console.error('Erro no fallback de busca de membros da família:', fallbackErr)
+    return []
+  }
 }
 
 /**
