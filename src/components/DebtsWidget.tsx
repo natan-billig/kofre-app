@@ -85,6 +85,11 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
   // Filter debts by current scope
   const scopedDebts = debts.filter((debt) => debt.scope === currentScope)
 
+  // Ocultação Condicional: Renderizar no painel apenas se houver pelo menos 1 dívida no escopo ativo
+  if (scopedDebts.length === 0) {
+    return null
+  }
+
   const pendingDebts = scopedDebts.filter((d) => d.status === 'pending')
   const settledDebts = scopedDebts.filter((d) => d.status === 'settled')
 

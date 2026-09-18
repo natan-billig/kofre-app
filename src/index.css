@@ -4,6 +4,16 @@
 
 /* Previne zoom automático forçado em inputs em navegadores móveis (Safari iOS e Chrome Mobile) */
 @layer base {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+    box-sizing: border-box;
+  }
+
   @media (max-width: 640px) {
     input:not([type="checkbox"]):not([type="radio"]),
     select,

@@ -589,4 +589,12 @@ export const es: TranslationDictionary = {
       },
     },
   },
+  mobileMenu: {
+    freePlan: 'Plan Gratuito',
+    financialShortcuts: 'Accesos Financieros',
+    fixedBills: 'Gastos Fijos del Mes',
+    debtsAndLoans: 'Deudas y Préstamos',
+    quickPreferences: 'Preferencias Rápidas',
+    supportAndHistory: 'Ayuda e Historial',
+  },
 }

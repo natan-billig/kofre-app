@@ -587,6 +587,14 @@ export const pt = {
       },
     },
   },
+  mobileMenu: {
+    freePlan: 'Plano Gratuito',
+    financialShortcuts: 'Atalhos Financeiros',
+    fixedBills: 'Contas Fixas do Mês',
+    debtsAndLoans: 'Dívidas & Empréstimos',
+    quickPreferences: 'Preferências Rápidas',
+    supportAndHistory: 'Apoio & Histórico',
+  },
 }
 
 export type TranslationDictionary = typeof pt

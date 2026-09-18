@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.6.0'
+export const CURRENT_APP_VERSION = '1.7.0'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.7.0',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Menu Lateral Móvel, Dashboard Limpo e Zero Transbordo Lateral',
+      es: 'Menú Lateral Móvil, Dashboard Limpio y Cero Desbordamiento Lateral',
+    },
+    highlights: [
+      {
+        icon: 'Smartphone',
+        title: {
+          pt: 'Menu Lateral Ergonómico (Drawer)',
+          es: 'Menú Lateral Ergonómico (Drawer)',
+        },
+        description: {
+          pt: 'Painel deslizante no telemóvel reunindo atalhos financeiros, alternador de tema e idioma, guia de início e suporte em um só lugar.',
+          es: 'Panel deslizable en móviles reuniendo accesos directos financieros, alternador de tema e idioma, guía de inicio y soporte en un solo lugar.',
+        },
+      },
+      {
+        icon: 'Layout',
+        title: {
+          pt: 'Ocultação Inteligente de Cards Vazios',
+          es: 'Ocultación Inteligente de Tarjetas Vacías',
+        },
+        description: {
+          pt: 'Os widgets de Contas Fixas e Dívidas só são renderizados se contiverem pendências no escopo selecionado, deixando a tela limpa.',
+          es: 'Los widgets de Gastos Fijos y Deudas solo se muestran si tienen movimientos en el alcance actual, manteniendo la vista despejada.',
+        },
+      },
+      {
+        icon: 'ShieldCheck',
+        title: {
+          pt: 'Zero Transbordo Horizontal no Telemóvel',
+          es: 'Cero Desbordamiento Horizontal en Móviles',
+        },
+        description: {
+          pt: 'Eliminação definitiva de margens e larguras que causavam deslocamento horizontal involuntário na navegação em ecrãs pequenos.',
+          es: 'Eliminación definitiva de márgenes y anchos que causaban deslizamiento horizontal involuntario en pantallas pequeñas.',
+        },
+      },
+    ],
+  },
   {
     version: '1.6.0',
     releaseDate: '2026-09-18',

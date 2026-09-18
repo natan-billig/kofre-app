@@ -42,6 +42,7 @@ import { FamilySettingsModal } from './components/FamilySettingsModal'
 import { WhatsNewModal } from './components/WhatsNewModal'
 import { OnboardingTourModal } from './components/OnboardingTourModal'
 import { DashboardLayout } from './components/DashboardLayout'
+import { MobileMenuDrawer } from './components/MobileMenuDrawer'
 import { AuthModal } from './components/auth/AuthModal'
 import { CURRENT_APP_VERSION, getUnseenCount } from './data/changelog'
 import { Plus, Loader2 } from 'lucide-react'
@@ -87,6 +88,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // WhatsNew & Onboarding Tour State
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false)
@@ -393,7 +395,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30 transition-colors duration-200">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30 transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         userEmail={sessionUser.email}
@@ -407,6 +409,7 @@ export default function App() {
           setUnseenWhatsNewCount(0)
         }}
         unseenCount={unseenWhatsNewCount}
+        onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         onSignOut={() => {
           setSessionUser(null)
           setWallets([])
@@ -417,7 +420,7 @@ export default function App() {
         }}
       />
 
-      <main className="flex-1 max-w-[1680px] w-full mx-auto px-4 lg:px-8 xl:px-12 py-6 space-y-6">
+      <main className="flex-1 max-w-[1680px] w-full max-w-full overflow-x-hidden mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 py-4 sm:py-6 space-y-6">
         {/* Scope Filter Bar (Minhas Contas / Caixa da Família) */}
         <ScopeFilter
           currentScope={currentScope}
@@ -671,6 +674,34 @@ export default function App() {
         onClose={() => setIsOnboardingTourOpen(false)}
         onCompleted={() => {
           setUnseenWhatsNewCount(getUnseenCount())
+        }}
+      />
+
+      {/* Mobile Menu Drawer */}
+      <MobileMenuDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        userEmail={sessionUser.email}
+        userName={userProfile?.full_name || sessionUser.name}
+        userAvatar={userProfile?.avatar}
+        unseenCount={unseenWhatsNewCount}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
+        onOpenRecurringBills={() => setIsRecurringBillsModalOpen(true)}
+        onOpenDebts={() => setIsCreateDebtOpen(true)}
+        onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
+        onOpenWhatsNew={() => {
+          setIsWhatsNewOpen(true)
+          setUnseenWhatsNewCount(0)
+        }}
+        onOpenOnboardingTour={() => setIsOnboardingTourOpen(true)}
+        onSignOut={() => {
+          setSessionUser(null)
+          setWallets([])
+          setTransactions([])
+          setRecurringBills([])
+          setDebts([])
+          setUserProfile(null)
         }}
       />
     </div>

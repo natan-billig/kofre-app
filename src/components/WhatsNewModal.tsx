@@ -27,6 +27,10 @@ import {
   History,
   ChevronDown,
   ChevronUp,
+  Smartphone,
+  Layout,
+  ShieldCheck,
+  Calculator,
 } from 'lucide-react'
 
 interface WhatsNewModalProps {
@@ -51,6 +55,10 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Users,
   Coins,
   Search,
+  Smartphone,
+  Layout,
+  ShieldCheck,
+  Calculator,
 }
 
 export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({

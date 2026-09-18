@@ -47,6 +47,11 @@ export const MonthlyBillsWidget: React.FC<MonthlyBillsWidgetProps> = ({
     return bill.scope === currentScope
   })
 
+  // Ocultação Condicional: Renderizar no painel apenas se houver pelo menos 1 conta fixa no escopo ativo
+  if (filteredBills.length === 0) {
+    return null
+  }
+
   // Check paid status for each bill
   const billsWithStatus = filteredBills.map((bill) => ({
     bill,

@@ -15,6 +15,7 @@ interface NavbarProps {
   onOpenWhatsNew?: () => void
   hasUnreadWhatsNew?: boolean
   unseenCount?: number
+  onOpenMobileMenu?: () => void
   onSignOut: () => void
 }
 
@@ -28,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenWhatsNew,
   hasUnreadWhatsNew,
   unseenCount,
+  onOpenMobileMenu,
   onSignOut,
 }) => {
   const { t, language, setLanguage } = useTranslation()
@@ -59,8 +61,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </button>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Mobile-Only Avatar Button (Opens MobileMenuDrawer) */}
+        <div className="flex md:hidden items-center">
+          <button
+            type="button"
+            onClick={onOpenMobileMenu || onOpenProfile}
+            className="relative cursor-pointer p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 active:scale-95 transition-transform"
+            aria-label="Abrir Menu"
+          >
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${avatarColor}`}>
+              <AvatarRenderer avatarId={userAvatar} className="w-5 h-5" />
+            </div>
+            {unseenCount !== undefined && unseenCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-pulse">
+                {unseenCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Desktop-Only Actions (>= md) */}
+        <div className="hidden md:flex items-center gap-2 sm:gap-2.5">
           {/* Language Switcher PT | ES */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-950/60 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold">
             <button
