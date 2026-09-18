@@ -1,22 +1,29 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { getBudgetPeriod, isDateInBudgetPeriod, formatDateToISO } from '../lib/dateUtils'
 
 interface MonthSelectorProps {
   selectedDate: Date
+  budgetStartDay?: number
   onSelectDate: (date: Date) => void
 }
 
 export const MonthSelector: React.FC<MonthSelectorProps> = ({
   selectedDate,
+  budgetStartDay = 1,
   onSelectDate,
 }) => {
   const { t, language } = useTranslation()
 
   const today = new Date()
-  const isCurrentMonth =
-    selectedDate.getFullYear() === today.getFullYear() &&
-    selectedDate.getMonth() === today.getMonth()
+  const locale = language === 'es' ? 'es-PY' : 'pt-BR'
+  const period = getBudgetPeriod(selectedDate, budgetStartDay, locale)
+
+  const isCurrent = period.isCustomCycle
+    ? isDateInBudgetPeriod(formatDateToISO(today), period)
+    : selectedDate.getFullYear() === today.getFullYear() &&
+      selectedDate.getMonth() === today.getMonth()
 
   const handlePrevMonth = () => {
     onSelectDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))
@@ -30,13 +37,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
     onSelectDate(new Date())
   }
 
-  // Format month and year capitalized according to locale
-  const locale = language === 'es' ? 'es-PY' : 'pt-BR'
-  const rawMonthYear = selectedDate.toLocaleDateString(locale, {
-    month: 'long',
-    year: 'numeric',
-  })
-  const formattedMonthYear = rawMonthYear.charAt(0).toUpperCase() + rawMonthYear.slice(1)
+  const displayText = period.isCustomCycle ? period.label : period.label
 
   return (
     <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 sm:p-3 flex items-center justify-between shadow-sm transition-colors">
@@ -51,16 +52,16 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
       </button>
 
       {/* Mês e Ano Centralizados */}
-      <div className="flex items-center gap-2">
-        <Calendar className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-        <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight select-none">
-          {formattedMonthYear}
+      <div className="flex items-center gap-2 text-center">
+        <Calendar className="w-4 h-4 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight select-none">
+          {displayText}
         </span>
       </div>
 
       {/* Ações da Direita: Botão Próximo e Atalho Mês Atual */}
       <div className="flex items-center gap-1.5 sm:gap-2">
-        {!isCurrentMonth && (
+        {!isCurrent && (
           <button
             type="button"
             onClick={handleCurrentMonth}

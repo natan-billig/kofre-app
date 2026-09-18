@@ -41,7 +41,10 @@ import {
   Tag,
   Sparkles,
   Layers,
+  Calculator,
 } from 'lucide-react'
+import { hasMathExpression, evaluateMathExpression } from '../lib/mathParser'
+import { predictCategory } from '../lib/categoryPredictor'
 
 function projectInstallmentDate(baseDateStr: string, monthOffset: number): string {
   const [year, month, day] = baseDateStr.split('-').map(Number)
@@ -148,6 +151,39 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       : new Date().toISOString().split('T')[0]
   )
 
+  // Sugestão Preditiva de Categorias
+  const [userHasManuallySelectedCategory, setUserHasManuallySelectedCategory] = useState<boolean>(
+    Boolean(editingTransaction?.category)
+  )
+  const [isSuggestedCategory, setIsSuggestedCategory] = useState<boolean>(false)
+
+  // Calculadora Aritmética Segura no Campo de Montante
+  const mathPreview = useMemo(() => {
+    if (hasMathExpression(amount)) {
+      return evaluateMathExpression(amount)
+    }
+    return null
+  }, [amount])
+
+  const resolveAmountMath = () => {
+    if (mathPreview !== null) {
+      setAmount(String(mathPreview))
+    }
+  }
+
+  const destMathPreview = useMemo(() => {
+    if (hasMathExpression(destAmount)) {
+      return evaluateMathExpression(destAmount)
+    }
+    return null
+  }, [destAmount])
+
+  const resolveDestAmountMath = () => {
+    if (destMathPreview !== null) {
+      setDestAmount(String(destMathPreview))
+    }
+  }
+
   // Bimoeda / Despesa Internacional
   const [isBimonetary, setIsBimonetary] = useState<boolean>(
     Boolean(editingTransaction?.original_amount)
@@ -192,7 +228,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       : transactionDate
   )
 
-  const numAmount = parseFloat(amount) || 0
+  const numAmount = mathPreview !== null ? mathPreview : (parseFloat(amount) || 0)
   const sourceCurrency = sourceWallet?.currency || 'PYG'
 
   let perInstallmentAmount = numAmount
@@ -273,6 +309,23 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
     return groups
   }, [displayedCategories])
 
+  const handleDescriptionChange = (val: string) => {
+    setDescription(val)
+    if (!userHasManuallySelectedCategory && (type === 'expense' || type === 'income')) {
+      const suggested = predictCategory(val, displayedCategories)
+      if (suggested && suggested !== category) {
+        setCategory(suggested)
+        setIsSuggestedCategory(true)
+      }
+    }
+  }
+
+  const handleSelectCategory = (catName: string) => {
+    setUserHasManuallySelectedCategory(true)
+    setIsSuggestedCategory(false)
+    setCategory(catName)
+  }
+
   const isCrossCurrencyTransfer =
     type === 'transfer' &&
     sourceWallet &&
@@ -285,6 +338,11 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
+
+    resolveAmountMath()
+    if (isCrossCurrencyTransfer) {
+      resolveDestAmountMath()
+    }
 
     if (!sourceWalletId) {
       setErrorMsg(t('quickModal.fillRequired'))
@@ -304,7 +362,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       }
 
       if (isCrossCurrencyTransfer) {
-        const parsedDest = parseFloat(destAmount)
+        const parsedDest = destMathPreview !== null ? destMathPreview : parseFloat(destAmount)
         if (!parsedDest || parsedDest <= 0) {
           setErrorMsg(t('quickModal.fillRequired'))
           return
@@ -603,19 +661,35 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               {!isCrossCurrencyTransfer ? (
                 /* Mesma Moeda: Input Único */
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
-                    {language === 'es' ? 'Monto de la Transferencia' : 'Valor da Transferência'} ({sourceWallet?.currency})
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                      {language === 'es' ? 'Monto de la Transferencia' : 'Valor da Transferência'} ({sourceWallet?.currency})
+                    </label>
+                    {mathPreview !== null && (
+                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                        <Calculator className="w-3.5 h-3.5" />
+                        = {formatCurrency(mathPreview, sourceWallet?.currency || 'PYG')}
+                      </span>
+                    )}
+                  </div>
                   <input
-                    type="number"
-                    step="any"
-                    min="0"
+                    type="text"
+                    inputMode="text"
                     required
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    onBlur={resolveAmountMath}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') resolveAmountMath()
+                    }}
                     placeholder="0.00"
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-base font-semibold focus:border-indigo-500 outline-none"
                   />
+                  {mathPreview !== null && (
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-semibold px-1">
+                      = {formatCurrency(mathPreview, sourceWallet?.currency || 'PYG')}
+                    </p>
+                  )}
                 </div>
               ) : (
                 /* Moedas Diferentes: Operação de Câmbio */
@@ -629,32 +703,52 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
-                        {t('quickModal.debitedAmount')} ({sourceWallet?.currency})
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                          {t('quickModal.debitedAmount')} ({sourceWallet?.currency})
+                        </label>
+                        {mathPreview !== null && (
+                          <span className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            = {formatCurrency(mathPreview, sourceWallet?.currency || 'PYG')}
+                          </span>
+                        )}
+                      </div>
                       <input
-                        type="number"
-                        step="any"
-                        min="0"
+                        type="text"
+                        inputMode="text"
                         required
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
+                        onBlur={resolveAmountMath}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') resolveAmountMath()
+                        }}
                         placeholder={language === 'es' ? `Monto en ${sourceWallet?.currency}` : `Valor em ${sourceWallet?.currency}`}
                         className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
-                        {t('quickModal.creditedAmount')} ({destWallet?.currency})
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                          {t('quickModal.creditedAmount')} ({destWallet?.currency})
+                        </label>
+                        {destMathPreview !== null && (
+                          <span className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            = {formatCurrency(destMathPreview, destWallet?.currency || 'PYG')}
+                          </span>
+                        )}
+                      </div>
                       <input
-                        type="number"
-                        step="any"
-                        min="0"
+                        type="text"
+                        inputMode="text"
                         required
                         value={destAmount}
                         onChange={(e) => setDestAmount(e.target.value)}
+                        onBlur={resolveDestAmountMath}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') resolveDestAmountMath()
+                        }}
                         placeholder={language === 'es' ? `Monto en ${destWallet?.currency}` : `Valor em ${destWallet?.currency}`}
                         className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
                       />
@@ -702,19 +796,35 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
                 {/* Valor Efetivamente Cobrado */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
-                    {t('quickModal.amount')} ({sourceWallet?.currency})
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                      {t('quickModal.amount')} ({sourceWallet?.currency})
+                    </label>
+                    {mathPreview !== null && (
+                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                        <Calculator className="w-3.5 h-3.5" />
+                        = {formatCurrency(mathPreview, sourceWallet?.currency || 'PYG')}
+                      </span>
+                    )}
+                  </div>
                   <input
-                    type="number"
-                    step="any"
-                    min="0"
+                    type="text"
+                    inputMode="text"
                     required
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    onBlur={resolveAmountMath}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') resolveAmountMath()
+                    }}
                     placeholder="0.00"
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-base font-semibold focus:border-indigo-500 outline-none"
                   />
+                  {mathPreview !== null && (
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-semibold px-1">
+                      = {formatCurrency(mathPreview, sourceWallet?.currency || 'PYG')}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -965,9 +1075,17 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           {type !== 'transfer' && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
-                  {t('quickModal.category')}
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                    {t('quickModal.category')}
+                  </label>
+                  {isSuggestedCategory && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      {t('quickModal.suggestedCategoryBadge')}
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsCategoryManagerOpen(true)}
@@ -987,7 +1105,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   {/* Select com <optgroup> por Macro-categoria */}
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                    onChange={(e) => handleSelectCategory(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:border-indigo-500 outline-none cursor-pointer"
                   >
                     {!displayedCategories.some((c) => c.name === category) && category && (
@@ -1021,7 +1139,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                         <button
                           key={cat.id || cat.name}
                           type="button"
-                          onClick={() => setCategory(cat.name)}
+                          onClick={() => handleSelectCategory(cat.name)}
                           className={`cursor-pointer px-2 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-all ${
                             isSelected
                               ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-200 shadow-sm font-semibold'
@@ -1059,7 +1177,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               <input
                 type="text"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder={t('quickModal.descriptionPlaceholder')}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:border-indigo-500 outline-none"
               />

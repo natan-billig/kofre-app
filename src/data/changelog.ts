@@ -11,9 +11,63 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.5.0'
+export const CURRENT_APP_VERSION = '1.6.0'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.6.0',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Calculadora no Montante, Sugestão de Categorias e Ciclo Flexível',
+      es: 'Calculadora en Monto, Sugerencia de Categorías y Ciclo Flexible',
+    },
+    highlights: [
+      {
+        icon: 'Calculator',
+        title: {
+          pt: 'Calculadora no Campo de Valor',
+          es: 'Calculadora en el Campo de Monto',
+        },
+        description: {
+          pt: 'Efetue somas, subtrações e multiplicações diretamente ao lançar transações com pré-visualização instantânea.',
+          es: 'Realice sumas, restas y multiplicaciones directamente al registrar transacciones con vista previa en tiempo real.',
+        },
+      },
+      {
+        icon: 'Sparkles',
+        title: {
+          pt: 'Sugestão Preditiva de Categorias',
+          es: 'Sugerencia Predictiva de Categorías',
+        },
+        description: {
+          pt: 'Deteção e seleção automática de categorias com base nas palavras-chave da descrição digitada.',
+          es: 'Detección y selección automática de categorías basada en las palabras clave de la descripción ingresada.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Ciclo Mensal Flexível',
+          es: 'Ciclo Mensual Flexible',
+        },
+        description: {
+          pt: 'Defina no perfil o dia de corte do seu mês orçamental para acompanhar seus gastos alinhados ao seu salário.',
+          es: 'Defina en su perfil el día de corte de su mes presupuestario para controlar sus gastos alineados a su salario.',
+        },
+      },
+      {
+        icon: 'ShieldCheck',
+        title: {
+          pt: 'Interface Refinada',
+          es: 'Interfaz Refinada',
+        },
+        description: {
+          pt: 'Cabeçalho simplificado e ampliado para melhor leitura, com botão direto para retornar ao topo do Dashboard.',
+          es: 'Encabezado simplificado y ampliado para mejor lectura, con acceso directo para volver arriba en el Dashboard.',
+        },
+      },
+    ],
+  },
   {
     version: '1.5.0',
     releaseDate: '2026-09-18',

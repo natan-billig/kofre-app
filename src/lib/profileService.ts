@@ -45,15 +45,25 @@ export async function updateUserProfile(
     updated_at: new Date().toISOString(),
   }
 
+  if (data.budget_start_day !== undefined) {
+    payload.budget_start_day = data.budget_start_day
+  }
+
   let { data: result, error } = await supabase
     .from('profiles')
     .upsert(payload, { onConflict: 'id' })
     .select()
     .single()
 
-  // Se a coluna updated_at não existir no schema cache, faz fallback sem updated_at
-  if (error && (error.code === 'PGRST204' || error.message?.includes('updated_at'))) {
+  // Se a coluna updated_at ou budget_start_day não existir no schema cache, faz fallback sem elas
+  if (
+    error &&
+    (error.code === 'PGRST204' ||
+      error.message?.includes('updated_at') ||
+      error.message?.includes('budget_start_day'))
+  ) {
     delete payload.updated_at
+    delete payload.budget_start_day
     const retry = await supabase
       .from('profiles')
       .upsert(payload, { onConflict: 'id' })
@@ -68,7 +78,12 @@ export async function updateUserProfile(
     throw error
   }
 
-  return result as Profile
+  const finalProfile = (result as Profile) || (payload as unknown as Profile)
+  if (data.budget_start_day !== undefined && finalProfile.budget_start_day === undefined) {
+    finalProfile.budget_start_day = data.budget_start_day
+  }
+
+  return finalProfile
 }
 
 export async function upsertProfile(userId: string, fullName: string, email: string) {

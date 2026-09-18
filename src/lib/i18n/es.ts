@@ -41,6 +41,11 @@ export const es: TranslationDictionary = {
     restartTourDesc: 'Repasar el tour ilustrado con los 6 pasos de Kofre',
     appVersion: 'Versión de la Aplicación',
     developedBy: 'Desarrollado por Natan Billig',
+    budgetStartDay: 'Inicio del Mes Presupuestario',
+    budgetStartDayDefault: 'Estándar (Mes calendario)',
+    dayOfMonth: 'Día',
+    budgetStartDayDesc:
+      'Alinee el período con la fecha de cobro de su salario (ej.: del día 5 al día 4 del mes siguiente).',
   },
   scope: {
     personal: 'Mis Cuentas',
@@ -318,6 +323,8 @@ export const es: TranslationDictionary = {
     cashbackSummaryTotal: 'Total Original',
     cashbackSummaryCashback: 'Reintegro Previsto',
     cashbackSummaryEffective: 'Costo Efectivo',
+    suggestedCategoryBadge: 'Categoría sugerida',
+    mathResult: 'Resultado calculado',
   },
   categoryManager: {
     title: 'Gestión de Categorías',

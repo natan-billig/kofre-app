@@ -39,6 +39,11 @@ export const pt = {
     restartTourDesc: 'Repassar o tour ilustrado com as 6 etapas do Kofre',
     appVersion: 'Versão da Aplicação',
     developedBy: 'Desenvolvido por Natan Billig',
+    budgetStartDay: 'Início do Mês Orçamental',
+    budgetStartDayDefault: 'Padrão (Mês civil)',
+    dayOfMonth: 'Dia',
+    budgetStartDayDesc:
+      'Alinhe o período com a data de pagamento do seu salário (ex.: do dia 5 ao dia 4 do mês seguinte).',
   },
   scope: {
     personal: 'Minhas Contas',
@@ -316,6 +321,8 @@ export const pt = {
     cashbackSummaryTotal: 'Total Original',
     cashbackSummaryCashback: 'Reintegro Previsto',
     cashbackSummaryEffective: 'Custo Efetivo',
+    suggestedCategoryBadge: 'Categoria sugerida',
+    mathResult: 'Resultado calculado',
   },
   categoryManager: {
     title: 'Gestão de Categorias',

@@ -30,6 +30,7 @@ import {
   Sparkles,
   RotateCcw,
   MessageCircle,
+  Calendar,
 } from 'lucide-react'
 import { CURRENT_APP_VERSION } from '../data/changelog'
 
@@ -62,6 +63,9 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   const [avatar, setAvatar] = useState(currentProfile?.avatar || 'user')
   const [preferredCurrency, setPreferredCurrency] = useState<CurrencyCode>(
     currentProfile?.preferred_currency || 'PYG'
+  )
+  const [budgetStartDay, setBudgetStartDay] = useState<number>(
+    currentProfile?.budget_start_day || 1
   )
 
   const [isSaving, setIsSaving] = useState(false)
@@ -177,6 +181,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
         full_name: trimmedName,
         avatar,
         preferred_currency: preferredCurrency,
+        budget_start_day: budgetStartDay,
       })
 
       onProfileUpdated(updated)
@@ -397,6 +402,32 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                 )
               })}
             </div>
+          </div>
+
+          {/* Início do Mês Orçamental / Ciclo Flexível */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+              <span>{t('profile.budgetStartDay')}</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <select
+                value={budgetStartDay}
+                onChange={(e) => setBudgetStartDay(Number(e.target.value))}
+                className="w-full sm:w-56 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none cursor-pointer"
+              >
+                {Array.from({ length: 28 }, (_, idx) => idx + 1).map((day) => (
+                  <option key={day} value={day}>
+                    {day === 1
+                      ? `1 - ${t('profile.budgetStartDayDefault')}`
+                      : `${t('profile.dayOfMonth')} ${day}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {t('profile.budgetStartDayDesc')}
+            </p>
           </div>
 
           {/* Guia Rápido / Onboarding Tour Shortcut */}

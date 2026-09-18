@@ -20,6 +20,7 @@ import {
 import { fetchRecurringBills } from './lib/recurringService'
 import { fetchUserProfile, upsertProfile } from './lib/profileService'
 import { fetchDebts } from './lib/debtService'
+import { getBudgetPeriod, isDateInBudgetPeriod } from './lib/dateUtils'
 import { Navbar } from './components/Navbar'
 import { ScopeFilter } from './components/ScopeFilter'
 import { CurrencyDashboard } from './components/CurrencyDashboard'
@@ -47,7 +48,7 @@ import { Plus, Loader2 } from 'lucide-react'
 import { useTranslation } from './lib/i18n/LanguageContext'
 
 export default function App() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [sessionUser, setSessionUser] = useState<{
     id: string
     email?: string | null
@@ -270,13 +271,14 @@ export default function App() {
   const scopedWallets = wallets.filter((w) => w.type === currentScope)
   const activeCurrencies = getActiveCurrencies(scopedWallets, preferredCurrency)
 
-  // Filter transactions for the selected month (UTC-safe via YYYY-MM substring)
-  const selectedYear = selectedDate.getFullYear()
-  const selectedMonth = selectedDate.getMonth()
+  // Filter transactions for the selected month (respecting flexible budget cycle)
+  const budgetStartDay = userProfile?.budget_start_day || 1
+  const locale = language === 'es' ? 'es-PY' : 'pt-BR'
+  const budgetPeriod = getBudgetPeriod(selectedDate, budgetStartDay, locale)
+
   const monthlyTransactions = transactions.filter((t) => {
     if (!t.transaction_date) return false
-    const [txYear, txMonth] = t.transaction_date.substring(0, 7).split('-').map(Number)
-    return txYear === selectedYear && txMonth - 1 === selectedMonth
+    return isDateInBudgetPeriod(t.transaction_date, budgetPeriod)
   })
 
   const personalCount = wallets.filter((w) => w.type === 'personal').length
@@ -455,6 +457,7 @@ export default function App() {
             monthSelector={
               <MonthSelector
                 selectedDate={selectedDate}
+                budgetStartDay={budgetStartDay}
                 onSelectDate={setSelectedDate}
               />
             }

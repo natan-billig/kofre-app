@@ -55,6 +55,7 @@ export interface Profile {
   email?: string | null
   avatar?: string | null
   preferred_currency?: CurrencyCode | null
+  budget_start_day?: number | null
 }
 
 export interface CurrencyBalances {
