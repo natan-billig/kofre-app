@@ -124,12 +124,12 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
         key={release.version}
         className={`rounded-2xl border transition-all ${
           isLatest
-            ? 'p-4 sm:p-5 bg-gradient-to-b from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border-indigo-200 dark:border-indigo-800/60 shadow-sm'
-            : 'p-4 bg-slate-50/70 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800'
+            ? 'p-4 sm:p-6 bg-gradient-to-b from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border-indigo-200 dark:border-indigo-800/60 shadow-sm'
+            : 'p-4 sm:p-5 bg-slate-50/70 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800'
         }`}
       >
-        <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono tracking-wide ${
                 isLatest
@@ -151,11 +151,11 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           </span>
         </div>
 
-        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-3">
+        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-3 whitespace-normal">
           {title}
         </h3>
 
-        <div className="space-y-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {release.highlights.map((item, idx) => renderHighlightItem(item, idx))}
         </div>
       </div>
@@ -164,18 +164,18 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-150">
+      <div className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4 max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-150">
         {/* Top Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 {language === 'es' ? 'Novedades de Kofre' : 'Novidades do Kofre'}
               </h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 {language === 'es'
                   ? 'Descubre las mejoras y nuevas funciones de esta versión'
                   : 'Descubra as melhorias e novos recursos desta versão'}
@@ -186,7 +186,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
           <button
             type="button"
             onClick={handleAcknowledge}
-            className="cursor-pointer p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title={language === 'es' ? 'Cerrar' : 'Fechar'}
           >
             <X className="w-5 h-5" />
@@ -194,7 +194,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1 sm:pr-2">
           {/* Latest Version Card */}
           {latestRelease && renderReleaseCard(latestRelease, true)}
 
@@ -203,10 +203,10 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             <button
               type="button"
               onClick={() => setShowHistory(!showHistory)}
-              className="cursor-pointer w-full py-2 px-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-between transition-colors"
+              className="cursor-pointer w-full py-2.5 px-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-between transition-colors"
             >
-              <span className="flex items-center gap-1.5">
-                <History className="w-3.5 h-3.5 text-indigo-500" />
+              <span className="flex items-center gap-2">
+                <History className="w-4 h-4 text-indigo-500" />
                 <span>
                   {language === 'es'
                     ? 'Ver historial de actualizaciones anteriores'
@@ -221,7 +221,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             </button>
 
             {showHistory && (
-              <div className="mt-3 space-y-2.5 animate-in fade-in duration-150">
+              <div className="mt-3 space-y-3 animate-in fade-in duration-150">
                 {pastReleases.map((release) => {
                   const isExpanded = !!expandedVersions[release.version]
                   const releaseTitle = release.title[language] || release.title.pt
@@ -230,38 +230,40 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                   return (
                     <div
                       key={release.version}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900/60"
+                      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 transition-colors"
                     >
                       <button
                         type="button"
                         onClick={() => toggleVersionAccordion(release.version)}
-                        className="cursor-pointer w-full p-3 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                        className="cursor-pointer w-full p-3.5 sm:p-4 flex items-start sm:items-center justify-between gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors rounded-2xl"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[11px] font-bold font-mono text-slate-700 dark:text-slate-300">
+                        <div className="flex items-center gap-2.5 flex-wrap flex-1 min-w-0">
+                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold font-mono text-slate-700 dark:text-slate-300">
                             v{release.version}
                           </span>
-                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-xs">
+                          <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 whitespace-normal">
                             {releaseTitle}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[11px] text-slate-400">
+                        <div className="flex items-center gap-2.5 shrink-0 pt-0.5 sm:pt-0">
+                          <span className="text-[11px] sm:text-xs text-slate-400 font-medium">
                             {formattedDate}
                           </span>
                           {isExpanded ? (
-                            <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
                           ) : (
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
                           )}
                         </div>
                       </button>
 
                       {isExpanded && (
-                        <div className="p-3 pt-1 border-t border-slate-100 dark:border-slate-800/60 space-y-2 bg-slate-50/50 dark:bg-slate-950/30">
-                          {release.highlights.map((item, idx) =>
-                            renderHighlightItem(item, idx)
-                          )}
+                        <div className="p-4 pt-2 border-t border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-950/30 rounded-b-2xl">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {release.highlights.map((item, idx) =>
+                              renderHighlightItem(item, idx)
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

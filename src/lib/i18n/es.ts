@@ -519,5 +519,57 @@ export const es: TranslationDictionary = {
     previous: 'Anterior',
     next: 'Siguiente',
     finish: '¡Comenzar a Usar!',
+    completeGuide: 'Concluir Guía',
+    stepIndicator: 'Paso {current} de {total}',
+    steps: {
+      scope: {
+        badge: 'Alcance y Privacidad',
+        title: 'Alcance y Conmutador Binario',
+        description:
+          'Alterna arriba con un clic entre "Mis Cuentas" (tus finanzas personales privadas) y "Caja de la Familia" (gastos y cuentas compartidas en tiempo real con tu pareja/miembros). Los saldos, extractos e informes nunca se mezclan.',
+        tagPersonal: 'Mis Cuentas',
+        tagShared: 'Caja de la Familia',
+      },
+      liquidity: {
+        badge: 'Liquidez y Sobregiro',
+        title: 'Saldos Líquidos vs. Tarjetas y Sobregiro',
+        description:
+          'Monitorea tu liquidez real inmediata (efectivo y saldo disponible en cuentas bancarias). El límite de sobregiro de emergencia se supervisa para imprevistos sin inflar falsamente el patrimonio disponible.',
+        liquidCash: 'Efectivo + Cuentas',
+        overdraftLimit: 'Sobregiro Bancario',
+      },
+      cards: {
+        badge: 'Tarjetas y Cuotas',
+        title: 'Tarjetas, Cuotas y Reintegros',
+        description:
+          'Registra compras divididas en hasta 48 cuotas descontando tu límite global y proyectando las facturas futuras mes a mes. Aplica o edita reintegros bancarios promocionales (% o fijo con tope) con ajuste contable inteligente.',
+        installments: 'Cuotas 1x a 48x',
+        cashback: 'Reintegros (% o $)',
+      },
+      budgets: {
+        badge: 'Presupuestos y Topes',
+        title: 'Presupuestos, Topes y Análisis por Categoría',
+        description:
+          'Define topes mensuales de gasto por categoría y visualiza alertas dinámicas (verde, ámbar y rojo al excederse). Toca cualquier categoría para activar el drill-down y filtrar los movimientos correspondientes en el extracto.',
+        withinBudget: 'Consumo del Tope',
+        interactiveDrilldown: 'Toca para Drill-down',
+      },
+      statement: {
+        badge: 'Extracto Inteligente',
+        title: 'Extracto Inteligente y Filtro por Fechas',
+        description:
+          'Filtra tus movimientos por intervalo personalizado ("Desde" y "Hasta"), realiza búsquedas de texto instantáneas por notas o comercio, revisa la suma dinámica de los valores filtrados y exporta reportes en CSV.',
+        dateRange: 'Rango Desde / Hasta',
+        instantSearch: 'Búsqueda Rápida + CSV',
+      },
+      savingsAndDebts: {
+        badge: 'Metas y Compromisos',
+        title: 'Reservas, Metas y Deudas Bilaterales',
+        description:
+          'Crea cuentas de ahorro aisladas de la liquidez diaria con barra de avance para objetivos futuros. Gestiona préstamos con fecha retroactiva de origen, perspectiva espejo bilateral y abono automático en caja al liquidar.',
+        savingsGoal: 'Ahorro con Metas',
+        bilateralDebts: 'Deudas Bilaterales',
+      },
+    },
   },
 }

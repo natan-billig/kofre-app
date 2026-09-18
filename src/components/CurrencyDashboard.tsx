@@ -63,7 +63,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
       ? 'grid-cols-1'
       : displayedCurrencies.length === 2
       ? 'grid-cols-1 sm:grid-cols-2'
-      : 'grid-cols-1 sm:grid-cols-3'
+      : 'grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3'
 
   return (
     <div className="space-y-4">
@@ -129,7 +129,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
             {cardInvoices.map(({ wallet, invoiceAmount, availableLimit }) => {
               const hasLimit = wallet.credit_limit != null && Number(wallet.credit_limit) > 0
               const limit = hasLimit ? Number(wallet.credit_limit) : 0

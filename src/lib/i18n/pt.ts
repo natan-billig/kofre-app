@@ -517,6 +517,58 @@ export const pt = {
     previous: 'Anterior',
     next: 'Próximo',
     finish: 'Começar a Usar!',
+    completeGuide: 'Concluir Guia',
+    stepIndicator: 'Etapa {current} de {total}',
+    steps: {
+      scope: {
+        badge: 'Escopo e Privacidade',
+        title: 'Escopo e Alternador Binário',
+        description:
+          'Alterne no topo com um clique entre "Minhas Contas" (suas finanças pessoais privadas) e "Caixa da Família" (gastos e contas compartilhadas em tempo real com seu cônjuge/membros). Os saldos, extratos e relatórios nunca se misturam.',
+        tagPersonal: 'Minhas Contas',
+        tagShared: 'Caixa da Família',
+      },
+      liquidity: {
+        badge: 'Liquidez e Sobregiro',
+        title: 'Saldos Líquidos vs. Cartões e Sobregiro',
+        description:
+          'Acompanhe sua liquidez real imediata (dinheiro em espécie e saldo disponível em contas correntes). O limite de sobregiro emergencial é sinalizado para cobrir imprevistos sem inflar falsamente o patrimônio disponível.',
+        liquidCash: 'Dinheiro + Contas',
+        overdraftLimit: 'Sobregiro Bancário',
+      },
+      cards: {
+        badge: 'Cartões e Cuotas',
+        title: 'Cartões, Parcelamento (Cuotas) e Reintegros',
+        description:
+          'Lance compras parceladas em até 48 vezes abatendo seu limite global e projetando as faturas futuras mês a mês. Aplique ou edite reintegros bancários promocionais (% ou fixo com teto) com estorno inteligente.',
+        installments: 'Parcelas 1x a 48x',
+        cashback: 'Reintegros (% ou $)',
+      },
+      budgets: {
+        badge: 'Orçamentos e Tetos',
+        title: 'Orçamentos, Tetos e Análise por Categoria',
+        description:
+          'Defina limites mensais de gastos por categoria e acompanhe alertas visuais dinâmicos (verde, âmbar e vermelho ao ultrapassar). Toque em qualquer categoria para acionar o drill-down e filtrar os lançamentos correspondentes.',
+        withinBudget: 'Consumo do Teto',
+        interactiveDrilldown: 'Toque para Drill-down',
+      },
+      statement: {
+        badge: 'Extrato Inteligente',
+        title: 'Extrato Inteligente e Filtro por Datas',
+        description:
+          'Filtre seus lançamentos por intervalo personalizado ("De" e "Até"), faça pesquisas textuais instantâneas por notas ou fornecedor, visualize a somatória dinâmica dos valores filtrados e exporte relatórios em CSV.',
+        dateRange: 'Intervalo De / Até',
+        instantSearch: 'Busca Rápida + CSV',
+      },
+      savingsAndDebts: {
+        badge: 'Metas e Compromissos',
+        title: 'Reservas & Metas e Dívidas Bilaterais',
+        description:
+          'Crie contas poupança isoladas do saldo diário com barra de progresso para metas futuras. Gerencie dívidas e empréstimos com data retroativa de origem, perspectiva espelhada bilateral e estorno automático na liquidação.',
+        savingsGoal: 'Poupança com Metas',
+        bilateralDebts: 'Dívidas Bilaterais',
+      },
+    },
   },
 }
 

@@ -40,6 +40,7 @@ import { ManageAccountModal } from './components/ManageAccountModal'
 import { FamilySettingsModal } from './components/FamilySettingsModal'
 import { WhatsNewModal } from './components/WhatsNewModal'
 import { OnboardingTourModal } from './components/OnboardingTourModal'
+import { DashboardLayout } from './components/DashboardLayout'
 import { AuthModal } from './components/auth/AuthModal'
 import { CURRENT_APP_VERSION } from './data/changelog'
 import { Plus, Loader2 } from 'lucide-react'
@@ -417,8 +418,8 @@ export default function App() {
         }}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Scope Filter Bar (Minhas Contas / Caixa da Família / Consolidado) */}
+      <main className="flex-1 max-w-[1680px] w-full mx-auto px-4 lg:px-8 xl:px-12 py-6 space-y-6">
+        {/* Scope Filter Bar (Minhas Contas / Caixa da Família) */}
         <ScopeFilter
           currentScope={currentScope}
           onSelectScope={setCurrentScope}
@@ -432,95 +433,91 @@ export default function App() {
             <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
           </div>
         ) : (
-          <>
-            {/* Currency Dashboard: Liquid Balances & Card Invoices */}
-            <CurrencyDashboard
-              balances={balances}
-              cardInvoices={cardInvoices}
-              activeCurrencies={activeCurrencies}
-              onPayCardInvoice={handlePayCardInvoice}
-            />
-
-            {/* Desktop 2-column layout / Mobile vertical stack */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Main Column: TransactionList with MonthSelector and MonthlySummary */}
-              <div className="lg:col-span-8 order-2 lg:order-1 space-y-4">
-                {/* Monthly Time Navigation */}
-                <MonthSelector
-                  selectedDate={selectedDate}
-                  onSelectDate={setSelectedDate}
-                />
-
-                {/* Monthly Operational Summary */}
-                <MonthlySummary
-                  transactions={monthlyTransactions}
-                  wallets={wallets}
-                  currentScope={currentScope}
-                  preferredCurrency={preferredCurrency}
-                />
-
-                {/* Monthly Category Spending Breakdown */}
-                <CategoryBreakdown
-                  transactions={monthlyTransactions}
-                  wallets={wallets}
-                  currentScope={currentScope}
-                  preferredCurrency={preferredCurrency}
-                  onSelectCategory={(catName) => setActiveCategoryFilter(catName)}
-                />
-
-                {/* Chronological Transactions Feed */}
-                <TransactionList
-                  transactions={monthlyTransactions}
-                  wallets={wallets}
-                  currentScope={currentScope}
-                  currentUserId={sessionUser.id}
-                  selectedDate={selectedDate}
-                  selectedCategory={activeCategoryFilter}
-                  onSelectCategory={setActiveCategoryFilter}
-                  onEditTransaction={handleEditTransaction}
-                  onTransactionDeleted={() => refreshData()}
-                />
-              </div>
-
-              {/* Sidebar Column: MonthlyBillsWidget and AccountList */}
-              <div className="lg:col-span-4 order-1 lg:order-2 space-y-6">
-                <MonthlyBillsWidget
-                  recurringBills={recurringBills}
-                  monthlyTransactions={monthlyTransactions}
-                  wallets={wallets}
-                  currentScope={currentScope}
-                  selectedDate={selectedDate}
-                  onOpenManage={() => setIsRecurringBillsModalOpen(true)}
-                  onPayBill={handlePayBill}
-                />
-
-                <DebtsWidget
-                  debts={debts}
-                  wallets={wallets}
-                  currentScope={currentScope}
-                  currentUserId={sessionUser?.id}
-                  onOpenCreateDebt={() => setIsCreateDebtOpen(true)}
-                  onDebtChanged={() => refreshData()}
-                />
-
-                <SavingsGoalsWidget
-                  wallets={wallets}
-                  transactions={transactions}
-                  currentScope={currentScope}
-                  onSaveMoney={handleSaveMoney}
-                  onManageAccount={(wallet) => setManagingWallet(wallet)}
-                />
-
-                <AccountList
-                  wallets={wallets}
-                  transactions={transactions}
-                  currentScope={currentScope}
-                  onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
-                  onManageAccount={(wallet) => setManagingWallet(wallet)}
-                />
-              </div>
-            </div>
-          </>
+          <DashboardLayout
+            currencyDashboard={
+              <CurrencyDashboard
+                balances={balances}
+                cardInvoices={cardInvoices}
+                activeCurrencies={activeCurrencies}
+                onPayCardInvoice={handlePayCardInvoice}
+              />
+            }
+            transactionList={
+              <TransactionList
+                transactions={monthlyTransactions}
+                wallets={wallets}
+                currentScope={currentScope}
+                currentUserId={sessionUser.id}
+                selectedDate={selectedDate}
+                selectedCategory={activeCategoryFilter}
+                onSelectCategory={setActiveCategoryFilter}
+                onEditTransaction={handleEditTransaction}
+                onTransactionDeleted={() => refreshData()}
+              />
+            }
+            monthSelector={
+              <MonthSelector
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+              />
+            }
+            monthlySummary={
+              <MonthlySummary
+                transactions={monthlyTransactions}
+                wallets={wallets}
+                currentScope={currentScope}
+                preferredCurrency={preferredCurrency}
+              />
+            }
+            categoryBreakdown={
+              <CategoryBreakdown
+                transactions={monthlyTransactions}
+                wallets={wallets}
+                currentScope={currentScope}
+                preferredCurrency={preferredCurrency}
+                onSelectCategory={(catName) => setActiveCategoryFilter(catName)}
+              />
+            }
+            monthlyBills={
+              <MonthlyBillsWidget
+                recurringBills={recurringBills}
+                monthlyTransactions={monthlyTransactions}
+                wallets={wallets}
+                currentScope={currentScope}
+                selectedDate={selectedDate}
+                onOpenManage={() => setIsRecurringBillsModalOpen(true)}
+                onPayBill={handlePayBill}
+              />
+            }
+            accountList={
+              <AccountList
+                wallets={wallets}
+                transactions={transactions}
+                currentScope={currentScope}
+                onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
+                onManageAccount={(wallet) => setManagingWallet(wallet)}
+              />
+            }
+            savingsGoals={
+              <SavingsGoalsWidget
+                wallets={wallets}
+                transactions={transactions}
+                currentScope={currentScope}
+                onSaveMoney={handleSaveMoney}
+                onManageAccount={(wallet) => setManagingWallet(wallet)}
+              />
+            }
+            debtsWidget={
+              <DebtsWidget
+                debts={debts}
+                wallets={wallets}
+                currentScope={currentScope}
+                currentUserId={sessionUser?.id}
+                onOpenCreateDebt={() => setIsCreateDebtOpen(true)}
+                onDebtChanged={() => refreshData()}
+              />
+            }
+          />
         )}
       </main>
 
