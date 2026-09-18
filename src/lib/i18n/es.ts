@@ -33,6 +33,8 @@ export const es: TranslationDictionary = {
     unlinkConfirm: '¿Deseas desvincular tu cuenta de Google? Deberás usar correo y contraseña para entrar.',
   },
   scope: {
+    personal: 'Mis Cuentas',
+    shared: 'Caja Familiar',
     myAccounts: 'Mis Cuentas',
     familyBox: 'Caja Familiar',
     consolidated: 'Consolidado',
@@ -162,6 +164,8 @@ export const es: TranslationDictionary = {
     owesYou: '{name} te debe {amount}',
     pending: 'Pendientes',
     settled: 'Liquidados',
+    issueDate: 'Fecha del Préstamo',
+    settlementDate: 'Fecha de Liquidación',
     dueDate: 'Vencimiento',
     moveBalanceNow: '¿Mover saldo de la cuenta ahora?',
     receiveInAccount: 'Recibir este monto en la cuenta',

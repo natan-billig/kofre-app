@@ -74,8 +74,9 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
 
   const [activeTab, setActiveTab] = useState<'pending' | 'settled'>('pending')
   const [settlingDebt, setSettlingDebt] = useState<DebtItem | null>(null)
-  const [recordMovement, setRecordMovement] = useState(false)
   const [selectedWalletId, setSelectedWalletId] = useState<string>('')
+  const [settlementDate, setSettlementDate] = useState<string>('')
+  const [recordMovement, setRecordMovement] = useState(false)
   const [isSubmittingSettle, setIsSubmittingSettle] = useState(false)
 
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -98,6 +99,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
   const handleOpenSettle = (debt: DebtItem) => {
     setSettlingDebt(debt)
     setRecordMovement(false)
+    setSettlementDate(new Date().toISOString().split('T')[0])
     const matching = activeWallets.filter((w) => w.currency === debt.currency)
     setSelectedWalletId(matching[0]?.id || '')
   }
@@ -117,7 +119,8 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
       await settleDebt(
         settlingDebt.id,
         recordMovement && selectedWalletId ? selectedWalletId : undefined,
-        currentUserId
+        currentUserId,
+        settlementDate
       )
       setSettlingDebt(null)
       onDebtChanged()
@@ -295,6 +298,15 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
                       )}
 
                       <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
+                        {(debt.issue_date || debt.created_at) && (
+                          <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                            <Calendar className="w-3.5 h-3.5 text-violet-500/70" />
+                            <span>
+                              {t('debts.issueDate')}: {formatDate(debt.issue_date || debt.created_at!, language)}
+                            </span>
+                          </span>
+                        )}
+
                         {debt.due_date && (
                           <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
                             <Calendar className="w-3.5 h-3.5" />
@@ -418,6 +430,22 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
                   </p>
 
                   <div className="space-y-3 pt-1">
+                    {/* Data da Liquidação */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-400">
+                        {t('debts.settlementDate')}
+                      </label>
+                      <div className="relative">
+                        <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="date"
+                          value={settlementDate}
+                          onChange={(e) => setSettlementDate(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/60 transition-colors"
+                        />
+                      </div>
+                    </div>
+
                     {/* Checkbox: Registrar movimentação na minha conta? */}
                     <div
                       role="button"

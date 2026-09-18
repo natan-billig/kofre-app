@@ -182,6 +182,7 @@ export interface DebtItem {
   currency: CurrencyCode
   wallet_id?: string | null
   description?: string
+  issue_date?: string
   due_date?: string | null
   status: DebtStatus
   settled_at?: string | null

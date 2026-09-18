@@ -31,6 +31,8 @@ export const pt = {
     unlinkConfirm: 'Deseja desvincular sua conta Google? Você precisará usar e-mail e senha para entrar.',
   },
   scope: {
+    personal: 'Minhas Contas',
+    shared: 'Caixa da Família',
     myAccounts: 'Minhas Contas',
     familyBox: 'Caixa da Família',
     consolidated: 'Consolidado',
@@ -160,6 +162,8 @@ export const pt = {
     owesYou: '{name} te deve {amount}',
     pending: 'Pendentes',
     settled: 'Liquidados',
+    issueDate: 'Data do Empréstimo',
+    settlementDate: 'Data da Liquidação',
     dueDate: 'Vencimento',
     moveBalanceNow: 'Movimentar saldo da conta agora?',
     receiveInAccount: 'Receber esse valor na conta',

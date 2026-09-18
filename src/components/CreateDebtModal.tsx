@@ -46,6 +46,7 @@ export function CreateDebtModal({
   const [currency, setCurrency] = useState<CurrencyCode>('PYG')
   const [scope, setScope] = useState<WalletScope>('personal')
   const [description, setDescription] = useState('')
+  const [issueDate, setIssueDate] = useState(() => new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState('')
   const [selectedWalletId, setSelectedWalletId] = useState<string>('')
   const [moveWalletBalance, setMoveWalletBalance] = useState(false)
@@ -81,6 +82,7 @@ export function CreateDebtModal({
         setType('i_owe')
         setAmount('')
         setDescription('')
+        setIssueDate(new Date().toISOString().split('T')[0])
         setDueDate('')
         setExternalName('')
         setMoveWalletBalance(false)
@@ -209,6 +211,7 @@ export function CreateDebtModal({
           currency,
           wallet_id: moveWalletBalance ? effectiveWalletId || null : null,
           description: description.trim() || undefined,
+          issue_date: issueDate || new Date().toISOString().split('T')[0],
           due_date: dueDate || null,
           status: 'pending',
         },
@@ -437,20 +440,36 @@ export function CreateDebtModal({
             )}
           </div>
 
-          {/* Description & Due Date Grid */}
+          {/* Description */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
+              {t('transactions.description')} (Opcional)
+            </label>
+            <div className="relative">
+              <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('debts.descriptionPlaceholder')}
+                className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Dates Grid: Issue Date & Due Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
-                {t('transactions.title')} (Opcional)
+                {t('debts.issueDate')}
               </label>
               <div className="relative">
-                <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t('debts.descriptionPlaceholder')}
-                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
                 />
               </div>
             </div>

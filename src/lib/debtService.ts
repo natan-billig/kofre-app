@@ -126,17 +126,28 @@ export async function createDebt(
     userId = authData?.user?.id || ''
   }
 
-  const payload = {
+  const effectiveIssueDate = debt.issue_date || new Date().toISOString().split('T')[0]
+
+  const payload: any = {
     ...debt,
     user_id: userId,
+    issue_date: effectiveIssueDate,
     status: debt.status || 'pending',
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('debts')
     .insert([payload])
     .select()
     .single()
+
+  // Se a coluna issue_date ainda não existir no schema do banco (fallback gracioso)
+  if (error && (error.code === 'PGRST204' || error.message?.includes('issue_date'))) {
+    delete payload.issue_date
+    const retry = await supabase.from('debts').insert([payload]).select().single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Erro ao cadastrar dívida:', error)
@@ -159,7 +170,7 @@ export async function createDebt(
       description: isIOwe
         ? `Empréstimo recebido: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`
         : `Empréstimo concedido: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`,
-      transaction_date: new Date().toISOString(),
+      transaction_date: effectiveIssueDate,
     })
   }
 
@@ -170,12 +181,16 @@ export async function createDebt(
  * Marca uma dívida como liquidada.
  * Se walletId for informado, gera automaticamente a transação de despesa ou receita correspondente
  * com base na perspectiva do usuário que está realizando a liquidação.
+ * Suporta settlementDate para definir a data exata da liquidação contábil.
  */
 export async function settleDebt(
   debtId: string,
   walletId?: string,
-  currentUserId?: string
+  currentUserId?: string,
+  settlementDate?: string
 ): Promise<DebtItem> {
+  const finalSettlementDate = settlementDate || new Date().toISOString().split('T')[0]
+
   // 1. Se informada a carteira, busca os dados da dívida para gerar a transação contábil
   if (walletId) {
     const { data: debt, error: fetchErr } = await supabase
@@ -225,7 +240,7 @@ export async function settleDebt(
         description: isPayer
           ? `Quitação de empréstimo: ${otherPartyName}${debt.description ? ` - ${debt.description}` : ''}`
           : `Recebimento de empréstimo: ${otherPartyName}${debt.description ? ` - ${debt.description}` : ''}`,
-        transaction_date: new Date().toISOString(),
+        transaction_date: finalSettlementDate,
       })
     }
   }
@@ -235,7 +250,9 @@ export async function settleDebt(
     .from('debts')
     .update({
       status: 'settled',
-      settled_at: new Date().toISOString(),
+      settled_at: settlementDate
+        ? (settlementDate.includes('T') ? settlementDate : `${settlementDate}T12:00:00.000Z`)
+        : new Date().toISOString(),
     })
     .eq('id', debtId)
     .select()
