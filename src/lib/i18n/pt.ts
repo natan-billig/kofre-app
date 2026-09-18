@@ -653,6 +653,16 @@ export const pt = {
     dayOfMonth: 'Dia',
     exceedsCash: 'Excede saldo',
     noCommitments: 'Nenhum compromisso futuro agendado para este mês.',
+    projectedBalance: 'Saldo Projetado',
+    baseSalary: 'Salário Base',
+    expectedIncome: 'Receita Prevista',
+    totalInflow: 'Entradas Previstas',
+    totalOutflow: 'Saídas Previstas',
+  },
+  types: {
+    expense: 'Despesa',
+    income: 'Receita',
+    transfer: 'Transferência / Pagamento',
   },
   notificationParser: {
     title: 'Leitor de Notificações Bancárias',

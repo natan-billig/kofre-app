@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.3'
+export const CURRENT_APP_VERSION = '1.8.4'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.4',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Projeção Dinâmica com Salário/Entradas, Parser Sudameris e Ajustes Visuais v1.8.4',
+      es: 'Proyección Dinámica con Salario/Ingresos, Parser Sudameris y Ajustes Visuales v1.8.4',
+    },
+    highlights: [
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Projeção Dinâmica de Caixa com Entradas e Salário',
+          es: 'Proyección Dinámica de Caja con Ingresos y Sueldo',
+        },
+        description: {
+          pt: 'O Calendário de Vencimentos agora projeta a evolução diária do saldo considerando o salário base do perfil, receitas fixas e entradas agendadas, com alerta estrito em caso de risco de saldo negativo.',
+          es: 'El Calendario de Vencimientos proyecta ahora la evolución diaria del saldo considerando el sueldo base, ingresos fijos y cobros programados, con alerta estricta ante riesgo de sobregiro.',
+        },
+      },
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Suporte a Receitas Fixas no Gestor Recorrente',
+          es: 'Soporte a Ingresos Fijos en el Gestor Recurrente',
+        },
+        description: {
+          pt: 'Cadastre salários e rendas fixas no gestor recorrente com alternador Despesa vs. Receita e sincronização resiliente em cache local.',
+          es: 'Registra sueldos e ingresos fijos en el gestor recurrente con selector Gasto vs. Ingreso y sincronización resiliente en caché local.',
+        },
+      },
+      {
+        icon: 'ClipboardPaste',
+        title: {
+          pt: 'Parser Bancário Sudameris e Suporte a Vírgulas',
+          es: 'Parser Bancario Sudameris y Soporte de Comas',
+        },
+        description: {
+          pt: 'Reconhecimento automático de pagamentos de fatura de cartão Sudameris como transferência e suporte a moedas com pontuação colada e vírgulas em Guaranis.',
+          es: 'Reconocimiento automático de pagos de tarjeta Sudameris como transferencia y soporte de monedas con puntuación pegada y comas en Guaraníes.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.3',
     releaseDate: '2026-09-18',

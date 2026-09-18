@@ -7,6 +7,7 @@ import type {
   ScopeFilterType,
   CurrencyCode,
   DueCommitmentItem,
+  Profile,
 } from '../lib/types'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
 import { calculateBalances, getActiveCurrencies, updateTransaction } from '../lib/accountingService'
@@ -20,6 +21,8 @@ import {
   ShieldAlert,
   CalendarClock,
   CheckCircle2,
+  TrendingUp,
+  ArrowDownLeft,
 } from 'lucide-react'
 
 interface DueDatesCalendarWidgetProps {
@@ -30,6 +33,7 @@ interface DueDatesCalendarWidgetProps {
   currentScope?: ScopeFilterType
   preferredCurrency?: CurrencyCode
   selectedMonthDate?: Date
+  userProfile?: Profile | null
   onTransactionPaid?: (transactionId: string) => Promise<void> | void
 }
 
@@ -41,6 +45,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   currentScope = 'personal',
   preferredCurrency = 'PYG',
   selectedMonthDate = new Date(),
+  userProfile,
   onTransactionPaid,
 }) => {
   const { t, language } = useTranslation()
@@ -62,10 +67,38 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   const balances = calculateBalances(scopedWallets, transactions)
   const liquidCash = balances[currencyToUse] || 0
 
-  // 3. Montar lista de compromissos com data de vencimento
+  // 3. Montar lista de movimentações previstas com data de vencimento/recebimento
   const commitments: DueCommitmentItem[] = []
 
-  // A. Faturas de Cartão de Crédito
+  // A. Salário Base do Perfil (se configurado > 0 e moeda compatível)
+  const profileBaseIncome =
+    userProfile?.base_monthly_income != null && userProfile.base_monthly_income > 0
+      ? Number(userProfile.base_monthly_income)
+      : 0
+  const profileCurrency = userProfile?.preferred_currency || preferredCurrency
+
+  if (profileBaseIncome > 0 && currencyToUse === profileCurrency) {
+    const salaryDay =
+      userProfile?.budget_start_day &&
+      userProfile.budget_start_day > 0 &&
+      userProfile.budget_start_day <= 31
+        ? userProfile.budget_start_day
+        : 5
+
+    commitments.push({
+      id: 'profile-base-salary',
+      title: t('calendar.baseSalary') || (language === 'es' ? 'Sueldo Base' : 'Salário Base'),
+      amount: profileBaseIncome,
+      currency: currencyToUse,
+      type: 'base_salary',
+      flowType: 'in',
+      dueDay: salaryDay,
+      entityName: t('calendar.baseSalary') || 'Salário Base',
+      scope: currentScope,
+    })
+  }
+
+  // B. Faturas de Cartão de Crédito
   const creditCards = scopedWallets.filter(
     (w) => w.account_type === 'credit_card' && w.currency === currencyToUse
   )
@@ -79,6 +112,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
         amount: details.currentInvoiceAmount,
         currency: currencyToUse,
         type: 'card_invoice',
+        flowType: 'out',
         dueDay: card.due_day,
         entityName: card.name,
         scope: currentScope,
@@ -86,26 +120,27 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     }
   }
 
-  // B. Contas Fixas Vigentes
+  // C. Contas Fixas Vigentes (Despesas e Receitas)
   for (const bill of recurringBills) {
     if (!bill.is_active) continue
     if (bill.scope !== currentScope) continue
     if (bill.currency !== currencyToUse) continue
-    if (bill.type === 'income') continue
 
+    const isIncome = bill.type === 'income'
     commitments.push({
       id: `bill-${bill.id}`,
       title: bill.name,
       amount: bill.amount,
       currency: currencyToUse,
-      type: 'recurring_bill',
+      type: isIncome ? 'recurring_income' : 'recurring_bill',
+      flowType: isIncome ? 'in' : 'out',
       dueDay: bill.due_day,
       entityName: bill.category,
       scope: currentScope,
     })
   }
 
-  // C. Dívidas / Empréstimos a Pagar (i_owe)
+  // D. Dívidas / Empréstimos a Pagar (i_owe)
   for (const debt of debts) {
     if (debt.status !== 'pending') continue
     if (debt.scope !== currentScope) continue
@@ -126,6 +161,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       amount: debt.amount,
       currency: currencyToUse,
       type: 'debt',
+      flowType: 'out',
       dueDay,
       dueDate: debt.due_date || undefined,
       entityName: debt.contact_name,
@@ -133,14 +169,13 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     })
   }
 
-  // D. Despesas Avulsas Agendadas / Não Pagas (is_paid === false || status === 'pending')
+  // E. Transações Avulsas Agendadas (is_paid === false || status === 'pending')
   const scopedWalletMap = new Map<string, Wallet>()
   for (const w of scopedWallets) {
     scopedWalletMap.set(w.id, w)
   }
 
   for (const t of transactions) {
-    if (t.type !== 'expense') continue
     if (t.is_paid !== false && t.status !== 'pending') continue
 
     const wallet = scopedWalletMap.get(t.wallet_id)
@@ -154,19 +189,43 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       }
     }
 
-    commitments.push({
-      id: `tx-${t.id}`,
-      title: t.description || t.category || (language === 'es' ? 'Gasto Programado' : 'Despesa Agendada'),
-      amount: Number(t.amount),
-      currency: currencyToUse,
-      type: 'scheduled_expense',
-      dueDay,
-      dueDate: t.transaction_date,
-      entityName: t.category,
-      scope: currentScope,
-      transactionId: t.id,
-      is_paid: false,
-    })
+    if (t.type === 'expense') {
+      commitments.push({
+        id: `tx-${t.id}`,
+        title:
+          t.description ||
+          t.category ||
+          (language === 'es' ? 'Gasto Programado' : 'Despesa Agendada'),
+        amount: Number(t.amount),
+        currency: currencyToUse,
+        type: 'scheduled_expense',
+        flowType: 'out',
+        dueDay,
+        dueDate: t.transaction_date,
+        entityName: t.category,
+        scope: currentScope,
+        transactionId: t.id,
+        is_paid: false,
+      })
+    } else if (t.type === 'income') {
+      commitments.push({
+        id: `tx-${t.id}`,
+        title:
+          t.description ||
+          t.category ||
+          (language === 'es' ? 'Ingreso Programado' : 'Receita Agendada'),
+        amount: Number(t.amount),
+        currency: currencyToUse,
+        type: 'scheduled_income',
+        flowType: 'in',
+        dueDay,
+        dueDate: t.transaction_date,
+        entityName: t.category,
+        scope: currentScope,
+        transactionId: t.id,
+        is_paid: false,
+      })
+    }
   }
 
   const [payingId, setPayingId] = useState<string | null>(null)
@@ -180,36 +239,72 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
         await updateTransaction(transactionId, { is_paid: true, status: 'completed' })
       }
     } catch (err) {
-      console.error('Error marking scheduled expense as paid:', err)
+      console.error('Error updating scheduled transaction status:', err)
     } finally {
       setPayingId(null)
     }
   }
 
-  // Ordenar compromissos por dia de vencimento (1 a 31)
+  // Ordenar itens por dia de vencimento (1 a 31)
   commitments.sort((a, b) => (a.dueDay || 0) - (b.dueDay || 0))
 
-  // Agrupar por dia e calcular saídas acumuladas
-  let cumulativeOutflow = 0
-  const daysMap = new Map<number, { items: DueCommitmentItem[]; dayTotal: number; cumulative: number }>()
+  // Agrupar por dia
+  const daysMap = new Map<
+    number,
+    {
+      items: DueCommitmentItem[]
+      dayInflow: number
+      dayOutflow: number
+      projectedBalance: number
+      isAtRisk: boolean
+    }
+  >()
 
   for (const item of commitments) {
     const d = item.dueDay || 1
-    cumulativeOutflow += item.amount
     if (!daysMap.has(d)) {
-      daysMap.set(d, { items: [], dayTotal: 0, cumulative: 0 })
+      daysMap.set(d, {
+        items: [],
+        dayInflow: 0,
+        dayOutflow: 0,
+        projectedBalance: 0,
+        isAtRisk: false,
+      })
     }
     const group = daysMap.get(d)!
     group.items.push(item)
-    group.dayTotal += item.amount
-    group.cumulative = cumulativeOutflow
+    if (item.flowType === 'in') {
+      group.dayInflow += item.amount
+    } else {
+      group.dayOutflow += item.amount
+    }
   }
 
   const sortedDays = Array.from(daysMap.keys()).sort((a, b) => a - b)
-  const totalCommitmentsAmount = cumulativeOutflow
-  const hasOverdraftRisk = totalCommitmentsAmount > liquidCash && liquidCash >= 0
 
-  // Se não houver compromissos futuros neste escopo
+  // Cálculo Cronológico Cumulativo do Saldo:
+  // Inicializar o caixa no primeiro dia com a liquidez disponível atual
+  let runningBalance = liquidCash
+  let totalInflow = 0
+  let totalOutflow = 0
+  let hasOverdraftRisk = false
+
+  for (const d of sortedDays) {
+    const group = daysMap.get(d)!
+    totalInflow += group.dayInflow
+    totalOutflow += group.dayOutflow
+    runningBalance = runningBalance + group.dayInflow - group.dayOutflow
+    group.projectedBalance = runningBalance
+    // Exibir etiqueta "Excede saldo" e o aviso ESTRITAMENTE se o saldoProjetado for menor que zero (< 0)
+    group.isAtRisk = runningBalance < 0
+    if (group.isAtRisk) {
+      hasOverdraftRisk = true
+    }
+  }
+
+  const finalProjectedBalance = runningBalance
+
+  // Se não houver movimentações futuras neste escopo
   if (commitments.length === 0) {
     return null
   }
@@ -253,28 +348,52 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
         )}
       </div>
 
-      {/* Caixa Disponível vs Total de Saídas */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-xs">
+      {/* Caixa Disponível vs Entradas vs Total de Saídas vs Saldo Projetado */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-xs">
         <div>
           <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-bold uppercase">
             {t('calendar.liquidAvailable') || 'Liquidez Disponível'}
           </span>
-          <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+          <span className="font-extrabold text-sm text-slate-900 dark:text-white font-mono">
             {formatCurrency(liquidCash, currencyToUse)}
           </span>
         </div>
 
-        <div className="text-right">
-          <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-bold uppercase">
+        <div>
+          <span className="text-emerald-600 dark:text-emerald-400 block text-[10px] font-bold uppercase">
+            {t('calendar.totalInflow') || 'Entradas Previstas'}
+          </span>
+          <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400 font-mono">
+            +{formatCurrency(totalInflow, currencyToUse)}
+          </span>
+        </div>
+
+        <div>
+          <span className="text-amber-600 dark:text-amber-400 block text-[10px] font-bold uppercase">
             {t('calendar.totalDue') || 'Total a Vencer'}
           </span>
-          <span className="font-extrabold text-sm text-amber-600 dark:text-amber-400">
-            {formatCurrency(totalCommitmentsAmount, currencyToUse)}
+          <span className="font-extrabold text-sm text-amber-600 dark:text-amber-400 font-mono">
+            -{formatCurrency(totalOutflow, currencyToUse)}
+          </span>
+        </div>
+
+        <div>
+          <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-bold uppercase">
+            {t('calendar.projectedBalance') || 'Saldo Projetado'}
+          </span>
+          <span
+            className={`font-extrabold text-sm font-mono ${
+              finalProjectedBalance >= 0
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-rose-600 dark:text-rose-400'
+            }`}
+          >
+            {formatCurrency(finalProjectedBalance, currencyToUse)}
           </span>
         </div>
       </div>
 
-      {/* Alerta de Risco de Sobregiro se Saídas > Liquidez */}
+      {/* Alerta de Risco de Sobregiro se Saldo Projetado < 0 */}
       {hasOverdraftRisk && (
         <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 flex items-start gap-2.5">
           <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
@@ -290,17 +409,16 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
         </div>
       )}
 
-      {/* Linha do Tempo de Dias de Vencimento */}
+      {/* Linha do Tempo de Dias de Vencimento e Recebimento */}
       <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
         {sortedDays.map((day) => {
           const group = daysMap.get(day)!
-          const isAtRisk = group.cumulative > liquidCash
 
           return (
             <div
               key={day}
               className={`p-3 rounded-xl border transition-all ${
-                isAtRisk
+                group.isAtRisk
                   ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40'
                   : 'bg-slate-50/70 dark:bg-slate-950/40 border-slate-200/80 dark:border-slate-800/80'
               }`}
@@ -315,12 +433,19 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                   </span>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">
-                    {formatCurrency(group.dayTotal, currencyToUse)}
-                  </span>
-                  {isAtRisk && (
-                    <span className="text-[10px] block font-semibold text-rose-600 dark:text-rose-400">
+                <div className="text-right flex items-center gap-2">
+                  {group.dayInflow > 0 && (
+                    <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                      +{formatCurrency(group.dayInflow, currencyToUse)}
+                    </span>
+                  )}
+                  {group.dayOutflow > 0 && (
+                    <span className="text-xs font-bold font-mono text-amber-600 dark:text-amber-400">
+                      -{formatCurrency(group.dayOutflow, currencyToUse)}
+                    </span>
+                  )}
+                  {group.isAtRisk && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                       {t('calendar.exceedsCash') || 'Excede saldo'}
                     </span>
                   )}
@@ -330,9 +455,20 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
               {/* Itens do Dia */}
               <div className="space-y-1.5 pl-1">
                 {group.items.map((item) => {
+                  const isInflow = item.flowType === 'in'
                   let ItemIcon = CalendarCheck
                   let iconColor = 'text-amber-500'
-                  if (item.type === 'card_invoice') {
+
+                  if (item.type === 'base_salary') {
+                    ItemIcon = TrendingUp
+                    iconColor = 'text-emerald-500'
+                  } else if (item.type === 'recurring_income') {
+                    ItemIcon = ArrowDownLeft
+                    iconColor = 'text-emerald-500'
+                  } else if (item.type === 'scheduled_income') {
+                    ItemIcon = CalendarClock
+                    iconColor = 'text-emerald-500'
+                  } else if (item.type === 'card_invoice') {
                     ItemIcon = CreditCard
                     iconColor = 'text-indigo-500'
                   } else if (item.type === 'debt') {
@@ -350,7 +486,22 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                     >
                       <div className="flex items-center gap-2 min-w-0 pr-2">
                         <ItemIcon className={`w-3.5 h-3.5 ${iconColor} shrink-0`} />
-                        <span className="truncate">{item.title}</span>
+                        <span className="truncate font-medium">{item.title}</span>
+                        {item.type === 'base_salary' && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+                            {language === 'es' ? 'Sueldo Base' : 'Salário Base'}
+                          </span>
+                        )}
+                        {item.type === 'recurring_income' && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+                            {language === 'es' ? 'Ingreso Fijo' : 'Receita Prevista'}
+                          </span>
+                        )}
+                        {item.type === 'scheduled_income' && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+                            {language === 'es' ? 'A Cobrar' : 'A Receber'}
+                          </span>
+                        )}
                         {item.type === 'scheduled_expense' && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                             {language === 'es' ? 'Por Vencer' : 'A Vencer'}
@@ -358,25 +509,58 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-semibold">
-                          {formatCurrency(item.amount, item.currency)}
+                        <span
+                          className={`font-semibold font-mono ${
+                            isInflow
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-slate-900 dark:text-white'
+                          }`}
+                        >
+                          {isInflow ? '+' : '-'} {formatCurrency(item.amount, item.currency)}
                         </span>
-                        {item.type === 'scheduled_expense' && item.transactionId && (
-                          <button
-                            type="button"
-                            onClick={() => handleMarkAsPaid(item.transactionId!)}
-                            disabled={payingId === item.transactionId}
-                            className="cursor-pointer px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
-                            title={language === 'es' ? 'Marcar como pagado' : 'Marcar como pago'}
-                          >
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>{payingId === item.transactionId ? '...' : (language === 'es' ? 'Pagar' : 'Pagar')}</span>
-                          </button>
-                        )}
+                        {(item.type === 'scheduled_expense' || item.type === 'scheduled_income') &&
+                          item.transactionId && (
+                            <button
+                              type="button"
+                              onClick={() => handleMarkAsPaid(item.transactionId!)}
+                              disabled={payingId === item.transactionId}
+                              className="cursor-pointer px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                              title={
+                                item.type === 'scheduled_income'
+                                  ? (language === 'es' ? 'Marcar como cobrado' : 'Marcar como recebido')
+                                  : (language === 'es' ? 'Marcar como pagado' : 'Marcar como pago')
+                              }
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>
+                                {payingId === item.transactionId
+                                  ? '...'
+                                  : item.type === 'scheduled_income'
+                                  ? (language === 'es' ? 'Cobrar' : 'Receber')
+                                  : (language === 'es' ? 'Pagar' : 'Pagar')}
+                              </span>
+                            </button>
+                          )}
                       </div>
                     </div>
                   )
                 })}
+              </div>
+
+              {/* Indicador de Fecho Diário com Saldo Projetado */}
+              <div className="mt-2.5 pt-2 border-t border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                  {t('calendar.projectedBalance') || 'Saldo Projetado'}:
+                </span>
+                <span
+                  className={`font-mono font-bold ${
+                    group.projectedBalance >= 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                  }`}
+                >
+                  {formatCurrency(group.projectedBalance, currencyToUse)}
+                </span>
               </div>
             </div>
           )

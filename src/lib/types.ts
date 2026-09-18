@@ -237,7 +237,15 @@ export interface DueCommitmentItem {
   title: string
   amount: number
   currency: CurrencyCode
-  type: 'card_invoice' | 'recurring_bill' | 'debt' | 'scheduled_expense'
+  type:
+    | 'card_invoice'
+    | 'recurring_bill'
+    | 'debt'
+    | 'scheduled_expense'
+    | 'recurring_income'
+    | 'scheduled_income'
+    | 'base_salary'
+  flowType?: 'in' | 'out'
   dueDay?: number
   dueDate?: string
   entityName?: string
@@ -257,4 +265,6 @@ export interface ParsedNotification {
   suggestedCategory?: string
   bankSource?: string
   rawSnippet?: string
+  suggestedSourceWallet?: string
+  suggestedDestinationWallet?: string
 }

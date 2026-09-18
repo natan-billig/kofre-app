@@ -1,6 +1,37 @@
 import { supabase } from './supabase'
 import type { RecurringBill, Transaction, WalletScope } from './types'
 
+const RECURRING_TYPES_STORAGE_KEY = 'kofre_recurring_types'
+
+function getLocalRecurringTypes(): Record<string, 'expense' | 'income'> {
+  try {
+    const raw = localStorage.getItem(RECURRING_TYPES_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveLocalRecurringType(id: string, type: 'expense' | 'income') {
+  try {
+    const current = getLocalRecurringTypes()
+    current[id] = type
+    localStorage.setItem(RECURRING_TYPES_STORAGE_KEY, JSON.stringify(current))
+  } catch {
+    // ignore localStorage errors
+  }
+}
+
+function removeLocalRecurringType(id: string) {
+  try {
+    const current = getLocalRecurringTypes()
+    delete current[id]
+    localStorage.setItem(RECURRING_TYPES_STORAGE_KEY, JSON.stringify(current))
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Busca as contas fixas cadastradas no Supabase, filtrando por escopo e família.
  */
@@ -33,9 +64,10 @@ export async function fetchRecurringBills(
   }
 
   const rawList = (data as RecurringBill[]) || []
+  const localTypes = getLocalRecurringTypes()
   return rawList.map((item) => ({
     ...item,
-    type: item.type || 'expense',
+    type: item.type || localTypes[item.id] || 'expense',
   }))
 }
 
@@ -92,9 +124,14 @@ export async function createRecurringBill(
     throw error
   }
 
+  const finalType = (data as RecurringBill)?.type || bill.type || 'expense'
+  if (data?.id) {
+    saveLocalRecurringType(data.id, finalType)
+  }
+
   return {
     ...(data as RecurringBill),
-    type: (data as RecurringBill)?.type || bill.type || 'expense',
+    type: finalType,
   }
 }
 
@@ -131,9 +168,14 @@ export async function updateRecurringBill(
     throw error
   }
 
+  const finalType = (data as RecurringBill)?.type || partialBill.type || 'expense'
+  if (id && partialBill.type) {
+    saveLocalRecurringType(id, partialBill.type)
+  }
+
   return {
     ...(data as RecurringBill),
-    type: (data as RecurringBill)?.type || partialBill.type || 'expense',
+    type: finalType,
   }
 }
 
@@ -141,6 +183,7 @@ export async function updateRecurringBill(
  * Remove uma conta fixa recorrente.
  */
 export async function deleteRecurringBill(id: string): Promise<void> {
+  removeLocalRecurringType(id)
   const { error } = await supabase
     .from('recurring_bills')
     .delete()

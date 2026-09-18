@@ -17,7 +17,11 @@ interface SmartNotificationParserModalProps {
   isOpen: boolean
   wallets: Wallet[]
   onClose: () => void
-  onApplyParsed: (parsed: ParsedNotification, selectedWalletId?: string) => void
+  onApplyParsed: (
+    parsed: ParsedNotification,
+    selectedWalletId?: string,
+    destinationWalletId?: string
+  ) => void
 }
 
 export const SmartNotificationParserModal: React.FC<SmartNotificationParserModalProps> = ({
@@ -39,7 +43,31 @@ export const SmartNotificationParserModal: React.FC<SmartNotificationParserModal
   const matchingWallets = wallets.filter(
     (w) => !w.is_archived && w.currency === (parsed?.currency || 'PYG')
   )
-  const defaultWalletId = matchingWallets[0]?.id || wallets.find((w) => !w.is_archived)?.id
+  let defaultWalletId = matchingWallets[0]?.id || wallets.find((w) => !w.is_archived)?.id
+  let destWalletId: string | undefined = undefined
+
+  // Reconhecimento de Pagamento de Fatura Sudameris (débito em conta bancária, crédito em cartão)
+  if (parsed?.bankSource === 'Sudameris' && parsed.type === 'transfer') {
+    const sudamerisBank =
+      matchingWallets.find(
+        (w) => w.name.toLowerCase().includes('sudameris') && w.account_type !== 'credit_card'
+      ) ||
+      wallets.find(
+        (w) =>
+          !w.is_archived &&
+          w.name.toLowerCase().includes('sudameris') &&
+          w.account_type !== 'credit_card'
+      )
+    if (sudamerisBank) defaultWalletId = sudamerisBank.id
+
+    const creditCard =
+      matchingWallets.find(
+        (w) => w.account_type === 'credit_card' && w.name.toLowerCase().includes('sudameris')
+      ) ||
+      matchingWallets.find((w) => w.account_type === 'credit_card') ||
+      wallets.find((w) => !w.is_archived && w.account_type === 'credit_card')
+    if (creditCard) destWalletId = creditCard.id
+  }
 
   const handlePasteFromClipboard = async () => {
     try {
@@ -54,7 +82,7 @@ export const SmartNotificationParserModal: React.FC<SmartNotificationParserModal
 
   const handleConfirm = () => {
     if (!parsed) return
-    onApplyParsed(parsed, defaultWalletId)
+    onApplyParsed(parsed, defaultWalletId, destWalletId)
     setInputText('')
     onClose()
   }
@@ -137,8 +165,10 @@ export const SmartNotificationParserModal: React.FC<SmartNotificationParserModal
                   <span className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
                     {parsed.type === 'expense' ? (
                       <TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-                    ) : (
+                    ) : parsed.type === 'income' ? (
                       <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5 text-indigo-500" />
                     )}
                     {parsed.amount
                       ? formatCurrency(parsed.amount, parsed.currency || 'PYG')
@@ -152,9 +182,12 @@ export const SmartNotificationParserModal: React.FC<SmartNotificationParserModal
                     {t('notificationParser.type') || 'Tipo'}
                   </span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {parsed.type === 'expense'
-                      ? t('types.expense') || 'Despesa'
-                      : t('types.income') || 'Receita'}
+                    {t(`types.${parsed.type}`) ||
+                      (parsed.type === 'expense'
+                        ? 'Despesa'
+                        : parsed.type === 'income'
+                        ? 'Receita'
+                        : 'Transferência')}
                   </span>
                 </div>
 

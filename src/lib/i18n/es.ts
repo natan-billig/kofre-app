@@ -655,6 +655,16 @@ export const es: TranslationDictionary = {
     dayOfMonth: 'Día',
     exceedsCash: 'Excede saldo',
     noCommitments: 'No hay compromisos pendientes para este mes.',
+    projectedBalance: 'Saldo Proyectado',
+    baseSalary: 'Sueldo Base',
+    expectedIncome: 'Ingreso Previsto',
+    totalInflow: 'Ingresos Previstos',
+    totalOutflow: 'Gastos Previstos',
+  },
+  types: {
+    expense: 'Gasto',
+    income: 'Ingreso',
+    transfer: 'Transferencia / Pago',
   },
   notificationParser: {
     title: 'Lector de Notificaciones Bancarias',

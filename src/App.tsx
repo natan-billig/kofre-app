@@ -550,6 +550,7 @@ export default function App() {
                 currentScope={currentScope}
                 preferredCurrency={preferredCurrency}
                 selectedMonthDate={selectedDate}
+                userProfile={userProfile}
                 onTransactionPaid={async () => {
                   await refreshData()
                 }}
@@ -791,9 +792,10 @@ export default function App() {
         isOpen={isNotificationParserOpen}
         onClose={() => setIsNotificationParserOpen(false)}
         wallets={wallets}
-        onApplyParsed={(parsed, selectedWalletId) => {
+        onApplyParsed={(parsed, selectedWalletId, destinationWalletId) => {
           setQuickTxType(parsed.type)
           if (selectedWalletId) setQuickTxSourceId(selectedWalletId)
+          if (destinationWalletId) setQuickTxDestId(destinationWalletId)
           if (parsed.amount) setQuickTxAmount(parsed.amount)
           if (parsed.suggestedCategory) setQuickTxCategory(parsed.suggestedCategory)
           if (parsed.description) setQuickTxDescription(parsed.description)
