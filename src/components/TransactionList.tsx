@@ -32,6 +32,8 @@ import {
   SlidersHorizontal,
   Calendar,
   Tag,
+  Sparkles,
+  CreditCard,
 } from 'lucide-react'
 import { exportTransactionsToCSV } from '../lib/exportService'
 import { fetchTransactionsByDateRange } from '../lib/accountingService'
@@ -294,14 +296,18 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     }, 3500)
   }
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (deleteAllInstallments: boolean = false) => {
     if (!txToDelete) return
 
     setIsDeleting(true)
     setDeleteError(null)
 
     try {
-      await deleteTransaction(txToDelete.id)
+      await deleteTransaction(
+        txToDelete.id,
+        deleteAllInstallments,
+        txToDelete.installment_group_id
+      )
       setTxToDelete(null)
       if (selectedTxForDetails?.id === txToDelete.id) {
         setSelectedTxForDetails(null)
@@ -636,6 +642,31 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           <span>{destWallet?.name || (language === 'es' ? 'Destino' : 'Destino')}</span>
                         </span>
                       )}
+
+                      {/* Parcelamento / Cuota Badge */}
+                      {tItem.installment_number && tItem.total_installments && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 flex items-center gap-1 font-semibold">
+                          <CreditCard className="w-3 h-3 text-purple-500" />
+                          <span>
+                            {t('transactions.installmentBadge')
+                              .replace('{current}', String(tItem.installment_number))
+                              .replace('{total}', String(tItem.total_installments))}
+                          </span>
+                        </span>
+                      )}
+
+                      {/* Reintegro Bancário Badge */}
+                      {tItem.cashback_amount && Number(tItem.cashback_amount) > 0 && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1 font-semibold">
+                          <Sparkles className="w-3 h-3 text-emerald-500" />
+                          <span>
+                            {t('transactions.cashbackBadge').replace(
+                              '{amount}',
+                              formatCurrency(Number(tItem.cashback_amount), sourceWallet?.currency || 'PYG')
+                            )}
+                          </span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Metadata line: Category, Date, Account, and Author for shared */}
@@ -761,11 +792,20 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('transactions.deleteConfirmTitle')}</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                {txToDelete.installment_group_id
+                  ? t('transactions.deleteInstallmentGroupTitle')
+                  : t('transactions.deleteConfirmTitle')}
+              </h3>
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              {t('transactions.deleteConfirmDesc')}
+              {txToDelete.installment_group_id
+                ? t('transactions.deleteInstallmentGroupDesc').replace(
+                    '{total}',
+                    String(txToDelete.total_installments || '')
+                  )
+                : t('transactions.deleteConfirmDesc')}
             </p>
 
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
@@ -788,27 +828,63 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               </div>
             )}
 
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setTxToDelete(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-              >
-                {t('transactions.cancel')}
-              </button>
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={handleConfirmDelete}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-rose-600/20 transition-all"
-              >
-                {isDeleting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <span>{t('transactions.confirm')}</span>
-                )}
-              </button>
-            </div>
+            {txToDelete.installment_group_id ? (
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => handleConfirmDelete(false)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span>{t('transactions.deleteInstallmentOnly')}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => handleConfirmDelete(true)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-rose-600/20 transition-all"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span>{t('transactions.deleteAllInstallments')}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTxToDelete(null)}
+                  className="w-full py-2 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-medium cursor-pointer transition-colors"
+                >
+                  {t('transactions.cancel')}
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setTxToDelete(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                >
+                  {t('transactions.cancel')}
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => handleConfirmDelete(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-rose-600/20 transition-all"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span>{t('transactions.confirm')}</span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

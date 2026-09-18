@@ -40,6 +40,12 @@ export interface Transaction {
   original_amount?: number | null
   original_currency?: CurrencyCode | null
   debt_id?: string | null
+  installment_number?: number | null
+  total_installments?: number | null
+  installment_group_id?: string | null
+  cashback_amount?: number | null
+  cashback_percent?: number | null
+  parent_transaction_id?: string | null
 }
 
 export interface Profile {
@@ -76,6 +82,12 @@ export interface CreateTransactionDTO {
   original_amount?: number | null
   original_currency?: CurrencyCode | null
   debt_id?: string | null
+  installment_number?: number | null
+  total_installments?: number | null
+  installment_group_id?: string | null
+  cashback_amount?: number | null
+  cashback_percent?: number | null
+  parent_transaction_id?: string | null
 }
 
 export type UpdateTransactionDTO = Partial<Omit<CreateTransactionDTO, 'user_id'>>

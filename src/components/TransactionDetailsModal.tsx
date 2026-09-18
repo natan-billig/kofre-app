@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import type { Transaction, Wallet, Category } from '../lib/types'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -26,6 +26,9 @@ import {
   ShoppingBag,
   Briefcase,
   PiggyBank,
+  CreditCard,
+  Sparkles,
+  Layers,
 } from 'lucide-react'
 
 export interface TransactionDetailsModalProps {
@@ -207,11 +210,65 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
                 </span>
               </div>
             )}
+
+            {/* Badges de Parcelamento e Reintegro */}
+            <div className="flex items-center justify-center gap-2 flex-wrap mt-2">
+              {transaction.installment_number && transaction.total_installments && (
+                <span className="text-xs px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 flex items-center gap-1.5 font-bold">
+                  <CreditCard className="w-3.5 h-3.5 text-purple-500" />
+                  <span>
+                    {t('transactions.installmentBadge')
+                      .replace('{current}', String(transaction.installment_number))
+                      .replace('{total}', String(transaction.total_installments))}
+                  </span>
+                </span>
+              )}
+
+              {transaction.cashback_amount && Number(transaction.cashback_amount) > 0 && (
+                <span className="text-xs px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1.5 font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>
+                    {t('transactions.cashbackBadge').replace(
+                      '{amount}',
+                      formatCurrency(Number(transaction.cashback_amount), sourceWallet?.currency || 'PYG')
+                    )}
+                  </span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Detailed Information Grid */}
         <div className="space-y-3 text-xs sm:text-sm">
+          {/* Parcelamento / Cuotas */}
+          {transaction.installment_number && transaction.total_installments && (
+            <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-purple-500" />
+                {t('quickModal.installments')}
+              </span>
+              <span className="font-semibold text-purple-600 dark:text-purple-400">
+                {t('transactions.installmentBadge')
+                  .replace('{current}', String(transaction.installment_number))
+                  .replace('{total}', String(transaction.total_installments))}
+              </span>
+            </div>
+          )}
+
+          {/* Reintegro Bancário (Cashback) */}
+          {transaction.cashback_amount && Number(transaction.cashback_amount) > 0 && (
+            <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                {t('quickModal.cashbackToggle')}
+              </span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                - {formatCurrency(Number(transaction.cashback_amount), sourceWallet?.currency || 'PYG')}
+                {transaction.cashback_percent ? ` (${transaction.cashback_percent}%)` : ''}
+              </span>
+            </div>
+          )}
           {/* Description */}
           <div className="flex items-start justify-between py-2 border-b border-slate-100 dark:border-slate-800">
             <span className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">

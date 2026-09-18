@@ -9,10 +9,15 @@ import type {
   Category,
   WalletScope,
 } from '../lib/types'
-import { createTransaction, updateTransaction } from '../lib/accountingService'
+import {
+  createTransaction,
+  updateTransaction,
+  createTransactionsBatch,
+  syncCashbackTransaction,
+} from '../lib/accountingService'
 import { fetchCategories, DEFAULT_MACRO_MAP } from '../lib/categoryService'
 import { CategoryManagerModal } from './CategoryManagerModal'
-import { formatExchangeRate } from '../lib/formatters'
+import { formatCurrency, formatExchangeRate } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
@@ -34,7 +39,18 @@ import {
   Edit3,
   Settings2,
   Tag,
+  Sparkles,
+  Layers,
 } from 'lucide-react'
+
+function projectInstallmentDate(baseDateStr: string, monthOffset: number): string {
+  const [year, month, day] = baseDateStr.split('-').map(Number)
+  const targetYear = year + Math.floor((month - 1 + monthOffset) / 12)
+  const targetMonth = ((month - 1 + monthOffset) % 12) + 1
+  const maxDays = new Date(targetYear, targetMonth, 0).getDate()
+  const targetDay = Math.min(day, maxDays)
+  return `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`
+}
 
 interface QuickTransactionModalProps {
   userId: string
@@ -149,6 +165,62 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   const sourceWallet = selectableWallets.find((w) => w.id === sourceWalletId)
   const destWallet = selectableWallets.find((w) => w.id === destWalletId)
 
+  const isCreditCardExpense = type === 'expense' && sourceWallet?.account_type === 'credit_card'
+
+  // Parcelas / Cuotas
+  const [installments, setInstallments] = useState<number>(
+    editingTransaction?.total_installments || 1
+  )
+
+  // Reintegro Bancário (Cashback)
+  const [hasCashback, setHasCashback] = useState<boolean>(
+    Boolean(editingTransaction?.cashback_amount && Number(editingTransaction.cashback_amount) > 0)
+  )
+  const [cashbackType, setCashbackType] = useState<'percent' | 'fixed'>(
+    editingTransaction?.cashback_percent ? 'percent' : 'percent'
+  )
+  const [cashbackPercent, setCashbackPercent] = useState<string>(
+    editingTransaction?.cashback_percent ? String(editingTransaction.cashback_percent) : '10'
+  )
+  const [cashbackAmountInput, setCashbackAmountInput] = useState<string>(
+    editingTransaction?.cashback_amount ? String(editingTransaction.cashback_amount) : ''
+  )
+  const [cashbackMaxCap, setCashbackMaxCap] = useState<string>('')
+  const [cashbackDate, setCashbackDate] = useState<string>(
+    editingTransaction?.transaction_date
+      ? editingTransaction.transaction_date.substring(0, 10)
+      : transactionDate
+  )
+
+  const numAmount = parseFloat(amount) || 0
+  const sourceCurrency = sourceWallet?.currency || 'PYG'
+
+  let perInstallmentAmount = numAmount
+  if (installments > 1 && numAmount > 0) {
+    perInstallmentAmount =
+      sourceCurrency === 'PYG'
+        ? Math.round(numAmount / installments)
+        : Number((numAmount / installments).toFixed(2))
+  }
+
+  let effectiveCashback = 0
+  if (hasCashback && numAmount > 0) {
+    if (cashbackType === 'percent') {
+      const p = parseFloat(cashbackPercent) || 0
+      let raw = (numAmount * p) / 100
+      const cap = parseFloat(cashbackMaxCap) || 0
+      if (cap > 0) {
+        raw = Math.min(raw, cap)
+      }
+      effectiveCashback = sourceCurrency === 'PYG' ? Math.round(raw) : Number(raw.toFixed(2))
+    } else {
+      const fixed = parseFloat(cashbackAmountInput) || 0
+      effectiveCashback = sourceCurrency === 'PYG' ? Math.round(fixed) : Number(fixed.toFixed(2))
+    }
+  }
+
+  const effectiveCost = Math.max(0, numAmount - effectiveCashback)
+
   const currentScope: WalletScope = sourceWallet?.type || 'personal'
   const familyId = sourceWallet?.family_id
 
@@ -219,7 +291,6 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       return
     }
 
-    const numAmount = parseFloat(amount)
     if (!numAmount || numAmount <= 0) {
       setErrorMsg(t('quickModal.fillRequired'))
       return
@@ -274,9 +345,69 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           transaction_date: transactionDate,
           original_amount: numOrigAmount,
           original_currency: origCurr,
+          cashback_amount:
+            type === 'expense' && hasCashback && effectiveCashback > 0 ? effectiveCashback : null,
+          cashback_percent:
+            type === 'expense' && hasCashback && cashbackType === 'percent'
+              ? parseFloat(cashbackPercent) || null
+              : null,
         }
 
-        await updateTransaction(editingTransaction.id, updatePayload)
+        const updated = await updateTransaction(editingTransaction.id, updatePayload)
+        if (type === 'expense') {
+          await syncCashbackTransaction(
+            updated,
+            hasCashback ? effectiveCashback : 0,
+            cashbackDate || transactionDate,
+            cashbackType === 'percent' ? parseFloat(cashbackPercent) || null : null
+          )
+        }
+      } else if (isCreditCardExpense && installments > 1) {
+        // Criar em lote as N parcelas
+        const groupId = crypto.randomUUID()
+        const batchPayloads: CreateTransactionDTO[] = []
+
+        for (let i = 0; i < installments; i++) {
+          const projDate = projectInstallmentDate(transactionDate, i)
+          batchPayloads.push({
+            user_id: userId,
+            wallet_id: sourceWalletId,
+            destination_wallet_id: null,
+            type: 'expense',
+            amount: perInstallmentAmount,
+            destination_amount: null,
+            category,
+            description: description.trim() || null,
+            transaction_date: projDate,
+            installment_number: i + 1,
+            total_installments: installments,
+            installment_group_id: groupId,
+            // Reintegro aplicado na 1ª parcela
+            cashback_amount:
+              i === 0 && hasCashback && effectiveCashback > 0 ? effectiveCashback : null,
+            cashback_percent:
+              i === 0 && hasCashback && cashbackType === 'percent'
+                ? parseFloat(cashbackPercent) || null
+                : null,
+            original_amount:
+              isBimonetary && numOrigAmount
+                ? sourceWallet?.currency === 'PYG'
+                  ? Math.round(numOrigAmount / installments)
+                  : Number((numOrigAmount / installments).toFixed(2))
+                : null,
+            original_currency: isBimonetary ? origCurr : null,
+          })
+        }
+
+        const createdBatch = await createTransactionsBatch(batchPayloads)
+        if (hasCashback && effectiveCashback > 0 && createdBatch.length > 0) {
+          await syncCashbackTransaction(
+            createdBatch[0],
+            effectiveCashback,
+            cashbackDate || transactionDate,
+            cashbackType === 'percent' ? parseFloat(cashbackPercent) || null : null
+          )
+        }
       } else {
         const payload: CreateTransactionDTO = {
           user_id: userId,
@@ -295,16 +426,35 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           transaction_date: transactionDate,
           original_amount: numOrigAmount,
           original_currency: origCurr,
+          cashback_amount:
+            type === 'expense' && hasCashback && effectiveCashback > 0 ? effectiveCashback : null,
+          cashback_percent:
+            type === 'expense' && hasCashback && cashbackType === 'percent'
+              ? parseFloat(cashbackPercent) || null
+              : null,
         }
 
-        await createTransaction(payload)
+        const created = await createTransaction(payload)
+        if (type === 'expense') {
+          await syncCashbackTransaction(
+            created,
+            hasCashback ? effectiveCashback : 0,
+            cashbackDate || transactionDate,
+            cashbackType === 'percent' ? parseFloat(cashbackPercent) || null : null
+          )
+        }
       }
 
       onTransactionCreated()
       onClose()
     } catch (err: unknown) {
       console.error('Error saving transaction:', err)
-      const msg = err instanceof Error ? err.message : (language === 'es' ? 'Error al guardar movimiento.' : 'Erro ao salvar transação.')
+      const msg =
+        err instanceof Error
+          ? err.message
+          : language === 'es'
+          ? 'Error al guardar movimiento.'
+          : 'Erro ao salvar transação.'
       setErrorMsg(msg)
     } finally {
       setLoading(false)
@@ -614,6 +764,196 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                           ? 'El monto debitado de su cuenta sigue siendo el campo principal arriba.'
                           : 'O valor debitado da sua conta continua sendo o campo principal acima.'}
                       </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Compras Parceladas / Cuotas (Apenas em Cartão de Crédito ao criar) */}
+              {isCreditCardExpense && !editingTransaction && (
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{t('quickModal.installments')}</span>
+                    </label>
+                    <select
+                      value={installments}
+                      onChange={(e) => setInstallments(Number(e.target.value))}
+                      className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:border-indigo-500 outline-none cursor-pointer"
+                    >
+                      <option value={1}>{t('quickModal.installmentsCount')}</option>
+                      {Array.from({ length: 47 }, (_, i) => i + 2).map((num) => (
+                        <option key={num} value={num}>
+                          {num}x
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {installments > 1 && numAmount > 0 && (
+                    <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/30 text-xs font-semibold text-purple-800 dark:text-purple-200 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                      <span>
+                        {t('quickModal.installmentSummary')
+                          .replace('{total}', formatCurrency(numAmount, sourceWallet?.currency || 'PYG'))
+                          .replace('{n}', String(installments))
+                          .replace(
+                            '{perMonth}',
+                            formatCurrency(perInstallmentAmount, sourceWallet?.currency || 'PYG')
+                          )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Reintegro Bancário (Cashback) na criação e edição de despesas */}
+              {type === 'expense' && (
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={hasCashback}
+                        onChange={(e) => setHasCashback(e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 cursor-pointer"
+                      />
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{t('quickModal.cashbackToggle')}</span>
+                    </label>
+                  </div>
+
+                  {hasCashback && (
+                    <div className="mt-2 p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/20 space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                            {t('quickModal.cashbackType')}
+                          </label>
+                          <div className="flex rounded-xl bg-slate-100 dark:bg-slate-900 p-0.5 border border-slate-200 dark:border-slate-800">
+                            <button
+                              type="button"
+                              onClick={() => setCashbackType('percent')}
+                              className={`flex-1 py-1 text-xs font-medium rounded-lg cursor-pointer transition-all ${
+                                cashbackType === 'percent'
+                                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                                  : 'text-slate-600 dark:text-slate-400'
+                              }`}
+                            >
+                              %
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCashbackType('fixed')}
+                              className={`flex-1 py-1 text-xs font-medium rounded-lg cursor-pointer transition-all ${
+                                cashbackType === 'fixed'
+                                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                                  : 'text-slate-600 dark:text-slate-400'
+                              }`}
+                            >
+                              $
+                            </button>
+                          </div>
+                        </div>
+
+                        {cashbackType === 'percent' ? (
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                              {t('quickModal.cashbackPercent')}
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="any"
+                                value={cashbackPercent}
+                                onChange={(e) => setCashbackPercent(e.target.value)}
+                                placeholder="Ex: 20"
+                                className="w-full pl-3 pr-7 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none"
+                              />
+                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                                %
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                              {t('quickModal.cashbackAmount')}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={cashbackAmountInput}
+                              onChange={(e) => setCashbackAmountInput(e.target.value)}
+                              placeholder="Ex: 100000"
+                              className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {cashbackType === 'percent' && (
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                              {t('quickModal.cashbackMaxCap')}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={cashbackMaxCap}
+                              onChange={(e) => setCashbackMaxCap(e.target.value)}
+                              placeholder={t('quickModal.cashbackMaxCapHelp')}
+                              className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
+                            {t('quickModal.cashbackDate')}
+                          </label>
+                          <input
+                            type="date"
+                            value={cashbackDate}
+                            onChange={(e) => setCashbackDate(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Card em tempo real de Total | Reintegro | Custo Efetivo */}
+                      <div className="p-2.5 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-500/30 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-medium">
+                            {t('quickModal.cashbackSummaryTotal')}
+                          </div>
+                          <div className="font-semibold text-slate-800 dark:text-slate-200">
+                            {formatCurrency(numAmount, sourceWallet?.currency || 'PYG')}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-medium">
+                            {t('quickModal.cashbackSummaryCashback')}
+                          </div>
+                          <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                            - {formatCurrency(effectiveCashback, sourceWallet?.currency || 'PYG')}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-medium">
+                            {t('quickModal.cashbackSummaryEffective')}
+                          </div>
+                          <div className="font-extrabold text-indigo-700 dark:text-indigo-300">
+                            {formatCurrency(effectiveCost, sourceWallet?.currency || 'PYG')}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getCreditCardInvoiceDetails } from './creditCardService'
 import type {
   Wallet,
   Transaction,
@@ -66,6 +67,16 @@ export async function fetchTransactionsByDateRange(
   return (data as Transaction[]) || []
 }
 
+const OPTIONAL_COLUMNS = [
+  'debt_id',
+  'installment_number',
+  'total_installments',
+  'installment_group_id',
+  'cashback_amount',
+  'cashback_percent',
+  'parent_transaction_id',
+]
+
 export async function createTransaction(payload: CreateTransactionDTO): Promise<Transaction> {
   const insertPayload: Record<string, unknown> = { ...payload }
 
@@ -75,9 +86,11 @@ export async function createTransaction(payload: CreateTransactionDTO): Promise<
     .select()
     .single()
 
-  // Fallback seguro caso a coluna debt_id ainda não exista na tabela do Supabase
-  if (error && (error.code === 'PGRST204' || error.message?.includes('debt_id'))) {
-    delete insertPayload.debt_id
+  // Fallback seguro caso colunas novas ainda não existam na tabela do Supabase
+  if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('debt_id'))) {
+    for (const col of OPTIONAL_COLUMNS) {
+      delete insertPayload[col]
+    }
     const retry = await supabase
       .from('transactions')
       .insert([insertPayload])
@@ -95,16 +108,64 @@ export async function createTransaction(payload: CreateTransactionDTO): Promise<
   return data as Transaction
 }
 
+export async function createTransactionsBatch(payloads: CreateTransactionDTO[]): Promise<Transaction[]> {
+  if (payloads.length === 0) return []
+
+  let { data, error } = await supabase
+    .from('transactions')
+    .insert(payloads)
+    .select()
+
+  if (error && (error.code === 'PGRST204' || error.message?.includes('column'))) {
+    const cleanPayloads = payloads.map((p) => {
+      const copy: Record<string, unknown> = { ...p }
+      for (const col of OPTIONAL_COLUMNS) {
+        delete copy[col]
+      }
+      return copy
+    })
+    const retry = await supabase
+      .from('transactions')
+      .insert(cleanPayloads)
+      .select()
+    data = retry.data
+    error = retry.error
+  }
+
+  if (error) {
+    console.error('Error creating transactions batch:', error)
+    throw error
+  }
+
+  return (data as Transaction[]) || []
+}
+
 export async function updateTransaction(
   transactionId: string,
   payload: UpdateTransactionDTO
 ): Promise<Transaction> {
-  const { data, error } = await supabase
+  const updatePayload: Record<string, unknown> = { ...payload }
+
+  let { data, error } = await supabase
     .from('transactions')
-    .update(payload)
+    .update(updatePayload)
     .eq('id', transactionId)
     .select()
     .single()
+
+  if (error && (error.code === 'PGRST204' || error.message?.includes('column'))) {
+    for (const col of OPTIONAL_COLUMNS) {
+      delete updatePayload[col]
+    }
+    const retry = await supabase
+      .from('transactions')
+      .update(updatePayload)
+      .eq('id', transactionId)
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Error updating transaction:', error)
@@ -114,7 +175,101 @@ export async function updateTransaction(
   return data as Transaction
 }
 
-export async function deleteTransaction(transactionId: string): Promise<void> {
+export async function syncCashbackTransaction(
+  parentTx: Transaction,
+  cashbackAmount?: number | null,
+  cashbackDate?: string | null,
+  cashbackPercent?: number | null
+): Promise<void> {
+  const effectiveCashback = cashbackAmount != null && Number(cashbackAmount) > 0 ? Number(cashbackAmount) : 0
+
+  try {
+    const { data: existingChildren, error: fetchErr } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('parent_transaction_id', parentTx.id)
+
+    if (fetchErr && fetchErr.code === 'PGRST204') {
+      return
+    }
+
+    const child = existingChildren && existingChildren.length > 0 ? existingChildren[0] : null
+
+    if (effectiveCashback > 0) {
+      const dateToUse = cashbackDate || parentTx.transaction_date
+      const descToUse = `Reintegro: ${parentTx.description || parentTx.category}`
+
+      if (child) {
+        await updateTransaction(child.id, {
+          amount: effectiveCashback,
+          transaction_date: dateToUse,
+          description: descToUse,
+          cashback_percent: cashbackPercent,
+        })
+      } else {
+        await createTransaction({
+          user_id: parentTx.user_id,
+          wallet_id: parentTx.wallet_id,
+          type: 'income',
+          amount: effectiveCashback,
+          category: 'Reintegro',
+          description: descToUse,
+          transaction_date: dateToUse,
+          parent_transaction_id: parentTx.id,
+          cashback_percent: cashbackPercent,
+        })
+      }
+    } else {
+      if (child) {
+        await supabase.from('transactions').delete().eq('id', child.id)
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao sincronizar reintegro bancário:', err)
+  }
+}
+
+export async function deleteTransaction(
+  transactionId: string,
+  deleteAllInstallments: boolean = false,
+  installmentGroupId?: string | null
+): Promise<void> {
+  // 1. Remove qualquer reintegro filho vinculado a esta transação
+  try {
+    await supabase.from('transactions').delete().eq('parent_transaction_id', transactionId)
+  } catch (err) {
+    console.warn('Aviso ao excluir reintegro vinculado:', err)
+  }
+
+  // 2. Se for para excluir todas as parcelas deste grupo
+  if (deleteAllInstallments && installmentGroupId) {
+    try {
+      const { data: groupTxs } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('installment_group_id', installmentGroupId)
+
+      if (groupTxs && groupTxs.length > 0) {
+        const ids = groupTxs.map((t) => t.id)
+        await supabase.from('transactions').delete().in('parent_transaction_id', ids)
+      }
+    } catch (e) {
+      console.warn('Aviso ao remover reintegros do grupo:', e)
+    }
+
+    const { error: groupErr } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('installment_group_id', installmentGroupId)
+
+    if (groupErr) {
+      console.error('Error deleting installment group:', groupErr)
+      throw groupErr
+    }
+    return
+  }
+
+  // 3. Exclui a transação individual
   const { error } = await supabase
     .from('transactions')
     .delete()
@@ -205,9 +360,10 @@ export function calculateCardInvoices(
   })
 
   return cards.map((card) => {
-    const invoiceAmount = calculateAccountBalance(card, transactions)
+    const details = getCreditCardInvoiceDetails(card, transactions)
+    const invoiceAmount = details.currentInvoiceAmount
     const limit = card.credit_limit != null ? Number(card.credit_limit) : null
-    const availableLimit = limit != null ? limit - invoiceAmount : null
+    const availableLimit = limit != null ? limit - details.totalDebt : null
 
     return {
       wallet: card,
