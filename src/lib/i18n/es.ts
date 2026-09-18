@@ -385,4 +385,10 @@ export const es: TranslationDictionary = {
     alreadyRegisteredWithPassword:
       'Esta cuenta fue creada con correo y contraseña. Inicia sesión normalmente y vincula Google en los ajustes de tu perfil.',
   },
+  theme: {
+    title: 'Tema',
+    light: 'Modo Claro',
+    dark: 'Modo Oscuro',
+    system: 'Automático',
+  },
 }

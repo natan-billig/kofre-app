@@ -285,19 +285,19 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-xl bg-slate-900/95 border border-slate-800/80 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <CalendarClock className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                 {t('recurringBills.manageTitle')}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {scope === 'shared'
                   ? t('scope.shared')
                   : scope === 'personal'
@@ -308,7 +308,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-white p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -316,7 +316,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
 
         {/* Feedback Message */}
         {feedbackMsg && (
-          <div className="mx-6 mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-emerald-400 text-xs">
+          <div className="mx-6 mt-4 p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{feedbackMsg}</span>
           </div>
@@ -327,13 +327,13 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           {/* Action Bar / Toggle Form Button */}
           {!isFormOpen && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
                 {bills.length} {t('recurringBills.title')}
               </span>
               <button
                 type="button"
                 onClick={handleOpenCreateForm}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg shadow-sm shadow-emerald-950/30 transition-colors"
+                className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg shadow-sm shadow-emerald-950/30 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t('recurringBills.newBill')}</span>
@@ -345,30 +345,30 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           {isFormOpen && (
             <form
               onSubmit={handleSaveForm}
-              className="bg-slate-950/60 border border-slate-800 rounded-xl p-5 space-y-4"
+              className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
-                <h3 className="text-sm font-semibold text-white">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800/60">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                   {editingBill ? t('recurringBills.editBill') : t('recurringBills.newBill')}
                 </h3>
                 <button
                   type="button"
                   onClick={handleCancelForm}
-                  className="text-slate-400 hover:text-white text-xs"
+                  className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Selector: Despesa Fixa vs. Receita / Salário */}
-              <div className="grid grid-cols-2 gap-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+              <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => handleTypeChange('expense')}
                   className={`cursor-pointer py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                     billType === 'expense'
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-rose-500/10 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <ArrowUpRight className="w-3.5 h-3.5" />
@@ -379,8 +379,8 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                   onClick={() => handleTypeChange('income')}
                   className={`cursor-pointer py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                     billType === 'income'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-emerald-500/10 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <ArrowDownLeft className="w-3.5 h-3.5" />
@@ -389,7 +389,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
               </div>
 
               {formError && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-400 text-xs">
+                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-700 dark:text-rose-400 text-xs">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{formError}</span>
                 </div>
@@ -397,7 +397,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
 
               {/* Name */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                   {billType === 'income' ? t('recurringBills.nameIncome') : t('recurringBills.name')}
                 </label>
                 <input
@@ -409,7 +409,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                       ? t('recurringBills.nameIncomePlaceholder')
                       : t('recurringBills.namePlaceholder')
                   }
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
                   required
                 />
               </div>
@@ -417,7 +417,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
               {/* Amount & Currency Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                     {t('recurringBills.expectedAmount')}
                   </label>
                   <input
@@ -427,19 +427,19 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors font-mono"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                     {t('recurringBills.currency')}
                   </label>
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors cursor-pointer"
                   >
                     <option value="PYG">PYG (₲ Guaraní)</option>
                     <option value="USD">USD ($ Dólar)</option>
@@ -451,13 +451,13 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
               {/* Category & Debit Account Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                     {t('recurringBills.category')}
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors cursor-pointer"
                     required
                   >
                     {categories.map((cat) => (
@@ -469,13 +469,13 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                     {billType === 'income' ? t('recurringBills.creditAccount') : t('recurringBills.debitAccount')}
                   </label>
                   <select
                     value={walletId}
                     onChange={handleWalletChange}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors cursor-pointer"
                     required
                   >
                     {selectableWallets.map((w) => (
@@ -490,7 +490,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
               {/* Due Day & Start Date Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                     {(billType === 'income' ? t('recurringBills.receiptDay') : t('recurringBills.dueDay'))} (1-31)
                   </label>
                   <input
@@ -500,20 +500,20 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                     value={dueDay}
                     onChange={(e) => setDueDay(e.target.value)}
                     placeholder={t('recurringBills.dueDayPlaceholder')}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                     {t('recurringBills.startDate')}
                   </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors"
                     required
                   />
                 </div>
@@ -526,9 +526,9 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                     type="checkbox"
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-700 bg-slate-900"
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                   />
-                  <span className="text-xs font-medium text-slate-300">
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                     {isActive ? t('recurringBills.active') : t('recurringBills.paused')}
                   </span>
                 </label>
@@ -539,14 +539,14 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                 <button
                   type="button"
                   onClick={handleCancelForm}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-medium transition-colors"
+                  className="cursor-pointer px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-medium transition-colors"
                 >
                   {t('transactions.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-950/40 transition-all"
+                  className="cursor-pointer flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-950/40 transition-all"
                 >
                   {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{isSaving ? t('recurringBills.saving') : t('recurringBills.save')}</span>
@@ -561,14 +561,14 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
               <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
             </div>
           ) : bills.length === 0 ? (
-            <div className="text-center py-12 px-4 border border-dashed border-slate-800/80 rounded-2xl">
-              <CalendarClock className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm font-medium">{t('recurringBills.empty')}</p>
+            <div className="text-center py-12 px-4 border border-dashed border-slate-200 dark:border-slate-800/80 rounded-2xl">
+              <CalendarClock className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{t('recurringBills.empty')}</p>
               {!isFormOpen && (
                 <button
                   type="button"
                   onClick={handleOpenCreateForm}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-950/40 transition-all"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>{t('recurringBills.newBill')}</span>
@@ -584,21 +584,21 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                 return (
                   <div
                     key={bill.id}
-                    className={`group bg-slate-950/40 hover:bg-slate-950/70 border ${
-                      bill.is_active ? 'border-slate-800/80' : 'border-slate-800/40 opacity-60'
+                    className={`group bg-slate-50 hover:bg-slate-100/80 dark:bg-slate-950/40 dark:hover:bg-slate-950/70 border ${
+                      bill.is_active ? 'border-slate-200 dark:border-slate-800/80' : 'border-slate-200/60 dark:border-slate-800/40 opacity-60'
                     } rounded-xl p-3.5 transition-all flex items-center justify-between gap-3`}
                   >
                     {/* Left: Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-white text-sm truncate">
+                        <span className="font-semibold text-slate-900 dark:text-white text-sm truncate">
                           {bill.name}
                         </span>
                         <span
                           className={`text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 ${
                             bill.type === 'income'
-                              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
+                              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20'
+                              : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/20'
                           }`}
                         >
                           {bill.type === 'income' ? (
@@ -616,8 +616,8 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                         <span
                           className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                             bill.is_active
-                              ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                              : 'bg-slate-800 text-slate-400'
+                              ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           {bill.is_active
@@ -626,24 +626,24 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
-                          <Tag className="w-3 h-3 text-slate-500" />
+                          <Tag className="w-3 h-3 text-slate-400" />
                           {bill.category}
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          <CreditCard className="w-3 h-3 text-slate-500" />
+                          <CreditCard className="w-3 h-3 text-slate-400" />
                           {debitWallet?.name || 'Conta'}
                         </span>
                         <span>•</span>
-                        <span className="text-indigo-400 font-medium">
+                        <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                           {bill.type === 'income' ? t('recurringBills.receiptOn') : t('recurringBills.dueOn')} {bill.due_day}
                         </span>
                         {bill.start_date && (
                           <>
                             <span>•</span>
-                            <span className="text-slate-400">
+                            <span className="text-slate-500 dark:text-slate-400">
                               {t('recurringBills.billingStart')}: {bill.start_date.substring(0, 7)}
                             </span>
                           </>
@@ -656,7 +656,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                       <div className="text-right">
                         <span
                           className={`text-sm font-bold tracking-tight block font-mono ${
-                            bill.type === 'income' ? 'text-emerald-400' : 'text-white'
+                            bill.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
                           }`}
                         >
                           {bill.type === 'income' ? '+' : ''}{formatCurrency(bill.amount, bill.currency)}
@@ -669,10 +669,10 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                           type="button"
                           onClick={() => handleToggleActive(bill)}
                           title={bill.is_active ? t('recurringBills.paused') : t('recurringBills.active')}
-                          className={`p-1.5 rounded-lg transition-colors ${
+                          className={`cursor-pointer p-1.5 rounded-lg transition-colors ${
                             bill.is_active
-                              ? 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'
-                              : 'text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10'
+                              ? 'text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                              : 'text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
                           }`}
                         >
                           <Power className="w-4 h-4" />
@@ -682,25 +682,25 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                           type="button"
                           onClick={() => handleOpenEditForm(bill)}
                           title={t('recurringBills.editBill')}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+                          className="cursor-pointer p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-lg transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
 
                         {isConfirmingDelete ? (
-                          <div className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/30 rounded-lg p-1">
+                          <div className="flex items-center gap-1 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-lg p-1">
                             <button
                               type="button"
                               onClick={() => handleDelete(bill.id)}
                               disabled={isDeleting}
-                              className="text-[10px] font-bold text-rose-400 hover:text-rose-300 px-1.5 py-0.5 rounded transition-colors"
+                              className="cursor-pointer text-[10px] font-bold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 px-1.5 py-0.5 rounded transition-colors"
                             >
                               {isDeleting ? '...' : t('transactions.confirm')}
                             </button>
                             <button
                               type="button"
                               onClick={() => setDeletingId(null)}
-                              className="text-slate-400 hover:text-white p-0.5"
+                              className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-white p-0.5"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -710,7 +710,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                             type="button"
                             onClick={() => setDeletingId(bill.id)}
                             title="Excluir"
-                            className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                            className="cursor-pointer p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

@@ -108,29 +108,29 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">{t('createAccount.title')}</h2>
-              <p className="text-xs text-slate-400">{t('createAccount.subtitle')}</p>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('createAccount.title')}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('createAccount.subtitle')}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs">
             {errorMsg}
           </div>
         )}
@@ -138,7 +138,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Tipo de Conta */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
               {t('createAccount.accountType')}
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -147,8 +147,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 onClick={() => setAccountType('cash')}
                 className={`py-2 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                   accountType === 'cash'
-                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300'
-                    : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <Banknote className="w-4 h-4" />
@@ -159,8 +159,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 onClick={() => setAccountType('checking')}
                 className={`py-2 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                   accountType === 'checking'
-                    ? 'border-sky-500 bg-sky-500/15 text-sky-300'
-                    : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <Building2 className="w-4 h-4" />
@@ -171,8 +171,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 onClick={() => setAccountType('credit_card')}
                 className={`py-2 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                   accountType === 'credit_card'
-                    ? 'border-purple-500 bg-purple-500/15 text-purple-300'
-                    : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
@@ -183,7 +183,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
           {/* Nome da Conta */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
               {t('createAccount.name')}
             </label>
             <input
@@ -192,13 +192,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t('createAccount.namePlaceholder')}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-100 placeholder-slate-600 text-sm outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 text-sm outline-none transition-all"
             />
           </div>
 
           {/* Moeda Base */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
               {t('createAccount.currency')}
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -209,8 +209,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   onClick={() => setCurrency(curr)}
                   className={`py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                     currency === curr
-                      ? 'border-indigo-500 bg-indigo-500/15 text-indigo-300 shadow-sm'
-                      : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   {curr}
@@ -221,7 +221,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
           {/* Escopo (Pessoal vs Compartilhado) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
               {t('createAccount.scope')}
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -230,8 +230,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 onClick={() => setScope('personal')}
                 className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   scope === 'personal'
-                    ? 'border-indigo-500 bg-indigo-500/15 text-indigo-300'
-                    : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <User className="w-3.5 h-3.5" />
@@ -242,8 +242,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 onClick={() => setScope('shared')}
                 className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   scope === 'shared'
-                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300'
-                    : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <Users2 className="w-3.5 h-3.5" />
@@ -255,7 +255,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           {/* Saldo Inicial para contas de liquidez (Efetivo e Conta Bancária) */}
           {accountType !== 'credit_card' && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                 {t('createAccount.initialBalance')} ({currency})
               </label>
               <input
@@ -264,7 +264,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 value={initialBalance}
                 onChange={(e) => setInitialBalance(e.target.value)}
                 placeholder="0"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-100 placeholder-slate-600 text-sm outline-none transition-all font-mono"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 text-sm outline-none transition-all font-mono"
               />
               <p className="text-[11px] text-slate-500">
                 {t('createAccount.initialBalanceDesc')}
@@ -274,9 +274,9 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
           {/* Campos Específicos para Cartão de Crédito */}
           {accountType === 'credit_card' && (
-            <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-3">
+            <div className="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-500/20 space-y-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-purple-300 uppercase tracking-wider">
+                <label className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
                   {t('createAccount.creditLimit')} ({currency})
                 </label>
                 <input
@@ -286,13 +286,13 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   value={creditLimit}
                   onChange={(e) => setCreditLimit(e.target.value)}
                   placeholder="Ex: 5000000"
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-slate-100 text-sm outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-purple-200 dark:border-slate-800 focus:border-purple-500 text-slate-900 dark:text-slate-100 text-sm outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold text-slate-400 uppercase">
+                  <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase">
                     {t('createAccount.closingDay')}
                   </label>
                   <input
@@ -302,12 +302,12 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                     value={closingDay}
                     onChange={(e) => setClosingDay(e.target.value)}
                     placeholder="Ex: 20"
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-slate-100 text-sm outline-none"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-purple-200 dark:border-slate-800 focus:border-purple-500 text-slate-900 dark:text-slate-100 text-sm outline-none"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold text-slate-400 uppercase">
+                  <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase">
                     {t('createAccount.dueDay')}
                   </label>
                   <input
@@ -317,7 +317,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                     value={dueDay}
                     onChange={(e) => setDueDay(e.target.value)}
                     placeholder="Ex: 28"
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 focus:border-purple-500 text-slate-100 text-sm outline-none"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-purple-200 dark:border-slate-800 focus:border-purple-500 text-slate-900 dark:text-slate-100 text-sm outline-none"
                   />
                 </div>
               </div>

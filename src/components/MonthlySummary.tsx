@@ -66,8 +66,8 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
 
   if (activeCurrencies.length === 0) {
     return (
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 text-center shadow-sm">
-        <p className="text-xs sm:text-sm font-medium text-slate-400">
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 text-center shadow-sm">
+        <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
           {t('monthlySummary.empty')}
         </p>
       </div>
@@ -75,9 +75,9 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
   }
 
   return (
-    <div className="rounded-2xl bg-slate-900 border border-slate-800 p-3.5 sm:p-4 space-y-3 shadow-sm">
+    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 sm:p-4 space-y-3 shadow-sm transition-colors">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           {t('monthlySummary.title')}
         </span>
       </div>
@@ -91,10 +91,10 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
           return (
             <div
               key={curr}
-              className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 font-mono">
                   {curr}
                 </span>
               </div>
@@ -102,35 +102,37 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({
               <div className="grid grid-cols-3 gap-2">
                 {/* Entradas */}
                 <div className="space-y-0.5">
-                  <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-                    <ArrowDownLeft className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    <ArrowDownLeft className="w-3 h-3 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
                     <span className="truncate">{t('monthlySummary.incomes')}</span>
                   </div>
-                  <div className="text-xs sm:text-sm font-bold text-emerald-400 truncate">
+                  <div className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 truncate">
                     +{formatCurrency(income, curr)}
                   </div>
                 </div>
 
                 {/* Saídas */}
                 <div className="space-y-0.5">
-                  <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-                    <ArrowUpRight className="w-3 h-3 text-rose-400 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    <ArrowUpRight className="w-3 h-3 text-rose-500 dark:text-rose-400 flex-shrink-0" />
                     <span className="truncate">{t('monthlySummary.expenses')}</span>
                   </div>
-                  <div className="text-xs sm:text-sm font-bold text-rose-400 truncate">
+                  <div className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 truncate">
                     -{formatCurrency(expense, curr)}
                   </div>
                 </div>
 
                 {/* Balanço */}
                 <div className="space-y-0.5">
-                  <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-                    <Scale className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    <Scale className="w-3 h-3 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
                     <span className="truncate">{t('monthlySummary.balance')}</span>
                   </div>
                   <div
                     className={`text-xs sm:text-sm font-bold truncate ${
-                      isPositive ? 'text-emerald-400' : 'text-rose-400'
+                      isPositive
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-600 dark:text-rose-400'
                     }`}
                   >
                     {isPositive

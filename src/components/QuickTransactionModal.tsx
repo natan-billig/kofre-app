@@ -312,30 +312,30 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
         {/* Modal Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {editingTransaction ? (
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30 flex items-center justify-center">
                 <Edit3 className="w-4 h-4" />
               </div>
             ) : null}
-            <h2 className="text-lg font-bold text-white">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {editingTransaction ? t('quickModal.editTitle') : t('quickModal.newTitle')}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Type Tabs */}
-        <div className="flex rounded-2xl bg-slate-950/60 p-1 border border-slate-800">
+        <div className="flex rounded-2xl bg-slate-100 dark:bg-slate-950/60 p-1 border border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={() => {
@@ -345,7 +345,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
               type === 'expense'
                 ? 'bg-rose-600 text-white shadow-md shadow-rose-600/25'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <ArrowDownCircle className="w-4 h-4" />
@@ -361,7 +361,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
               type === 'income'
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <ArrowUpCircle className="w-4 h-4" />
@@ -377,7 +377,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
               type === 'transfer'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <ArrowRightLeft className="w-4 h-4" />
@@ -386,7 +386,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
         </div>
 
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs">
             {errorMsg}
           </div>
         )}
@@ -398,13 +398,13 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Conta Origem */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
                     {t('quickModal.sourceAccount')} {language === 'es' ? '(Debitar)' : '(Debitar)'}
                   </label>
                   <select
                     value={sourceWalletId}
                     onChange={(e) => setSourceWalletId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:border-indigo-500 outline-none cursor-pointer"
                   >
                     {selectableWallets.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -416,13 +416,13 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
                 {/* Conta Destino */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
                     {t('quickModal.destAccount')} {language === 'es' ? '(Acreditar)' : '(Creditar)'}
                   </label>
                   <select
                     value={destWalletId}
                     onChange={(e) => setDestWalletId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:border-indigo-500 outline-none cursor-pointer"
                   >
                     {selectableWallets
                       .filter((w) => w.id !== sourceWalletId)
@@ -438,8 +438,8 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
               {/* Badge Informativo de Pagamento de Fatura */}
               {isInvoicePayment && (
-                <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/30 flex items-center gap-2 text-purple-200 text-xs">
-                  <CreditCard className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/30 flex items-center gap-2 text-purple-800 dark:text-purple-200 text-xs">
+                  <CreditCard className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
                   <span>
                     <strong>{t('categories.Pagamento de Fatura')}:</strong>{' '}
                     {language === 'es'
@@ -453,7 +453,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               {!isCrossCurrencyTransfer ? (
                 /* Mesma Moeda: Input Único */
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
                     {language === 'es' ? 'Monto de la Transferencia' : 'Valor da Transferência'} ({sourceWallet?.currency})
                   </label>
                   <input
@@ -464,14 +464,14 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-base font-semibold focus:border-indigo-500 outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-base font-semibold focus:border-indigo-500 outline-none"
                   />
                 </div>
               ) : (
                 /* Moedas Diferentes: Operação de Câmbio */
-                <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-500/20 space-y-3">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
-                    <Globe2 className="w-4 h-4 text-indigo-400" />
+                <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 space-y-3">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                    <Globe2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     <span>
                       {language === 'es' ? 'Operación de Cambio' : 'Operação de Câmbio'} ({sourceWallet?.currency} ➔ {destWallet?.currency})
                     </span>
@@ -479,7 +479,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-400 uppercase">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
                         {t('quickModal.debitedAmount')} ({sourceWallet?.currency})
                       </label>
                       <input
@@ -490,12 +490,12 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder={language === 'es' ? `Monto en ${sourceWallet?.currency}` : `Valor em ${sourceWallet?.currency}`}
-                        className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
+                        className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-400 uppercase">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase">
                         {t('quickModal.creditedAmount')} ({destWallet?.currency})
                       </label>
                       <input
@@ -506,14 +506,14 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                         value={destAmount}
                         onChange={(e) => setDestAmount(e.target.value)}
                         placeholder={language === 'es' ? `Monto en ${destWallet?.currency}` : `Valor em ${destWallet?.currency}`}
-                        className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
+                        className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
                       />
                     </div>
                   </div>
 
                   {/* Cotação implícita */}
                   {parseFloat(amount) > 0 && parseFloat(destAmount) > 0 && sourceWallet && destWallet && (
-                    <div className="text-center pt-1 text-xs text-indigo-300/80 font-mono">
+                    <div className="text-center pt-1 text-xs text-indigo-700 dark:text-indigo-300/80 font-mono">
                       {t('quickModal.exchangeRate')}: {formatExchangeRate(
                         parseFloat(amount),
                         sourceWallet.currency,
@@ -531,7 +531,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Seleção de Conta */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
                     {type === 'expense'
                       ? (language === 'es' ? 'Cuenta Debitada' : 'Conta Debitada')
                       : (language === 'es' ? 'Cuenta Acreditada' : 'Conta Creditada')}
@@ -539,7 +539,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   <select
                     value={sourceWalletId}
                     onChange={(e) => setSourceWalletId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:border-indigo-500 outline-none cursor-pointer"
                   >
                     {selectableWallets.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -552,7 +552,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
                 {/* Valor Efetivamente Cobrado */}
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
                     {t('quickModal.amount')} ({sourceWallet?.currency})
                   </label>
                   <input
@@ -563,7 +563,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-base font-semibold focus:border-indigo-500 outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-base font-semibold focus:border-indigo-500 outline-none"
                   />
                 </div>
               </div>
@@ -574,7 +574,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsBimonetary(!isBimonetary)}
-                    className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                    className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
                   >
                     <Globe2 className="w-3.5 h-3.5" />
                     <span>
@@ -585,8 +585,8 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   </button>
 
                   {isBimonetary && (
-                    <div className="mt-2 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
-                      <span className="text-[11px] font-semibold text-slate-400 uppercase block">
+                    <div className="mt-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-2">
+                      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-400 uppercase block">
                         {language === 'es' ? 'Monto Original de la Compra (Frontera)' : 'Valor Original da Compra (Fronteira)'}
                       </span>
                       <div className="grid grid-cols-2 gap-2">
@@ -597,12 +597,12 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                           value={originalAmount}
                           onChange={(e) => setOriginalAmount(e.target.value)}
                           placeholder="Ex: 10.00"
-                          className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 text-sm outline-none"
+                          className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm outline-none"
                         />
                         <select
                           value={originalCurrency}
                           onChange={(e) => setOriginalCurrency(e.target.value as CurrencyCode)}
-                          className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 text-sm outline-none"
+                          className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm outline-none"
                         >
                           <option value="BRL">BRL (Reais)</option>
                           <option value="USD">USD (Dólares)</option>
@@ -625,13 +625,13 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           {type !== 'transfer' && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-400 uppercase">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
                   {t('quickModal.category')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsCategoryManagerOpen(true)}
-                  className="cursor-pointer text-[11px] font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                  className="cursor-pointer text-[11px] font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1 transition-colors"
                 >
                   <Settings2 className="w-3.5 h-3.5" />
                   <span>{t('quickModal.manageCategories')}</span>
@@ -648,7 +648,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:border-indigo-500 outline-none cursor-pointer"
                   >
                     {!displayedCategories.some((c) => c.name === category) && category && (
                       <option value={category}>{category}</option>
@@ -657,13 +657,13 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                       <optgroup
                         key={macroName}
                         label={macroName}
-                        className="bg-slate-900 text-indigo-300 font-semibold"
+                        className="bg-slate-100 text-indigo-700 dark:bg-slate-900 dark:text-indigo-300 font-semibold"
                       >
                         {cats.map((cat) => (
                           <option
                             key={cat.id || cat.name}
                             value={cat.name}
-                            className="bg-slate-950 text-slate-100 font-normal"
+                            className="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-normal"
                           >
                             {t(`categories.${cat.name}`, cat.name)}
                           </option>
@@ -684,8 +684,8 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                           onClick={() => setCategory(cat.name)}
                           className={`cursor-pointer px-2 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-all ${
                             isSelected
-                              ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200 shadow-sm'
-                              : 'border-slate-800/80 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-200 shadow-sm font-semibold'
+                              : 'border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-slate-300'
                           }`}
                         >
                           <Icon className="w-3 h-3" />
@@ -702,18 +702,18 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
           {/* Data e Descrição */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase">{t('quickModal.date')}</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">{t('quickModal.date')}</label>
               <input
                 type="date"
                 required
                 value={transactionDate}
                 onChange={(e) => setTransactionDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-xs focus:border-indigo-500 outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:border-indigo-500 outline-none"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase">
                 {t('quickModal.description')}
               </label>
               <input
@@ -721,7 +721,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('quickModal.descriptionPlaceholder')}
-                className="w-full px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-100 text-xs focus:border-indigo-500 outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:border-indigo-500 outline-none"
               />
             </div>
           </div>

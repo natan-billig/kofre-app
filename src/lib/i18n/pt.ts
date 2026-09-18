@@ -383,6 +383,12 @@ export const pt = {
     alreadyRegisteredWithPassword:
       'Esta conta foi criada com e-mail e senha. Faça login normalmente e vincule o Google nas configurações do seu perfil.',
   },
+  theme: {
+    title: 'Tema',
+    light: 'Modo Claro',
+    dark: 'Modo Escuro',
+    system: 'Automático',
+  },
 }
 
 export type TranslationDictionary = typeof pt

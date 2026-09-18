@@ -162,25 +162,25 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-lg bg-slate-900/95 border border-slate-800/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+            <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400">
               <HandCoins className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white tracking-tight">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
                 {t('debts.newDebt')}
               </h2>
-              <p className="text-xs text-slate-400">{t('debts.title')}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('debts.title')}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800/60 transition-colors"
+            className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-white p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -189,7 +189,7 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
           {errorMessage && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-400 text-xs">
+            <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-700 dark:text-rose-400 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
@@ -197,33 +197,33 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
 
           {/* Direction Selector: "Eu Devo" vs "Me Devem" */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
               {t('debts.typeLabel')}
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setType('i_owe')}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                className={`cursor-pointer flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
                   type === 'i_owe'
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-400 shadow-sm shadow-amber-950/30'
-                    : 'bg-slate-950/40 border-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800/40'
+                    ? 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-500/15 dark:border-amber-500/50 dark:text-amber-400 shadow-sm shadow-amber-950/30'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-950/40 dark:border-slate-800/80 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-slate-800/40'
                 }`}
               >
-                <TrendingDown className="w-4 h-4 text-amber-400" />
+                <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>{t('debts.iOwe')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setType('they_owe')}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                className={`cursor-pointer flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
                   type === 'they_owe'
-                    ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400 shadow-sm shadow-emerald-950/30'
-                    : 'bg-slate-950/40 border-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800/40'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-500/50 dark:text-emerald-400 shadow-sm shadow-emerald-950/30'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-950/40 dark:border-slate-800/80 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-slate-800/40'
                 }`}
               >
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>{t('debts.theyOwe')}</span>
               </button>
             </div>
@@ -232,18 +232,18 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
           {/* Contact / Person */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                 {t('debts.contact')}
               </label>
               {familyId && familyMembers.length > 0 && (
-                <div className="flex items-center gap-1 bg-slate-800/60 p-0.5 rounded-lg text-[11px]">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-0.5 rounded-lg text-[11px]">
                   <button
                     type="button"
                     onClick={() => setContactMode('family')}
-                    className={`px-2 py-0.5 rounded-md transition-colors ${
+                    className={`cursor-pointer px-2 py-0.5 rounded-md transition-colors ${
                       contactMode === 'family'
-                        ? 'bg-slate-700 text-white font-medium'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-medium'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     {t('debts.familyMember')}
@@ -251,10 +251,10 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setContactMode('external')}
-                    className={`px-2 py-0.5 rounded-md transition-colors ${
+                    className={`cursor-pointer px-2 py-0.5 rounded-md transition-colors ${
                       contactMode === 'external'
-                        ? 'bg-slate-700 text-white font-medium'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-medium'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     {t('debts.otherExternal')}
@@ -265,12 +265,12 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
 
             {contactMode === 'family' && familyId && familyMembers.length > 0 ? (
               <div className="relative">
-                <Users className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Users className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <select
                   value={selectedMemberId}
                   onChange={(e) => setSelectedMemberId(e.target.value)}
                   disabled={loadingMembers}
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors cursor-pointer"
                 >
                   {familyMembers.map((member) => (
                     <option key={member.user_id} value={member.user_id}>
@@ -281,13 +281,13 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
               </div>
             ) : (
               <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={externalName}
                   onChange={(e) => setExternalName(e.target.value)}
                   placeholder={t('debts.contactNamePlaceholder')}
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
                   required
                 />
               </div>
@@ -297,31 +297,31 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
           {/* Amount and Currency Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                 {t('recurringBills.expectedAmount')}
               </label>
               <div className="relative">
-                <DollarSign className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="number"
                   step="any"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors font-mono"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                 {t('recurringBills.currency')}
               </label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors cursor-pointer"
               >
                 <option value="PYG">PYG (₲ Guaraní)</option>
                 <option value="USD">USD ($ Dólar)</option>
@@ -333,32 +333,32 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
           {/* Description & Due Date Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                 {t('transactions.title')} (Opcional)
               </label>
               <div className="relative">
-                <FileText className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder={t('debts.descriptionPlaceholder')}
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                 {t('debts.dueDate')} (Opcional)
               </label>
               <div className="relative">
-                <Calendar className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/60 transition-colors"
                 />
               </div>
             </div>
@@ -367,17 +367,17 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
           {/* Scope selection if user belongs to family */}
           {familyId && (
             <div className="space-y-1 pt-1">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
                 {t('recurringBills.scope')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setScope('personal')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                  className={`cursor-pointer py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
                     scope === 'personal'
-                      ? 'bg-slate-800 border-indigo-500/40 text-white'
-                      : 'bg-slate-950/40 border-slate-800/80 text-slate-400 hover:text-slate-300'
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-slate-800 dark:border-indigo-500/40 dark:text-white'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-950/40 dark:border-slate-800/80 dark:text-slate-400 dark:hover:text-slate-300'
                   }`}
                 >
                   {t('scope.personal')}
@@ -385,10 +385,10 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setScope('shared')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                  className={`cursor-pointer py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
                     scope === 'shared'
-                      ? 'bg-slate-800 border-indigo-500/40 text-white'
-                      : 'bg-slate-950/40 border-slate-800/80 text-slate-400 hover:text-slate-300'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-slate-800 dark:border-indigo-500/40 dark:text-white'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-950/40 dark:border-slate-800/80 dark:text-slate-400 dark:hover:text-slate-300'
                   }`}
                 >
                   {t('scope.shared')}
@@ -402,14 +402,14 @@ export const CreateDebtModal: React.FC<CreateDebtModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-xl transition-colors"
+              className="cursor-pointer px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors"
             >
               {t('transactions.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-violet-950/40 transition-all"
+              className="cursor-pointer flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-violet-950/40 transition-all"
             >
               {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{isSubmitting ? t('recurringBills.saving') : t('debts.saveDebt')}</span>

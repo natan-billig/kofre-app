@@ -22,14 +22,14 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
 
   return (
     <div className="w-full">
-      <div className="flex rounded-2xl bg-slate-900/90 p-1.5 border border-slate-800 shadow-sm">
+      <div className="flex rounded-2xl bg-white dark:bg-slate-900/90 p-1.5 border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
         <button
           type="button"
           onClick={() => onSelectScope('personal')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
             currentScope === 'personal'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-              : 'text-slate-400 hover:text-slate-200'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <User className="w-3.5 h-3.5" />
@@ -38,7 +38,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
             className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
               currentScope === 'personal'
                 ? 'bg-indigo-700/80 text-indigo-100'
-                : 'bg-slate-800 text-slate-400'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
             }`}
           >
             {personalCount}
@@ -51,7 +51,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
             currentScope === 'shared'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25'
-              : 'text-slate-400 hover:text-slate-200'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Users2 className="w-3.5 h-3.5" />
@@ -60,7 +60,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
             className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
               currentScope === 'shared'
                 ? 'bg-emerald-700/80 text-emerald-100'
-                : 'bg-slate-800 text-slate-400'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
             }`}
           >
             {sharedCount}
@@ -72,8 +72,8 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           onClick={() => onSelectScope('all')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
             currentScope === 'all'
-              ? 'bg-slate-700 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-slate-800 text-white dark:bg-slate-700 dark:text-white shadow-md'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -82,15 +82,15 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
       </div>
 
       {currentScope === 'shared' && onOpenFamilySettings && (
-        <div className="mt-2.5 flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+        <div className="mt-2.5 flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300">
           <div className="flex items-center gap-2">
-            <Users2 className="w-4 h-4 text-emerald-400" />
+            <Users2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span className="font-medium">{t('scope.sharedBanner')}</span>
           </div>
           <button
             type="button"
             onClick={onOpenFamilySettings}
-            className="cursor-pointer font-semibold underline underline-offset-2 hover:text-white transition-colors"
+            className="cursor-pointer font-semibold underline underline-offset-2 hover:text-emerald-900 dark:hover:text-white transition-colors"
           >
             {t('scope.manageInvite')}
           </button>

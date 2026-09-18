@@ -10,6 +10,7 @@ import {
 } from '../lib/authService'
 import { AVATAR_OPTIONS, AvatarRenderer } from '../lib/avatarHelper'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useTheme } from '../lib/theme'
 import {
   X,
   Loader2,
@@ -22,6 +23,9 @@ import {
   Save,
   Link2,
   Unlink,
+  Sun,
+  Moon,
+  Laptop,
 } from 'lucide-react'
 
 interface ProfileModalProps {
@@ -43,6 +47,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   onSignOut,
 }) => {
   const { t } = useTranslation()
+  const { theme, setTheme } = useTheme()
 
   const [fullName, setFullName] = useState(currentProfile?.full_name || '')
   const [avatar, setAvatar] = useState(currentProfile?.avatar || 'user')
@@ -184,25 +189,25 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-lg bg-slate-900/95 border border-slate-800/80 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-colors">
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400">
               <AvatarRenderer avatarId={avatar} className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                 {t('profile.title')}
               </h2>
-              <p className="text-xs text-slate-400">{t('profile.editTitle')}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('profile.editTitle')}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-white p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -235,8 +240,8 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
         <form onSubmit={handleSave} className="p-6 overflow-y-auto space-y-5 flex-1">
           {/* E-mail (Read-only) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-slate-500" />
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
               <span>{t('profile.email')}</span>
             </label>
             <input
@@ -244,14 +249,14 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
               value={userEmail || ''}
               disabled
               readOnly
-              className="w-full bg-slate-950/40 border border-slate-800/60 rounded-xl px-4 py-2.5 text-sm text-slate-400 cursor-not-allowed select-none"
+              className="w-full bg-slate-100/80 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/60 rounded-xl px-4 py-2.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none"
             />
           </div>
 
           {/* Full Name */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
               <span>{t('profile.fullName')}</span>
             </label>
             <input
@@ -260,14 +265,14 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
               onChange={(e) => setFullName(e.target.value)}
               placeholder={t('profile.fullNamePlaceholder')}
               required
-              className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/60 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
             />
           </div>
 
           {/* Avatar Selector Grid */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
               <span>{t('profile.avatar')}</span>
             </label>
             <div className="grid grid-cols-5 gap-2 sm:gap-2.5">
@@ -282,8 +287,8 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                     onClick={() => setAvatar(opt.id)}
                     className={`cursor-pointer relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
                       isSelected
-                        ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/40 text-indigo-300 shadow-md shadow-indigo-950/40 scale-105'
-                        : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                        ? 'bg-indigo-600/15 dark:bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/40 text-indigo-600 dark:text-indigo-300 shadow-md shadow-indigo-950/20 scale-105'
+                        : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                     }`}
                     title={opt.label}
                   >
@@ -304,8 +309,8 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
 
           {/* Preferred Currency Selector */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-amber-400" />
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Coins className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>{t('profile.preferredCurrency')}</span>
             </label>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -321,8 +326,8 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                     onClick={() => setPreferredCurrency(cur)}
                     className={`cursor-pointer py-2.5 px-3 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center transition-all ${
                       isSelected
-                        ? 'bg-emerald-600/20 border-emerald-500 ring-2 ring-emerald-500/40 text-emerald-300 shadow-md shadow-emerald-950/40'
-                        : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                        ? 'bg-emerald-600/15 dark:bg-emerald-600/20 border-emerald-500 ring-2 ring-emerald-500/40 text-emerald-600 dark:text-emerald-300 shadow-md'
+                        : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                     }`}
                   >
                     <span className="text-sm font-bold">{cur}</span>
@@ -333,13 +338,65 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
             </div>
           </div>
 
+          {/* Theme Mode Selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sun className="w-3.5 h-3.5 text-amber-500" />
+              <span>{t('theme.title')}</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {[
+                {
+                  mode: 'light' as const,
+                  label: t('theme.light'),
+                  icon: Sun,
+                  activeClass:
+                    'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/40 text-amber-600 dark:text-amber-400 shadow-md',
+                },
+                {
+                  mode: 'dark' as const,
+                  label: t('theme.dark'),
+                  icon: Moon,
+                  activeClass:
+                    'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/40 text-indigo-600 dark:text-indigo-300 shadow-md',
+                },
+                {
+                  mode: 'system' as const,
+                  label: t('theme.system'),
+                  icon: Laptop,
+                  activeClass:
+                    'bg-emerald-600/20 border-emerald-500 ring-2 ring-emerald-500/40 text-emerald-600 dark:text-emerald-300 shadow-md',
+                },
+              ].map((item) => {
+                const isSelected = theme === item.mode
+                const IconComp = item.icon
+
+                return (
+                  <button
+                    key={item.mode}
+                    type="button"
+                    onClick={() => setTheme(item.mode)}
+                    className={`cursor-pointer py-2.5 px-3 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1 transition-all ${
+                      isSelected
+                        ? item.activeClass
+                        : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <IconComp className="w-4 h-4 mb-0.5" />
+                    <span className="text-[11px] font-medium">{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Connected Accounts / Contas Conectadas */}
-          <div className="space-y-2 pt-2 border-t border-slate-800/80">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800/80">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Link2 className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
               <span>{t('profile.connectedAccounts')}</span>
             </label>
-            <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+            <div className="p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                   <path
@@ -360,16 +417,16 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                   />
                 </svg>
                 <div>
-                  <p className="text-xs font-medium text-white flex items-center gap-2">
+                  <p className="text-xs font-medium text-slate-900 dark:text-white flex items-center gap-2">
                     Google
                     {hasGoogle && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                         <CheckCircle2 className="w-3 h-3" />
                         {t('profile.googleConnected')}
                       </span>
                     )}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     {hasGoogle
                       ? (googleIdentity?.identity_data?.email as string) ||
                         userEmail ||
@@ -387,7 +444,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                     type="button"
                     disabled={isUnlinkingGoogle}
                     onClick={handleUnlinkGoogle}
-                    className="cursor-pointer text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1 shrink-0"
+                    className="cursor-pointer text-xs font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 px-2.5 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1 shrink-0"
                   >
                     {isUnlinkingGoogle ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -402,7 +459,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                   type="button"
                   disabled={isLinkingGoogle}
                   onClick={handleLinkGoogle}
-                  className="cursor-pointer text-xs font-medium text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5 active:scale-95 disabled:opacity-50 shrink-0"
+                  className="cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5 active:scale-95 disabled:opacity-50 shrink-0"
                 >
                   {isLinkingGoogle ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -416,7 +473,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
           </div>
 
           {/* Modal Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
             {/* Sign Out secondary button */}
             <button
               type="button"
@@ -424,7 +481,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                 onClose()
                 onSignOut()
               }}
-              className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-xl transition-colors"
+              className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 rounded-xl transition-colors"
             >
               <LogOut className="w-4 h-4" />
               <span>{t('profile.signOut')}</span>
@@ -435,14 +492,14 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="cursor-pointer px-4 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-xl transition-colors"
+                className="cursor-pointer px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors"
               >
                 {t('transactions.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="cursor-pointer inline-flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-950/40 transition-all active:scale-95"
+                className="cursor-pointer inline-flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-950/20 transition-all active:scale-95"
               >
                 {isSaving ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

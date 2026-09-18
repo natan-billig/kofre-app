@@ -194,11 +194,11 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
 
   if (activeCurrencies.length === 0) {
     return (
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 sm:p-5 text-center shadow-sm space-y-2">
-        <div className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-slate-800/80 text-slate-400">
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 text-center shadow-sm">
+        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center mx-auto mb-2">
           <PieChart className="w-4 h-4" />
         </div>
-        <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+        <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           {t('categoryBreakdown.title')}
         </div>
         <p className="text-xs sm:text-sm font-medium text-slate-400">
@@ -209,28 +209,28 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
   }
 
   return (
-    <div className="rounded-2xl bg-slate-900 border border-slate-800 p-3.5 sm:p-5 space-y-3.5 shadow-sm">
+    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 sm:p-5 space-y-3.5 shadow-sm transition-colors">
       {/* Header: Title, View Switcher, and Currency Selector Tabs */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400">
             <PieChart className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             {t('categoryBreakdown.title')}
           </span>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* View Mode Toggle: Por Grupo | Detalhado */}
-          <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800/80">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950/70 p-1 rounded-xl border border-slate-200 dark:border-slate-800/80">
             <button
               type="button"
               onClick={() => setViewMode('group')}
               className={`cursor-pointer px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
                 viewMode === 'group'
                   ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
               }`}
             >
               {t('categoryBreakdown.byGroup')}
@@ -241,7 +241,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
               className={`cursor-pointer px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
                 viewMode === 'detailed'
                   ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
               }`}
             >
               {t('categoryBreakdown.detailed')}
@@ -249,7 +249,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
           </div>
 
           {/* Currency Pills */}
-          <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800/80">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950/70 p-1 rounded-xl border border-slate-200 dark:border-slate-800/80">
             {activeCurrencies.map((curr) => {
               const isSelected = curr === selectedCurrency
               return (
@@ -260,7 +260,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
                   className={`cursor-pointer px-2.5 py-1 text-[11px] font-bold font-mono rounded-lg transition-all ${
                     isSelected
                       ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   {curr}
@@ -272,11 +272,11 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
       </div>
 
       {/* Period Total Summary */}
-      <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/50 border border-slate-800/80 text-xs">
-        <span className="text-slate-400 font-medium">
+      <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 text-xs">
+        <span className="text-slate-500 dark:text-slate-400 font-medium">
           {t('categoryBreakdown.periodTotal')}
         </span>
-        <span className="font-bold text-slate-100 font-mono text-sm">
+        <span className="font-bold text-slate-900 dark:text-slate-100 font-mono text-sm">
           {formatCurrency(currentData.total, selectedCurrency)}
         </span>
       </div>
@@ -302,7 +302,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
               return (
                 <div
                   key={group.macroCategory}
-                  className="rounded-xl bg-slate-950/40 border border-slate-800/70 p-2.5 space-y-2 transition-all hover:border-slate-700/80"
+                  className="rounded-xl bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/70 p-2.5 space-y-2 transition-all hover:border-slate-300 dark:hover:border-slate-700/80"
                 >
                   {/* Top row: Toggle Button / Group Info */}
                   <div
@@ -310,35 +310,35 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
                     className="flex items-center justify-between cursor-pointer select-none group"
                   >
                     <div className="flex items-center gap-2 min-w-0 pr-2">
-                      <div className="w-6 h-6 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center flex-shrink-0 text-slate-400 group-hover:text-indigo-400 transition-colors">
+                      <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 flex items-center justify-center flex-shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
                         <MacroIcon className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-semibold text-slate-200 text-xs sm:text-sm truncate">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs sm:text-sm truncate">
                         {translatedMacro}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono flex-shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 font-mono flex-shrink-0">
                         {group.subcategories.length}
                       </span>
                       <ChevronDown
-                        className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-transform duration-200 ${
+                        className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-transform duration-200 ${
                           isExpanded ? 'rotate-180' : ''
                         }`}
                       />
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-shrink-0 text-right">
-                      <span className="font-semibold text-rose-400 font-mono text-xs sm:text-sm">
+                      <span className="font-semibold text-rose-600 dark:text-rose-400 font-mono text-xs sm:text-sm">
                         {formatCurrency(group.amount, selectedCurrency)}
                       </span>
-                      <span className="text-slate-600 font-normal">&bull;</span>
-                      <span className="text-slate-400 font-mono text-xs font-medium">
+                      <span className="text-slate-400 dark:text-slate-600 font-normal">&bull;</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-mono text-xs font-medium">
                         {formattedPercentage}
                       </span>
                     </div>
                   </div>
 
                   {/* Proportional horizontal progress bar with gradient */}
-                  <div className="h-2 w-full bg-slate-950/80 rounded-full overflow-hidden p-[1px] border border-slate-800/60">
+                  <div className="h-2 w-full bg-slate-200/80 dark:bg-slate-950/80 rounded-full overflow-hidden p-[1px] border border-slate-300/60 dark:border-slate-800/60">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-indigo-500 to-violet-500 transition-all duration-500 ease-out"
                       style={{ width: `${Math.min(Math.max(group.percentage, 2), 100)}%` }}
@@ -347,7 +347,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
 
                   {/* Subcategories Accordion Content */}
                   {isExpanded && (
-                    <div className="pt-2 mt-1 border-t border-slate-850 space-y-2 pl-2 sm:pl-3">
+                    <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-800/80 space-y-2 pl-2 sm:pl-3">
                       {group.subcategories.map((sub) => {
                         const SubIcon = CATEGORY_ICON_MAP[sub.category] || Tag
                         const translatedSub = t(`categories.${sub.category}`, sub.category)
@@ -360,17 +360,17 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
                           <div key={sub.category} className="space-y-1 group/sub">
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-1.5 min-w-0 pr-2">
-                                <SubIcon className="w-3 h-3 text-slate-500 group-hover/sub:text-indigo-400 transition-colors flex-shrink-0" />
-                                <span className="text-slate-300 truncate">
+                                <SubIcon className="w-3 h-3 text-slate-400 dark:text-slate-500 group-hover/sub:text-indigo-500 dark:group-hover/sub:text-indigo-400 transition-colors flex-shrink-0" />
+                                <span className="text-slate-700 dark:text-slate-300 truncate">
                                   {translatedSub}
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-1.5 flex-shrink-0 text-right">
-                                <span className="font-mono text-slate-300 text-xs">
+                                <span className="font-mono text-slate-700 dark:text-slate-300 text-xs">
                                   {formatCurrency(sub.amount, selectedCurrency)}
                                 </span>
-                                <span className="text-slate-600 font-normal">&bull;</span>
+                                <span className="text-slate-400 dark:text-slate-600 font-normal">&bull;</span>
                                 <span className="text-slate-500 font-mono text-[11px]">
                                   {subFormattedPct}
                                 </span>
@@ -378,9 +378,9 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
                             </div>
 
                             {/* Subcategory proportional bar */}
-                            <div className="h-1 w-full bg-slate-900/90 rounded-full overflow-hidden">
+                            <div className="h-1 w-full bg-slate-200 dark:bg-slate-900/90 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-indigo-500/50 rounded-full transition-all duration-300"
+                                className="h-full bg-indigo-500/60 rounded-full transition-all duration-300"
                                 style={{
                                   width: `${Math.min(Math.max(sub.percentage, 1), 100)}%`,
                                 }}
@@ -417,27 +417,27 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
                   {/* Top row: Name with Icon (Left) & Formatted Amount and Percentage (Right) */}
                   <div className="flex items-center justify-between text-xs sm:text-sm">
                     <div className="flex items-center gap-2 min-w-0 pr-2">
-                      <div className="w-6 h-6 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center flex-shrink-0 text-slate-400 group-hover:text-indigo-400 transition-colors">
+                      <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 flex items-center justify-center flex-shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
                         <CategoryIcon className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-medium text-slate-200 truncate">
+                      <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
                         {translatedCategory}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-shrink-0 text-right">
-                      <span className="font-semibold text-rose-400 font-mono">
+                      <span className="font-semibold text-rose-600 dark:text-rose-400 font-mono">
                         {formatCurrency(item.amount, selectedCurrency)}
                       </span>
-                      <span className="text-slate-600 font-normal">&bull;</span>
-                      <span className="text-slate-400 font-mono text-xs font-medium">
+                      <span className="text-slate-400 dark:text-slate-600 font-normal">&bull;</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-mono text-xs font-medium">
                         {formattedPercentage}
                       </span>
                     </div>
                   </div>
 
                   {/* Proportional horizontal progress bar with subtle gradient (emerald/indigo/violet) */}
-                  <div className="h-2 w-full bg-slate-950/80 rounded-full overflow-hidden p-[1px] border border-slate-800/60">
+                  <div className="h-2 w-full bg-slate-200/80 dark:bg-slate-950/80 rounded-full overflow-hidden p-[1px] border border-slate-300/60 dark:border-slate-800/60">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-indigo-500 to-violet-500 transition-all duration-500 ease-out"
                       style={{ width: `${Math.min(Math.max(item.percentage, 2), 100)}%` }}

@@ -288,7 +288,7 @@ export default function App() {
   // Auth Loading screen
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex items-center justify-center transition-colors">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
       </div>
     )
@@ -314,7 +314,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30 transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         userEmail={sessionUser.email}

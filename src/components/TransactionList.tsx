@@ -139,20 +139,20 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   }
 
   return (
-    <div className="rounded-3xl bg-slate-900 border border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm">
+    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             {t('transactions.title')}
           </h2>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium">
             {filteredTransactions.length}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           {downloadSuccess && (
-            <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
+            <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2.5 py-1 rounded-xl">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">{t('transactions.exportSuccess')}</span>
             </div>
@@ -163,9 +163,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             onClick={handleExportCSV}
             disabled={filteredTransactions.length === 0}
             title={t('transactions.exportExcel')}
-            className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/80 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 hover:text-white border border-slate-700/60 rounded-xl text-xs font-medium transition-all shadow-sm active:scale-95"
+            className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs font-medium transition-all shadow-sm active:scale-95"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>{t('transactions.exportCsv')}</span>
           </button>
         </div>
@@ -173,13 +173,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
       {filteredTransactions.length === 0 ? (
         <div className="text-center py-12 space-y-2">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-800/80 text-slate-500 mb-1">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 mb-1">
             <MoreHorizontal className="w-5 h-5" />
           </div>
-          <p className="text-sm font-medium text-slate-300">{t('transactions.empty')}</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-300">{t('transactions.empty')}</p>
         </div>
       ) : (
-        <div className="divide-y divide-slate-800/60">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
           {filteredTransactions.map((tItem) => {
             const sourceWallet = walletMap.get(tItem.wallet_id)
             const destWallet = tItem.destination_wallet_id
@@ -210,17 +210,17 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             return (
               <div
                 key={tItem.id}
-                className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-800/20 px-2 rounded-2xl transition-all group"
+                className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/20 px-2 rounded-2xl transition-all group"
               >
                 {/* Left side: Icon and description */}
                 <div className="flex items-start gap-3 min-w-0">
                   <div
                     className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
                       tItem.type === 'expense'
-                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
                         : tItem.type === 'income'
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20'
+                        : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20'
                     }`}
                   >
                     <CategoryIcon className="w-5 h-5" />
@@ -229,13 +229,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   <div className="min-w-0 space-y-1">
                     {/* Title / Description */}
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm font-semibold text-white truncate">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                         {tItem.description || translatedCategory}
                       </span>
 
                       {/* Transferred From/To route */}
                       {tItem.type === 'transfer' && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-500/30 flex items-center gap-1 font-medium">
+                        <span className="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1 font-medium">
                           <span>{sourceWallet?.name || (language === 'es' ? 'Origen' : 'Origem')}</span>
                           <span>➔</span>
                           <span>{destWallet?.name || (language === 'es' ? 'Destino' : 'Destino')}</span>
@@ -244,7 +244,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     </div>
 
                     {/* Metadata line: Category, Date, Account, and Author for shared */}
-                    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
+                    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500 dark:text-slate-400">
                       <span>{translatedCategory}</span>
                       <span>&bull;</span>
                       <span>{formatDate(tItem.transaction_date, language)}</span>
@@ -253,7 +253,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       {tItem.type !== 'transfer' && sourceWallet && (
                         <>
                           <span>&bull;</span>
-                          <span className="text-slate-300 font-medium">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">
                             {sourceWallet.name}
                           </span>
                         </>
@@ -261,7 +261,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
                       {/* Etiqueta Obrigatória: Por: [Nome do Usuário] em transações do Caixa da Família */}
                       {isSharedTransaction && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[11px] font-semibold">
                           <User className="w-3 h-3" />
                           <span>{t('transactions.by')}: {authorName}</span>
                         </span>
@@ -270,7 +270,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
                     {/* Bimonetary display for frontier expenses */}
                     {tItem.original_amount && tItem.original_currency && (
-                      <div className="flex items-center gap-1 text-[11px] text-amber-400 font-mono">
+                      <div className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-mono">
                         <Globe2 className="w-3 h-3" />
                         <span>
                           {language === 'es' ? 'Monto original: ' : 'Valor original: '}
@@ -287,10 +287,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     <div
                       className={`text-sm sm:text-base font-bold tracking-tight ${
                         tItem.type === 'expense'
-                          ? 'text-rose-400'
+                          ? 'text-rose-600 dark:text-rose-400'
                           : tItem.type === 'income'
-                          ? 'text-emerald-400'
-                          : 'text-indigo-300'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-indigo-600 dark:text-indigo-300'
                       }`}
                     >
                       {tItem.type === 'expense' && '- '}
@@ -304,7 +304,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       sourceWallet &&
                       sourceWallet.currency !== destWallet.currency &&
                       tItem.destination_amount && (
-                        <div className="text-[11px] text-emerald-400/90 font-mono">
+                        <div className="text-[11px] text-emerald-600 dark:text-emerald-400/90 font-mono">
                           {language === 'es' ? 'Recibe: +' : 'Recebe: +'}
                           {formatCurrency(Number(tItem.destination_amount), destWallet.currency)}
                         </div>
@@ -313,11 +313,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
                   {/* Contextual Action Menu / Buttons (Only if permitted) */}
                   {canManage && (
-                    <div className="flex items-center gap-1 pl-1 border-l border-slate-800/80">
+                    <div className="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-800/80">
                       <button
                         type="button"
                         onClick={() => onEditTransaction(tItem)}
-                        className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                        className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
                         title={t('transactions.edit')}
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -325,7 +325,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       <button
                         type="button"
                         onClick={() => setTxToDelete(tItem)}
-                        className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                         title={t('transactions.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -341,35 +341,35 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
       {/* Confirmation Modal for Transaction Deletion */}
       {txToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2.5 text-rose-400">
-              <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-rose-600 dark:text-rose-400">
+              <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-white text-base">{t('transactions.deleteConfirmTitle')}</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('transactions.deleteConfirmTitle')}</h3>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               {t('transactions.deleteConfirmDesc')}
             </p>
 
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs space-y-1">
-              <div className="font-medium text-white">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+              <div className="font-medium text-slate-900 dark:text-white">
                 {txToDelete.description || t(`categories.${txToDelete.category}`, txToDelete.category)}
               </div>
-              <div className="text-slate-400 flex items-center justify-between">
+              <div className="text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>
                   {t(`categories.${txToDelete.category}`, txToDelete.category)} &bull; {formatDate(txToDelete.transaction_date, language)}
                 </span>
-                <span className="font-bold text-slate-200">
+                <span className="font-bold text-slate-700 dark:text-slate-200">
                   {formatCurrency(Number(txToDelete.amount), walletMap.get(txToDelete.wallet_id)?.currency || 'PYG')}
                 </span>
               </div>
             </div>
 
             {deleteError && (
-              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs">
                 {deleteError}
               </div>
             )}
@@ -378,7 +378,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               <button
                 type="button"
                 onClick={() => setTxToDelete(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
               >
                 {t('transactions.cancel')}
               </button>

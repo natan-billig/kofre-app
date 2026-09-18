@@ -46,14 +46,14 @@ export const AccountList: React.FC<AccountListProps> = ({
   const creditWallets = activeWallets.filter((w) => w.account_type === 'credit_card')
 
   return (
-    <div className="rounded-3xl bg-slate-900 border border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm">
+    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm transition-colors">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
             {t('accounts.title')}
           </h2>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
             {activeWallets.length}
           </span>
         </div>
@@ -62,7 +62,7 @@ export const AccountList: React.FC<AccountListProps> = ({
           <button
             type="button"
             onClick={onOpenCreateAccount}
-            className="cursor-pointer inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 transition-all font-medium"
+            className="cursor-pointer inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-600/10 hover:bg-indigo-100 dark:hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 transition-all font-medium"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t('accounts.newAccountButton')}</span>
@@ -70,7 +70,7 @@ export const AccountList: React.FC<AccountListProps> = ({
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="cursor-pointer p-1 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+            className="cursor-pointer p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
             title={collapsed ? 'Expandir lista' : 'Recolher lista'}
           >
             {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -83,8 +83,8 @@ export const AccountList: React.FC<AccountListProps> = ({
           {/* Efetivo */}
           {cashWallets.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                <Banknote className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <Banknote className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                 <span>{t('accounts.cash')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
@@ -93,32 +93,32 @@ export const AccountList: React.FC<AccountListProps> = ({
                   return (
                     <div
                       key={w.id}
-                      className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between hover:border-slate-700 transition-all group"
+                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all group"
                     >
                       <div className="space-y-0.5 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-100 truncate">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {w.name}
                           </span>
                           {w.type === 'shared' && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                               {t('nav.family')}
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-400 uppercase font-mono block">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-mono block">
                           {w.currency}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-sm font-bold text-slate-100">
+                        <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
                           {formatCurrency(bal, w.currency)}
                         </div>
                         {onManageAccount && (
                           <button
                             type="button"
                             onClick={() => onManageAccount(w)}
-                            className="cursor-pointer p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                            className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
                             title={t('accounts.settings')}
                           >
                             <Settings className="w-3.5 h-3.5" />
@@ -135,8 +135,8 @@ export const AccountList: React.FC<AccountListProps> = ({
           {/* Contas Bancárias */}
           {checkingWallets.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                <Landmark className="w-3.5 h-3.5 text-sky-400" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <Landmark className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
                 <span>{t('accounts.checking')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
@@ -145,32 +145,32 @@ export const AccountList: React.FC<AccountListProps> = ({
                   return (
                     <div
                       key={w.id}
-                      className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between hover:border-slate-700 transition-all group"
+                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all group"
                     >
                       <div className="space-y-0.5 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-100 truncate">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {w.name}
                           </span>
                           {w.type === 'shared' && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                               {t('nav.family')}
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-400 uppercase font-mono block">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-mono block">
                           {w.currency}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-sm font-bold text-slate-100">
+                        <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
                           {formatCurrency(bal, w.currency)}
                         </div>
                         {onManageAccount && (
                           <button
                             type="button"
                             onClick={() => onManageAccount(w)}
-                            className="cursor-pointer p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                            className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
                             title={t('accounts.settings')}
                           >
                             <Settings className="w-3.5 h-3.5" />
@@ -187,8 +187,8 @@ export const AccountList: React.FC<AccountListProps> = ({
           {/* Cartões de Crédito */}
           {creditWallets.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                <CreditCard className="w-3.5 h-3.5 text-purple-400" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <CreditCard className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
                 <span>{t('accounts.credit_card')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
@@ -199,15 +199,15 @@ export const AccountList: React.FC<AccountListProps> = ({
                   return (
                     <div
                       key={w.id}
-                      className="p-3 rounded-xl bg-slate-950/60 border border-purple-500/20 flex items-center justify-between hover:border-purple-500/40 transition-all group"
+                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-purple-200 dark:border-purple-500/20 flex items-center justify-between hover:border-purple-300 dark:hover:border-purple-500/40 transition-all group"
                     >
                       <div className="space-y-1 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-100 truncate">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {w.name}
                           </span>
                           {w.type === 'shared' && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                               {t('nav.family')}
                             </span>
                           )}
@@ -216,7 +216,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                         {/* Badge discreto com as datas: "Fecha dia X • Vence dia Y" */}
                         {hasCycleDates && (
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 font-medium">
                               {details.closingDay != null && `${t('creditCard.closesDay')} ${details.closingDay}`}
                               {details.closingDay != null && details.dueDay != null && ' • '}
                               {details.dueDay != null && `${t('creditCard.dueOnDay')} ${details.dueDay}`}
@@ -224,7 +224,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                           </div>
                         )}
 
-                        <span className="text-[11px] text-purple-300/80 uppercase font-mono block">
+                        <span className="text-[11px] text-purple-600 dark:text-purple-300/80 uppercase font-mono block">
                           {t('creditCard.currentInvoice')}: {w.currency}
                         </span>
                       </div>
@@ -232,22 +232,22 @@ export const AccountList: React.FC<AccountListProps> = ({
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <div className="text-right space-y-0.5">
                           {/* Fatura Atual destacada */}
-                          <div className="text-sm font-bold text-purple-300 font-mono">
+                          <div className="text-sm font-bold text-purple-700 dark:text-purple-300 font-mono">
                             {formatCurrency(details.currentInvoiceAmount, w.currency)}
                           </div>
 
                           {/* Próxima Fatura se houver compras pós-fechamento */}
                           {details.nextInvoiceAmount > 0 && (
-                            <div className="text-[10px] text-slate-400 font-medium font-mono">
-                              <span className="text-slate-500">{t('creditCard.nextInvoice')}:</span>{' '}
-                              <span className="text-slate-300">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono">
+                              <span className="text-slate-400 dark:text-slate-500">{t('creditCard.nextInvoice')}:</span>{' '}
+                              <span className="text-slate-700 dark:text-slate-300">
                                 {formatCurrency(details.nextInvoiceAmount, w.currency)}
                               </span>
                             </div>
                           )}
 
                           {w.credit_limit && (
-                            <div className="text-[10px] text-slate-400">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
                               {t('dashboard.availableLimit')}:{' '}
                               {formatCurrency(Math.max(0, Number(w.credit_limit) - details.totalDebt), w.currency)}
                             </div>
@@ -258,7 +258,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                           <button
                             type="button"
                             onClick={() => onManageAccount(w)}
-                            className="cursor-pointer p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                            className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
                             title={t('accounts.settings')}
                           >
                             <Settings className="w-3.5 h-3.5" />
@@ -273,20 +273,20 @@ export const AccountList: React.FC<AccountListProps> = ({
           )}
 
           {activeWallets.length === 0 && (
-            <div className="text-center py-6 text-slate-500 text-xs">
+            <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
               {t('accounts.empty')}
             </div>
           )}
 
           {/* Seção Contas Arquivadas */}
           {archivedWallets.length > 0 && (
-            <div className="pt-3 border-t border-slate-800/80">
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80">
               <button
                 type="button"
                 onClick={() => setShowArchived(!showArchived)}
-                className="cursor-pointer inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 font-medium transition-colors"
+                className="cursor-pointer inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium transition-colors"
               >
-                <Archive className="w-3.5 h-3.5 text-amber-400" />
+                <Archive className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 <span>{t('accounts.archived')} ({archivedWallets.length})</span>
                 {showArchived ? (
                   <ChevronUp className="w-3.5 h-3.5" />
@@ -302,30 +302,30 @@ export const AccountList: React.FC<AccountListProps> = ({
                     return (
                       <div
                         key={w.id}
-                        className="p-3 rounded-xl bg-slate-950/40 border border-dashed border-slate-800 flex items-center justify-between opacity-75 hover:opacity-100 transition-all"
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between opacity-75 hover:opacity-100 transition-all"
                       >
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-medium text-slate-300 line-through">
+                            <span className="text-sm font-medium text-slate-500 dark:text-slate-300 line-through">
                               {w.name}
                             </span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                               {t('manageAccount.archivedBadge')}
                             </span>
                           </div>
-                          <span className="text-[11px] text-slate-500 uppercase font-mono">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-mono">
                             {w.currency}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="text-xs font-semibold text-slate-400">
+                          <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                             {formatCurrency(bal, w.currency)}
                           </div>
                           {onManageAccount && (
                             <button
                               type="button"
                               onClick={() => onManageAccount(w)}
-                              className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                              className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
                               title={t('accounts.settings')}
                             >
                               <Settings className="w-3.5 h-3.5" />
