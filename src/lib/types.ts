@@ -184,5 +184,7 @@ export interface DebtItem {
   status: DebtStatus
   settled_at?: string | null
   created_at?: string
+  creator?: { full_name: string | null } | null
+  target?: { full_name: string | null } | null
 }
 

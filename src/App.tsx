@@ -157,7 +157,7 @@ export default function App() {
           : Promise.resolve([]),
         fetchRecurringBills('all', familyId).catch(() => []),
         fetchUserProfile(sessionUser.id).catch(() => null),
-        fetchDebts('all', familyId).catch(() => []),
+        fetchDebts('all', familyId, sessionUser.id).catch(() => []),
       ])
 
       setTransactions(loadedTxs)
@@ -189,7 +189,7 @@ export default function App() {
               : Promise.resolve([]),
             fetchRecurringBills('all', familyId).catch(() => []),
             fetchUserProfile(sessionUser.id).catch(() => null),
-            fetchDebts('all', familyId).catch(() => []),
+            fetchDebts('all', familyId, sessionUser.id).catch(() => []),
           ])
 
           if (isMounted) {
@@ -411,6 +411,7 @@ export default function App() {
                   debts={debts}
                   wallets={wallets}
                   currentScope={currentScope}
+                  currentUserId={sessionUser?.id}
                   onOpenCreateDebt={() => setIsCreateDebtOpen(true)}
                   onDebtChanged={() => refreshData()}
                 />
