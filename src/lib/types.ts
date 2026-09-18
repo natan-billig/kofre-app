@@ -38,6 +38,7 @@ export interface Transaction {
   transaction_date: string
   original_amount?: number | null
   original_currency?: CurrencyCode | null
+  debt_id?: string | null
 }
 
 export interface Profile {
@@ -73,6 +74,7 @@ export interface CreateTransactionDTO {
   transaction_date: string
   original_amount?: number | null
   original_currency?: CurrencyCode | null
+  debt_id?: string | null
 }
 
 export type UpdateTransactionDTO = Partial<Omit<CreateTransactionDTO, 'user_id'>>

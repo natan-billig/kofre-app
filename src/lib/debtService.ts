@@ -171,6 +171,7 @@ export async function createDebt(
         ? `Empréstimo recebido: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`
         : `Empréstimo concedido: ${debt.contact_name}${debt.description ? ` - ${debt.description}` : ''}`,
       transaction_date: effectiveIssueDate,
+      debt_id: createdDebt.id,
     })
   }
 
@@ -241,6 +242,7 @@ export async function settleDebt(
           ? `Quitação de empréstimo: ${otherPartyName}${debt.description ? ` - ${debt.description}` : ''}`
           : `Recebimento de empréstimo: ${otherPartyName}${debt.description ? ` - ${debt.description}` : ''}`,
         transaction_date: finalSettlementDate,
+        debt_id: debtId,
       })
     }
   }
@@ -268,8 +270,25 @@ export async function settleDebt(
 
 /**
  * Exclui uma dívida ou empréstimo.
+ * Remove explicitamente quaisquer transações vinculadas à dívida (debt_id)
+ * para garantir exclusão em cascata e estorno automático de saldos.
  */
 export async function deleteDebt(debtId: string): Promise<void> {
+  // 1. Remove quaisquer movimentações financeiras geradas por esta dívida
+  try {
+    const { error: txError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('debt_id', debtId)
+
+    if (txError && txError.code !== 'PGRST204') {
+      console.warn('Aviso ao excluir transações associadas à dívida:', txError)
+    }
+  } catch (err) {
+    console.warn('Não foi possível remover transações vinculadas à dívida via debt_id:', err)
+  }
+
+  // 2. Remove o registro da dívida
   const { error } = await supabase.from('debts').delete().eq('id', debtId)
 
   if (error) {

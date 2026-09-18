@@ -67,11 +67,25 @@ export async function fetchTransactionsByDateRange(
 }
 
 export async function createTransaction(payload: CreateTransactionDTO): Promise<Transaction> {
-  const { data, error } = await supabase
+  const insertPayload: Record<string, unknown> = { ...payload }
+
+  let { data, error } = await supabase
     .from('transactions')
-    .insert([payload])
+    .insert([insertPayload])
     .select()
     .single()
+
+  // Fallback seguro caso a coluna debt_id ainda não exista na tabela do Supabase
+  if (error && (error.code === 'PGRST204' || error.message?.includes('debt_id'))) {
+    delete insertPayload.debt_id
+    const retry = await supabase
+      .from('transactions')
+      .insert([insertPayload])
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Error inserting transaction:', error)
