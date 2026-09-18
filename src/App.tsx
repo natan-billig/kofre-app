@@ -395,7 +395,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30 transition-colors duration-200">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30 transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         userEmail={sessionUser.email}
@@ -420,7 +420,7 @@ export default function App() {
         }}
       />
 
-      <main className="flex-1 max-w-[1680px] w-full max-w-full overflow-x-hidden mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 py-4 sm:py-6 space-y-6">
+      <main className="flex-1 max-w-[1680px] w-full max-w-full overflow-x-clip mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 py-4 sm:py-6 space-y-6">
         {/* Scope Filter Bar (Minhas Contas / Caixa da Família) */}
         <ScopeFilter
           currentScope={currentScope}

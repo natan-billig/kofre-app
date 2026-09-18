@@ -31,6 +31,8 @@ import {
   Layout,
   ShieldCheck,
   Calculator,
+  Pin,
+  MessageCircle,
 } from 'lucide-react'
 
 interface WhatsNewModalProps {
@@ -59,6 +61,8 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Layout,
   ShieldCheck,
   Calculator,
+  Pin,
+  MessageCircle,
 }
 
 export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({

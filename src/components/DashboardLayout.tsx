@@ -49,7 +49,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   if (isDesktopXl) {
     // Ecrãs Largos (xl: e 2xl: >= 1280px): Grelha Balanceada em 3 Colunas
     return (
-      <div className="w-full max-w-full overflow-x-hidden grid grid-cols-12 gap-6 items-start">
+      <div className="w-full max-w-full overflow-x-clip grid grid-cols-12 gap-6 items-start">
         {/* Coluna 1 (Fluxo Operacional Diário): 4 colunas em 2xl, 4 colunas em xl */}
         <div className="col-span-12 xl:col-span-4 2xl:col-span-4 space-y-6">
           {currencyDashboard}
@@ -76,7 +76,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   // Ecrãs Intermédios (md: e lg: 2 colunas fluidas) e Telemóvel (sm: 1 coluna linear)
   return (
-    <div className="w-full max-w-full overflow-x-hidden space-y-6">
+    <div className="w-full max-w-full overflow-x-clip space-y-6">
       {/* Topo: Saldos e Faturas */}
       {currencyDashboard}
 

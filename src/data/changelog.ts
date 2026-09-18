@@ -11,9 +11,41 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.7.0'
+export const CURRENT_APP_VERSION = '1.7.1'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.7.1',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Cabeçalho Flutuante Fixo (Sticky) e Navegação Aprimorada v1.7.1',
+      es: 'Encabezado Fijo (Sticky) y Navegación Mejorada v1.7.1',
+    },
+    highlights: [
+      {
+        icon: 'Pin',
+        title: {
+          pt: 'Cabeçalho Sempre Visível',
+          es: 'Encabezado Siempre Visible',
+        },
+        description: {
+          pt: 'Aceda ao menu lateral, atalhos rápidos e ao logótipo a partir de qualquer ponto da página com efeito translúcido (Glassmorphism).',
+          es: 'Acceda al menú lateral, accesos rápidos y al logotipo desde cualquier punto de la página con efecto translúcido (Glassmorphism).',
+        },
+      },
+      {
+        icon: 'MessageCircle',
+        title: {
+          pt: 'Suporte Direto Oficial',
+          es: 'Soporte Directo Oficial',
+        },
+        description: {
+          pt: 'Ligação direta do WhatsApp atualizada para o contacto oficial de assistência e melhorias do Kofre.',
+          es: 'Enlace directo de WhatsApp actualizado para el contacto oficial de soporte y mejoras de Kofre.',
+        },
+      },
+    ],
+  },
   {
     version: '1.7.0',
     releaseDate: '2026-09-18',

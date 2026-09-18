@@ -44,7 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const avatarColor = getAvatarColor(userAvatar)
 
   return (
-    <header className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200">
+    <header className="sticky top-0 z-40 w-full transition-all duration-200 bg-white/85 dark:bg-slate-950/85 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm">
       <div className="max-w-[1680px] mx-auto px-4 lg:px-8 xl:px-12 py-3 flex items-center justify-between">
         {/* Brand */}
         <button
