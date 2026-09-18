@@ -13,6 +13,7 @@ import {
   Building2,
   Banknote,
   CreditCard,
+  PiggyBank,
   Check,
 } from 'lucide-react'
 
@@ -54,6 +55,22 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
   const [isUpdatingBalance, setIsUpdatingBalance] = useState(false)
   const [balanceError, setBalanceError] = useState<string | null>(null)
   const [balanceSuccess, setBalanceSuccess] = useState(false)
+
+  // Savings target amount state
+  const initTargetStr = wallet.target_amount != null ? wallet.target_amount.toString() : ''
+  const [targetAmount, setTargetAmount] = useState(initTargetStr)
+  const [currentTargetAmount, setCurrentTargetAmount] = useState(initTargetStr)
+  const [isUpdatingTarget, setIsUpdatingTarget] = useState(false)
+  const [targetError, setTargetError] = useState<string | null>(null)
+  const [targetSuccess, setTargetSuccess] = useState(false)
+
+  // Checking overdraft limit state
+  const initOverdraftStr = wallet.credit_limit != null ? wallet.credit_limit.toString() : ''
+  const [overdraftLimit, setOverdraftLimit] = useState(initOverdraftStr)
+  const [currentOverdraftLimit, setCurrentOverdraftLimit] = useState(initOverdraftStr)
+  const [isUpdatingOverdraft, setIsUpdatingOverdraft] = useState(false)
+  const [overdraftError, setOverdraftError] = useState<string | null>(null)
+  const [overdraftSuccess, setOverdraftSuccess] = useState(false)
 
   // Credit card invoice cycle & limit state
   const [closingDay, setClosingDay] = useState(wallet.closing_day?.toString() || '')
@@ -220,9 +237,75 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
     }
   }
 
+  const handleSaveTargetAmount = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wallet) return
+
+    setTargetError(null)
+    setTargetSuccess(false)
+
+    let parsed: number | null = null
+    if (targetAmount.trim()) {
+      parsed = Number(targetAmount.trim())
+      if (isNaN(parsed) || parsed < 0) {
+        setTargetError(t('manageAccount.invalidNumber'))
+        return
+      }
+    }
+
+    setIsUpdatingTarget(true)
+    try {
+      await updateWallet(wallet.id, {
+        target_amount: parsed,
+      })
+      setCurrentTargetAmount(targetAmount.trim())
+      setTargetSuccess(true)
+      onAccountUpdated()
+    } catch (err: unknown) {
+      console.error('Error updating target amount:', err)
+      setTargetError(err instanceof Error ? err.message : 'Erro ao atualizar meta financeira.')
+    } finally {
+      setIsUpdatingTarget(false)
+    }
+  }
+
+  const handleSaveOverdraftLimit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wallet) return
+
+    setOverdraftError(null)
+    setOverdraftSuccess(false)
+
+    let parsed: number | null = null
+    if (overdraftLimit.trim()) {
+      parsed = Number(overdraftLimit.trim())
+      if (isNaN(parsed) || parsed < 0) {
+        setOverdraftError(t('manageAccount.invalidNumber'))
+        return
+      }
+    }
+
+    setIsUpdatingOverdraft(true)
+    try {
+      await updateWallet(wallet.id, {
+        credit_limit: parsed,
+      })
+      setCurrentOverdraftLimit(overdraftLimit.trim())
+      setOverdraftSuccess(true)
+      onAccountUpdated()
+    } catch (err: unknown) {
+      console.error('Error updating overdraft limit:', err)
+      setOverdraftError(err instanceof Error ? err.message : 'Erro ao atualizar limite de sobregiro.')
+    } finally {
+      setIsUpdatingOverdraft(false)
+    }
+  }
+
   const AccountIcon =
     wallet.account_type === 'credit_card'
       ? CreditCard
+      : wallet.account_type === 'savings'
+      ? PiggyBank
       : wallet.account_type === 'cash'
       ? Banknote
       : Building2
@@ -241,6 +324,8 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 {wallet.account_type === 'credit_card'
                   ? t('accounts.credit_card')
+                  : wallet.account_type === 'savings'
+                  ? t('accounts.savings')
                   : wallet.account_type === 'cash'
                   ? t('accounts.cash')
                   : t('accounts.checking')}{' '}
@@ -309,57 +394,174 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
           )}
         </form>
 
-        {/* Edit Initial Balance Form for Liquid Accounts */}
-        {wallet.account_type !== 'credit_card' && (
+        {/* Edit Initial Balance / Initial Debt Form */}
+        <form
+          onSubmit={handleSaveInitialBalance}
+          className="space-y-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800"
+        >
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {wallet.account_type === 'credit_card'
+              ? t('creditCard.initialDebtLabel')
+              : t('manageAccount.initialBalanceLabel')}{' '}
+            ({wallet.currency})
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              step="any"
+              value={initialBalance}
+              onChange={(e) => {
+                setInitialBalance(e.target.value)
+                setBalanceSuccess(false)
+                setBalanceError(null)
+              }}
+              placeholder="0"
+              className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors font-mono"
+            />
+            <button
+              type="submit"
+              disabled={
+                isUpdatingBalance ||
+                initialBalance.trim() === currentInitialBalance ||
+                isNaN(Number(initialBalance))
+              }
+              className="cursor-pointer px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+            >
+              {isUpdatingBalance ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{t('manageAccount.saveBalance')}</span>
+                </>
+              )}
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            {wallet.account_type === 'credit_card'
+              ? t('creditCard.initialDebtTip')
+              : t('manageAccount.initialBalanceDesc')}
+          </p>
+          {balanceError && (
+            <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{balanceError}</p>
+          )}
+          {balanceSuccess && (
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
+              <span>{t('manageAccount.balanceUpdated')}</span>
+            </p>
+          )}
+        </form>
+
+        {/* Edit Target Amount Form for Savings */}
+        {wallet.account_type === 'savings' && (
           <form
-            onSubmit={handleSaveInitialBalance}
-            className="space-y-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800"
+            onSubmit={handleSaveTargetAmount}
+            className="space-y-2 p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20"
           >
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              {t('manageAccount.initialBalanceLabel')} ({wallet.currency})
+            <label className="block text-xs font-semibold text-amber-800 dark:text-amber-300">
+              {t('manageAccount.targetAmountLabel')} ({wallet.currency})
             </label>
             <div className="flex gap-2">
               <input
                 type="number"
+                min="0"
                 step="any"
-                value={initialBalance}
+                value={targetAmount}
                 onChange={(e) => {
-                  setInitialBalance(e.target.value)
-                  setBalanceSuccess(false)
-                  setBalanceError(null)
+                  setTargetAmount(e.target.value)
+                  setTargetSuccess(false)
+                  setTargetError(null)
                 }}
-                placeholder="0"
-                className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors font-mono"
+                placeholder="Ex: 5000000"
+                className="flex-1 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/30 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors font-mono"
               />
               <button
                 type="submit"
                 disabled={
-                  isUpdatingBalance ||
-                  initialBalance.trim() === currentInitialBalance ||
-                  isNaN(Number(initialBalance))
+                  isUpdatingTarget ||
+                  targetAmount.trim() === currentTargetAmount ||
+                  (targetAmount.trim() !== '' && isNaN(Number(targetAmount)))
                 }
-                className="cursor-pointer px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                className="cursor-pointer px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
               >
-                {isUpdatingBalance ? (
+                {isUpdatingTarget ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <>
                     <Check className="w-3.5 h-3.5" />
-                    <span>{t('manageAccount.saveBalance')}</span>
+                    <span>{t('manageAccount.saveTargetAmount')}</span>
                   </>
                 )}
               </button>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              {t('manageAccount.initialBalanceDesc')}
+            <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80">
+              {t('savings.tip')}
             </p>
-            {balanceError && (
-              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{balanceError}</p>
+            {targetError && (
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{targetError}</p>
             )}
-            {balanceSuccess && (
+            {targetSuccess && (
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" />
-                <span>{t('manageAccount.balanceUpdated')}</span>
+                <span>{t('manageAccount.targetAmountUpdated')}</span>
+              </p>
+            )}
+          </form>
+        )}
+
+        {/* Edit Overdraft Limit Form for Checking */}
+        {wallet.account_type === 'checking' && (
+          <form
+            onSubmit={handleSaveOverdraftLimit}
+            className="space-y-2 p-3.5 rounded-2xl bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-500/20"
+          >
+            <label className="block text-xs font-semibold text-sky-800 dark:text-sky-300">
+              {t('manageAccount.overdraftLimitLabel')} ({wallet.currency})
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={overdraftLimit}
+                onChange={(e) => {
+                  setOverdraftLimit(e.target.value)
+                  setOverdraftSuccess(false)
+                  setOverdraftError(null)
+                }}
+                placeholder="Ex: 1000000"
+                className="flex-1 bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-500/30 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors font-mono"
+              />
+              <button
+                type="submit"
+                disabled={
+                  isUpdatingOverdraft ||
+                  overdraftLimit.trim() === currentOverdraftLimit ||
+                  (overdraftLimit.trim() !== '' && isNaN(Number(overdraftLimit)))
+                }
+                className="cursor-pointer px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                {isUpdatingOverdraft ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t('manageAccount.saveOverdraftLimit')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-[11px] text-sky-700/80 dark:text-sky-300/80">
+              {t('checking.overdraftTip')}
+            </p>
+            {overdraftError && (
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{overdraftError}</p>
+            )}
+            {overdraftSuccess && (
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                <span>{t('manageAccount.overdraftLimitUpdated')}</span>
               </p>
             )}
           </form>

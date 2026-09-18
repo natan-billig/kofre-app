@@ -1,6 +1,6 @@
 export type CurrencyCode = 'PYG' | 'USD' | 'BRL'
 
-export type AccountType = 'cash' | 'checking' | 'credit_card'
+export type AccountType = 'cash' | 'checking' | 'credit_card' | 'savings'
 
 export type WalletScope = 'personal' | 'shared'
 
@@ -22,6 +22,7 @@ export interface Wallet {
   closing_day?: number | null
   due_day?: number | null
   is_archived?: boolean | null
+  target_amount?: number | null
 }
 
 export interface Transaction {

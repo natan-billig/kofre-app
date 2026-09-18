@@ -64,7 +64,7 @@ export function getCreditCardInvoiceDetails(
   }
 
   // Segregação das movimentações vinculadas ao cartão
-  let currentInvoiceDebt = 0
+  let currentInvoiceDebt = Number(wallet.initial_balance || 0)
   let nextInvoiceDebt = 0
 
   for (const t of transactions) {

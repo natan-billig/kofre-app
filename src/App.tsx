@@ -24,6 +24,7 @@ import { Navbar } from './components/Navbar'
 import { ScopeFilter } from './components/ScopeFilter'
 import { CurrencyDashboard } from './components/CurrencyDashboard'
 import { AccountList } from './components/AccountList'
+import { SavingsGoalsWidget } from './components/SavingsGoalsWidget'
 import { TransactionList } from './components/TransactionList'
 import { MonthSelector } from './components/MonthSelector'
 import { MonthlySummary } from './components/MonthlySummary'
@@ -274,6 +275,34 @@ export default function App() {
     setIsQuickTxOpen(true)
   }
 
+  // Quick Action: Guardar Dinheiro em Conta Poupança
+  const handleSaveMoney = (savingsWallet: Wallet) => {
+    const sourceAccount =
+      wallets.find(
+        (w) =>
+          w.id !== savingsWallet.id &&
+          (w.account_type === 'checking' || w.account_type === 'cash') &&
+          w.currency === savingsWallet.currency &&
+          !w.is_archived
+      ) ||
+      wallets.find(
+        (w) =>
+          w.id !== savingsWallet.id &&
+          (w.account_type === 'checking' || w.account_type === 'cash') &&
+          !w.is_archived
+      ) ||
+      wallets.find((w) => w.id !== savingsWallet.id && !w.is_archived)
+
+    setEditingTransaction(null)
+    setQuickTxType('transfer')
+    setQuickTxSourceId(sourceAccount?.id)
+    setQuickTxDestId(savingsWallet.id)
+    setQuickTxAmount(undefined)
+    setQuickTxCategory('Investimentos')
+    setQuickTxDescription(`Aporte Poupança: ${savingsWallet.name}`)
+    setIsQuickTxOpen(true)
+  }
+
   // Open default Quick Transaction (+)
   const handleOpenDefaultQuickTx = () => {
     setEditingTransaction(null)
@@ -430,6 +459,14 @@ export default function App() {
                   currentUserId={sessionUser?.id}
                   onOpenCreateDebt={() => setIsCreateDebtOpen(true)}
                   onDebtChanged={() => refreshData()}
+                />
+
+                <SavingsGoalsWidget
+                  wallets={wallets}
+                  transactions={transactions}
+                  currentScope={currentScope}
+                  onSaveMoney={handleSaveMoney}
+                  onManageAccount={(wallet) => setManagingWallet(wallet)}
                 />
 
                 <AccountList

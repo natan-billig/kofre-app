@@ -3,7 +3,7 @@ import type { AccountType, CurrencyCode, WalletScope } from '../lib/types'
 import { createWallet } from '../lib/walletService'
 import { getOrCreateMyFamilyId } from '../lib/familyService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
-import { X, Loader2, Building2, Banknote, CreditCard, Users2, User } from 'lucide-react'
+import { X, Loader2, Building2, Banknote, CreditCard, PiggyBank, Users2, User } from 'lucide-react'
 
 interface CreateAccountModalProps {
   userId: string
@@ -25,6 +25,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [scope, setScope] = useState<WalletScope>('personal')
   const [initialBalance, setInitialBalance] = useState<string>('0')
   const [creditLimit, setCreditLimit] = useState<string>('')
+  const [targetAmount, setTargetAmount] = useState<string>('')
   const [closingDay, setClosingDay] = useState<string>('')
   const [dueDay, setDueDay] = useState<string>('')
   const [loading, setLoading] = useState(false)
@@ -67,6 +68,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       }
 
       const parsedInitialBalance = initialBalance.trim() ? Number(initialBalance.trim()) : 0
+      const parsedCreditLimit = creditLimit.trim() ? Number(creditLimit.trim()) : null
+      const parsedTargetAmount = targetAmount.trim() ? Number(targetAmount.trim()) : null
 
       await createWallet({
         owner_id: userId,
@@ -75,20 +78,23 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         account_type: accountType,
         currency,
         family_id: familyId,
-        initial_balance:
-          accountType === 'credit_card'
-            ? 0
-            : isNaN(parsedInitialBalance)
-            ? 0
-            : parsedInitialBalance,
-        credit_limit: accountType === 'credit_card' && creditLimit ? Number(creditLimit) : null,
+        initial_balance: isNaN(parsedInitialBalance) ? 0 : parsedInitialBalance,
+        credit_limit:
+          (accountType === 'credit_card' || accountType === 'checking') && parsedCreditLimit !== null && !isNaN(parsedCreditLimit)
+            ? parsedCreditLimit
+            : null,
         closing_day: accountType === 'credit_card' && closingDay ? parseInt(closingDay, 10) : null,
         due_day: accountType === 'credit_card' && dueDay ? parseInt(dueDay, 10) : null,
+        target_amount:
+          accountType === 'savings' && parsedTargetAmount !== null && !isNaN(parsedTargetAmount)
+            ? parsedTargetAmount
+            : null,
       })
 
       setName('')
       setInitialBalance('0')
       setCreditLimit('')
+      setTargetAmount('')
       setClosingDay('')
       setDueDay('')
       onAccountCreated()
@@ -141,7 +147,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
               {t('createAccount.accountType')}
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => setAccountType('cash')}
@@ -152,7 +158,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 }`}
               >
                 <Banknote className="w-4 h-4" />
-                <span>{t('createAccount.cash')}</span>
+                <span className="text-center">{t('createAccount.cash')}</span>
               </button>
               <button
                 type="button"
@@ -164,7 +170,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 }`}
               >
                 <Building2 className="w-4 h-4" />
-                <span>{t('createAccount.checking')}</span>
+                <span className="text-center">{t('createAccount.checking')}</span>
               </button>
               <button
                 type="button"
@@ -176,10 +182,30 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
-                <span>{t('createAccount.creditCard')}</span>
+                <span className="text-center">{t('createAccount.creditCard')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('savings')}
+                className={`py-2 px-2 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  accountType === 'savings'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
+                }`}
+              >
+                <PiggyBank className="w-4 h-4" />
+                <span className="text-center truncate w-full">{t('accounts.savings')}</span>
               </button>
             </div>
           </div>
+
+          {/* Dica informativa para Conta Poupança / Reserva */}
+          {accountType === 'savings' && (
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2.5">
+              <PiggyBank className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p>{t('createAccount.savingsTip')}</p>
+            </div>
+          )}
 
           {/* Nome da Conta */}
           <div className="space-y-1.5">
@@ -252,22 +278,66 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             </div>
           </div>
 
-          {/* Saldo Inicial para contas de liquidez (Efetivo e Conta Bancária) */}
-          {accountType !== 'credit_card' && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
-                {t('createAccount.initialBalance')} ({currency})
+          {/* Saldo Inicial / Fatura Inicial */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider">
+              {accountType === 'credit_card'
+                ? t('createAccount.creditCardInitialBalance')
+                : t('createAccount.initialBalance')}{' '}
+              ({currency})
+            </label>
+            <input
+              type="number"
+              step="any"
+              value={initialBalance}
+              onChange={(e) => setInitialBalance(e.target.value)}
+              placeholder="0"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 text-sm outline-none transition-all font-mono"
+            />
+            <p className="text-[11px] text-slate-500">
+              {accountType === 'credit_card'
+                ? t('createAccount.creditCardInitialBalanceTip')
+                : t('createAccount.initialBalanceDesc')}
+            </p>
+          </div>
+
+          {/* Campo Específico: Meta Financeira para Poupança */}
+          {accountType === 'savings' && (
+            <div className="space-y-1.5 p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20">
+              <label className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <PiggyBank className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>{t('createAccount.targetAmount')} ({currency})</span>
               </label>
               <input
                 type="number"
+                min="0"
                 step="any"
-                value={initialBalance}
-                onChange={(e) => setInitialBalance(e.target.value)}
-                placeholder="0"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 text-sm outline-none transition-all font-mono"
+                value={targetAmount}
+                onChange={(e) => setTargetAmount(e.target.value)}
+                placeholder={t('createAccount.targetAmountPlaceholder')}
+                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-amber-200 dark:border-amber-500/30 focus:border-amber-500 text-slate-900 dark:text-slate-100 text-sm outline-none font-mono"
               />
-              <p className="text-[11px] text-slate-500">
-                {t('createAccount.initialBalanceDesc')}
+            </div>
+          )}
+
+          {/* Campo Específico: Limite de Sobregiro para Conta Bancária */}
+          {accountType === 'checking' && (
+            <div className="space-y-1.5 p-3.5 rounded-2xl bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-500/20">
+              <label className="text-xs font-semibold text-sky-800 dark:text-sky-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                <span>{t('createAccount.checkingOverdraftLimit')} ({currency})</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={creditLimit}
+                onChange={(e) => setCreditLimit(e.target.value)}
+                placeholder="Ex: 1000000"
+                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-sky-200 dark:border-sky-500/30 focus:border-sky-500 text-slate-900 dark:text-slate-100 text-sm outline-none font-mono"
+              />
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {t('createAccount.checkingOverdraftTip')}
               </p>
             </div>
           )}

@@ -154,17 +154,30 @@ export async function createWallet(payload: {
   credit_limit?: number | null
   closing_day?: number | null
   due_day?: number | null
+  target_amount?: number | null
 }): Promise<Wallet> {
-  const insertPayload = {
+  const insertPayload: Record<string, unknown> = {
     ...payload,
     initial_balance: payload.initial_balance != null ? payload.initial_balance : 0,
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('wallets')
     .insert([insertPayload])
     .select()
     .single()
+
+  // Fallback seguro caso a coluna target_amount não exista ainda na tabela do Supabase
+  if (error && (error.code === 'PGRST204' || error.message?.includes('target_amount'))) {
+    delete insertPayload.target_amount
+    const retry = await supabase
+      .from('wallets')
+      .insert([insertPayload])
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Error creating wallet:', error)
@@ -218,6 +231,7 @@ export async function updateWallet(
     credit_limit?: number | null
     closing_day?: number | null
     due_day?: number | null
+    target_amount?: number | null
   }
 ): Promise<Wallet> {
   const updateData: Record<string, unknown> = {}
@@ -226,13 +240,27 @@ export async function updateWallet(
   if (payload.credit_limit !== undefined) updateData.credit_limit = payload.credit_limit
   if (payload.closing_day !== undefined) updateData.closing_day = payload.closing_day
   if (payload.due_day !== undefined) updateData.due_day = payload.due_day
+  if (payload.target_amount !== undefined) updateData.target_amount = payload.target_amount
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('wallets')
     .update(updateData)
     .eq('id', walletId)
     .select()
     .single()
+
+  // Fallback se target_amount não existir no Supabase
+  if (error && (error.code === 'PGRST204' || error.message?.includes('target_amount'))) {
+    delete updateData.target_amount
+    const retry = await supabase
+      .from('wallets')
+      .update(updateData)
+      .eq('id', walletId)
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Error updating wallet:', error)

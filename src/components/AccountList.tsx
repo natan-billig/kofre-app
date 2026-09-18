@@ -8,6 +8,7 @@ import {
   Banknote,
   Landmark,
   CreditCard,
+  PiggyBank,
   Plus,
   ChevronDown,
   ChevronUp,
@@ -42,6 +43,7 @@ export const AccountList: React.FC<AccountListProps> = ({
   const cashWallets = activeWallets.filter((w) => w.account_type === 'cash')
   const checkingWallets = activeWallets.filter((w) => w.account_type === 'checking')
   const creditWallets = activeWallets.filter((w) => w.account_type === 'credit_card')
+  const savingsWallets = activeWallets.filter((w) => w.account_type === 'savings')
 
   return (
     <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm transition-colors">
@@ -133,17 +135,25 @@ export const AccountList: React.FC<AccountListProps> = ({
           {/* Contas Bancárias */}
           {checkingWallets.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                <Landmark className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
+              <div className="flex items-center gap-1.5 text-xs text-sky-600 dark:text-sky-400 font-medium">
+                <Landmark className="w-3.5 h-3.5" />
                 <span>{t('accounts.checking')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                 {checkingWallets.map((w) => {
                   const bal = calculateAccountBalance(w, transactions)
+                  const hasOverdraft = w.credit_limit != null && Number(w.credit_limit) > 0
+                  const overdraft = hasOverdraft ? Number(w.credit_limit) : 0
+                  const isNegative = bal < 0
+
                   return (
                     <div
                       key={w.id}
-                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all group"
+                      className={`p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border ${
+                        isNegative
+                          ? 'border-rose-300 dark:border-rose-500/40 bg-rose-50/20 dark:bg-rose-950/10'
+                          : 'border-slate-200 dark:border-slate-800/80'
+                      } flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all group`}
                     >
                       <div className="space-y-0.5 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -161,8 +171,94 @@ export const AccountList: React.FC<AccountListProps> = ({
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                          {formatCurrency(bal, w.currency)}
+                        <div className="text-right space-y-0.5">
+                          <div
+                            className={`text-sm font-bold font-mono ${
+                              isNegative ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
+                            }`}
+                          >
+                            {formatCurrency(bal, w.currency)}
+                          </div>
+                          {hasOverdraft && (
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                              <span>
+                                {t('checking.availableWithOverdraft')}:{' '}
+                                <strong className="font-semibold text-slate-700 dark:text-slate-300">
+                                  {formatCurrency(bal + overdraft, w.currency)}
+                                </strong>
+                              </span>
+                              <span className="block text-[10px] text-slate-400">
+                                ({t('checking.overdraftLimitShort')}: {formatCurrency(overdraft, w.currency)})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {onManageAccount && (
+                          <button
+                            type="button"
+                            onClick={() => onManageAccount(w)}
+                            className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+                            title={t('accounts.settings')}
+                          >
+                            <Settings className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Contas Poupança / Reserva de Metas */}
+          {savingsWallets.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                <PiggyBank className="w-3.5 h-3.5" />
+                <span>{t('accounts.savings')}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+                {savingsWallets.map((w) => {
+                  const bal = calculateAccountBalance(w, transactions)
+                  const hasTarget = w.target_amount != null && Number(w.target_amount) > 0
+                  const target = hasTarget ? Number(w.target_amount) : 0
+
+                  return (
+                    <div
+                      key={w.id}
+                      className="p-3 rounded-xl bg-amber-50/40 dark:bg-amber-950/15 border border-amber-200 dark:border-amber-500/20 flex items-center justify-between hover:border-amber-300 dark:hover:border-amber-500/40 transition-all group"
+                    >
+                      <div className="space-y-0.5 min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                            {w.name}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-semibold">
+                            {t('accounts.savingsBadge')}
+                          </span>
+                          {w.type === 'shared' && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-medium">
+                              {t('nav.family')}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-amber-700/70 dark:text-amber-300/70 uppercase font-mono block">
+                          {w.currency}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="text-right space-y-0.5">
+                          <div className="text-sm font-bold text-amber-700 dark:text-amber-300 font-mono">
+                            {formatCurrency(bal, w.currency)}
+                          </div>
+                          {hasTarget && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                              <span>
+                                {t('accounts.targetAmount')}: {formatCurrency(target, w.currency)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         {onManageAccount && (
                           <button

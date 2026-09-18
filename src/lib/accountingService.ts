@@ -130,8 +130,8 @@ export function calculateAccountBalance(wallet: Wallet, transactions: Transactio
   const initialBalance = Number(wallet.initial_balance || 0)
 
   if (wallet.account_type === 'credit_card') {
-    // Para cartões de crédito: fatura = despesas - receitas - pagamentos recebidos
-    let debt = 0
+    // Para cartões de crédito: fatura = (initial_balance || 0) + despesas - receitas - pagamentos recebidos
+    let debt = initialBalance
     for (const t of transactions) {
       if (t.type === 'expense' && t.wallet_id === wallet.id) {
         debt += Number(t.amount)
