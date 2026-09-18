@@ -3,7 +3,7 @@ import type { Transaction, Wallet, ScopeFilterType, Category } from '../lib/type
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { fetchProfilesMap } from '../lib/profileService'
 import { fetchCategories } from '../lib/categoryService'
-import { deleteTransaction } from '../lib/accountingService'
+import { deleteTransaction, updateTransaction, fetchTransactionsByDateRange } from '../lib/accountingService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { TransactionDetailsModal } from './TransactionDetailsModal'
 import {
@@ -34,9 +34,9 @@ import {
   Tag,
   Sparkles,
   CreditCard,
+  CalendarClock,
 } from 'lucide-react'
 import { exportTransactionsToCSV } from '../lib/exportService'
-import { fetchTransactionsByDateRange } from '../lib/accountingService'
 
 interface TransactionListProps {
   transactions: Transaction[]
@@ -667,6 +667,14 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           </span>
                         </span>
                       )}
+
+                      {/* Agendada / A Vencer Badge */}
+                      {(tItem.is_paid === false || tItem.status === 'pending') && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 flex items-center gap-1 font-semibold">
+                          <CalendarClock className="w-3 h-3 text-amber-500" />
+                          <span>{language === 'es' ? 'Por Vencer' : 'A Vencer'}</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Metadata line: Category, Date, Account, and Author for shared */}
@@ -740,6 +748,25 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   {/* Contextual Action Menu / Buttons (Only if permitted) */}
                   {canManage && (
                     <div className="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-800/80">
+                      {(tItem.is_paid === false || tItem.status === 'pending') && (
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            try {
+                              await updateTransaction(tItem.id, { is_paid: true, status: 'completed' })
+                              onTransactionDeleted()
+                            } catch (err) {
+                              console.error('Error marking paid:', err)
+                            }
+                          }}
+                          className="cursor-pointer px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 mr-1"
+                          title={language === 'es' ? 'Marcar como pagado' : 'Marcar como pago'}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">{language === 'es' ? 'Pagar' : 'Pagar'}</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {

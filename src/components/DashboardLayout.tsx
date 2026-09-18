@@ -18,6 +18,10 @@ interface DashboardLayoutProps {
   accountList: React.ReactNode
   savingsGoals: React.ReactNode
   debtsWidget: React.ReactNode
+
+  // Controle de Abas Móveis
+  activeMobileTab?: 'wallet' | 'planning' | 'statement'
+  onMobileTabChange?: (tab: 'wallet' | 'planning' | 'statement') => void
 }
 
 function subscribeXlQuery(callback: () => void) {
@@ -56,9 +60,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   accountList,
   savingsGoals,
   debtsWidget,
+  activeMobileTab,
+  onMobileTabChange,
 }) => {
   const { language } = useTranslation()
-  const [mobileTab, setMobileTab] = useState<'wallet' | 'planning' | 'statement'>('wallet')
+  const [internalMobileTab, setInternalMobileTab] = useState<'wallet' | 'planning' | 'statement'>('wallet')
+  const mobileTab = activeMobileTab ?? internalMobileTab
+  const setMobileTab = onMobileTabChange ?? setInternalMobileTab
 
   const isDesktop = useSyncExternalStore(
     subscribeMdQuery,

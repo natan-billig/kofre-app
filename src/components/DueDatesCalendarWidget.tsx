@@ -9,7 +9,7 @@ import type {
   DueCommitmentItem,
 } from '../lib/types'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
-import { calculateBalances, getActiveCurrencies } from '../lib/accountingService'
+import { calculateBalances, getActiveCurrencies, updateTransaction } from '../lib/accountingService'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
@@ -18,6 +18,8 @@ import {
   CalendarCheck,
   HandCoins,
   ShieldAlert,
+  CalendarClock,
+  CheckCircle2,
 } from 'lucide-react'
 
 interface DueDatesCalendarWidgetProps {
@@ -28,6 +30,7 @@ interface DueDatesCalendarWidgetProps {
   currentScope?: ScopeFilterType
   preferredCurrency?: CurrencyCode
   selectedMonthDate?: Date
+  onTransactionPaid?: (transactionId: string) => Promise<void> | void
 }
 
 export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
@@ -38,8 +41,9 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   currentScope = 'personal',
   preferredCurrency = 'PYG',
   selectedMonthDate = new Date(),
+  onTransactionPaid,
 }) => {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   // Moedas disponíveis
   const activeCurrencies = getActiveCurrencies(wallets, preferredCurrency)
@@ -127,6 +131,59 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       entityName: debt.contact_name,
       scope: currentScope,
     })
+  }
+
+  // D. Despesas Avulsas Agendadas / Não Pagas (is_paid === false || status === 'pending')
+  const scopedWalletMap = new Map<string, Wallet>()
+  for (const w of scopedWallets) {
+    scopedWalletMap.set(w.id, w)
+  }
+
+  for (const t of transactions) {
+    if (t.type !== 'expense') continue
+    if (t.is_paid !== false && t.status !== 'pending') continue
+
+    const wallet = scopedWalletMap.get(t.wallet_id)
+    if (!wallet || wallet.currency !== currencyToUse) continue
+
+    let dueDay = 1
+    if (t.transaction_date) {
+      const parts = t.transaction_date.split('-')
+      if (parts.length === 3) {
+        dueDay = parseInt(parts[2], 10) || 1
+      }
+    }
+
+    commitments.push({
+      id: `tx-${t.id}`,
+      title: t.description || t.category || (language === 'es' ? 'Gasto Programado' : 'Despesa Agendada'),
+      amount: Number(t.amount),
+      currency: currencyToUse,
+      type: 'scheduled_expense',
+      dueDay,
+      dueDate: t.transaction_date,
+      entityName: t.category,
+      scope: currentScope,
+      transactionId: t.id,
+      is_paid: false,
+    })
+  }
+
+  const [payingId, setPayingId] = useState<string | null>(null)
+
+  const handleMarkAsPaid = async (transactionId: string) => {
+    setPayingId(transactionId)
+    try {
+      if (onTransactionPaid) {
+        await onTransactionPaid(transactionId)
+      } else {
+        await updateTransaction(transactionId, { is_paid: true, status: 'completed' })
+      }
+    } catch (err) {
+      console.error('Error marking scheduled expense as paid:', err)
+    } finally {
+      setPayingId(null)
+    }
   }
 
   // Ordenar compromissos por dia de vencimento (1 a 31)
@@ -281,20 +338,42 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                   } else if (item.type === 'debt') {
                     ItemIcon = HandCoins
                     iconColor = 'text-rose-500'
+                  } else if (item.type === 'scheduled_expense') {
+                    ItemIcon = CalendarClock
+                    iconColor = 'text-amber-500'
                   }
 
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300"
+                      className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 py-0.5"
                     >
                       <div className="flex items-center gap-2 min-w-0 pr-2">
                         <ItemIcon className={`w-3.5 h-3.5 ${iconColor} shrink-0`} />
                         <span className="truncate">{item.title}</span>
+                        {item.type === 'scheduled_expense' && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                            {language === 'es' ? 'Por Vencer' : 'A Vencer'}
+                          </span>
+                        )}
                       </div>
-                      <span className="font-medium shrink-0">
-                        {formatCurrency(item.amount, item.currency)}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-semibold">
+                          {formatCurrency(item.amount, item.currency)}
+                        </span>
+                        {item.type === 'scheduled_expense' && item.transactionId && (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkAsPaid(item.transactionId!)}
+                            disabled={payingId === item.transactionId}
+                            className="cursor-pointer px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                            title={language === 'es' ? 'Marcar como pagado' : 'Marcar como pago'}
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>{payingId === item.transactionId ? '...' : (language === 'es' ? 'Pagar' : 'Pagar')}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )
                 })}

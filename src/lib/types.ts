@@ -46,6 +46,8 @@ export interface Transaction {
   cashback_amount?: number | null
   cashback_percent?: number | null
   parent_transaction_id?: string | null
+  is_paid?: boolean | null
+  status?: 'pending' | 'completed' | null
 }
 
 export interface Profile {
@@ -94,6 +96,8 @@ export interface CreateTransactionDTO {
   cashback_amount?: number | null
   cashback_percent?: number | null
   parent_transaction_id?: string | null
+  is_paid?: boolean | null
+  status?: 'pending' | 'completed' | null
 }
 
 export type UpdateTransactionDTO = Partial<Omit<CreateTransactionDTO, 'user_id'>>
@@ -233,12 +237,14 @@ export interface DueCommitmentItem {
   title: string
   amount: number
   currency: CurrencyCode
-  type: 'card_invoice' | 'recurring_bill' | 'debt'
+  type: 'card_invoice' | 'recurring_bill' | 'debt' | 'scheduled_expense'
   dueDay?: number
   dueDate?: string
   entityName?: string
   scope: WalletScope
   status?: 'pending' | 'overdue' | 'paid'
+  transactionId?: string
+  is_paid?: boolean | null
 }
 
 export interface ParsedNotification {

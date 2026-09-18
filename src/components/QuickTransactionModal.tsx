@@ -43,6 +43,7 @@ import {
   Layers,
   Calculator,
   ClipboardPaste,
+  CalendarClock,
 } from 'lucide-react'
 import { hasMathExpression, evaluateMathExpression } from '../lib/mathParser'
 import { predictCategory } from '../lib/categoryPredictor'
@@ -154,6 +155,13 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
     editingTransaction?.transaction_date
       ? editingTransaction.transaction_date.substring(0, 10)
       : initialDate ?? new Date().toISOString().split('T')[0]
+  )
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const [isScheduled, setIsScheduled] = useState<boolean>(
+    Boolean(
+      editingTransaction?.is_paid === false ||
+      editingTransaction?.status === 'pending'
+    )
   )
 
   // Sugestão Preditiva de Categorias
@@ -388,6 +396,20 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       }
     }
 
+    if (
+      type === 'expense' &&
+      !isScheduled &&
+      (sourceWallet?.account_type === 'cash' || sourceWallet?.account_type === 'checking') &&
+      transactionDate > todayStr
+    ) {
+      setErrorMsg(
+        language === 'es'
+          ? 'No se permiten fechas futuras para efectivo o cuentas bancarias sin activar "Programar Pago".'
+          : 'Não são permitidas datas futuras para contas de liquidez sem ativar "Agendar Pagamento".'
+      )
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -414,6 +436,8 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             type === 'expense' && hasCashback && cashbackType === 'percent'
               ? parseFloat(cashbackPercent) || null
               : null,
+          is_paid: type === 'expense' ? !isScheduled : true,
+          status: type === 'expense' && isScheduled ? 'pending' : 'completed',
         }
 
         const updated = await updateTransaction(editingTransaction.id, updatePayload)
@@ -495,6 +519,8 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             type === 'expense' && hasCashback && cashbackType === 'percent'
               ? parseFloat(cashbackPercent) || null
               : null,
+          is_paid: type === 'expense' ? !isScheduled : true,
+          status: type === 'expense' && isScheduled ? 'pending' : 'completed',
         }
 
         const created = await createTransaction(payload)
@@ -1175,6 +1201,44 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
             </div>
           )}
 
+          {/* Comutador de Agendamento / Vencimento Futuro */}
+          {type === 'expense' && installments <= 1 && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 transition-all">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                  <CalendarClock className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {language === 'es' ? 'Programar Pago / Vencimiento Futuro' : 'Agendar Pagamento / Vencimento Futuro'}
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {language === 'es'
+                      ? 'No descuenta el saldo actual hasta marcarse como pagado'
+                      : 'Não desconta o saldo atual até ser marcado como pago'}
+                  </div>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={isScheduled}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setIsScheduled(checked)
+                    if (checked && transactionDate < todayStr) {
+                      setTransactionDate(todayStr)
+                    } else if (!checked && transactionDate > todayStr && sourceWallet?.account_type !== 'credit_card') {
+                      setTransactionDate(todayStr)
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+          )}
+
           {/* Data e Descrição */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -1183,6 +1247,13 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                 type="date"
                 required
                 value={transactionDate}
+                min={isScheduled ? todayStr : undefined}
+                max={
+                  !isScheduled &&
+                  (sourceWallet?.account_type === 'cash' || sourceWallet?.account_type === 'checking')
+                    ? todayStr
+                    : undefined
+                }
                 onChange={(e) => setTransactionDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:border-indigo-500 outline-none"
               />

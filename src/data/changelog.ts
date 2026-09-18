@@ -11,9 +11,63 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.2'
+export const CURRENT_APP_VERSION = '1.8.3'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.3',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Despesas Agendadas, Drilldown de Categorias e Atalhos v1.8.3',
+      es: 'Gastos Programados, Drilldown de Categorías y Accesos Directos v1.8.3',
+    },
+    highlights: [
+      {
+        icon: 'CalendarClock',
+        title: {
+          pt: 'Trava de Data e Despesas Agendadas',
+          es: 'Bloqueo de Fecha y Gastos Programados',
+        },
+        description: {
+          pt: 'Bloqueio de datas futuras em dinheiro e contas correntes para manter o saldo líquido real, com comutador para agendar contas a pagar sem debitar o saldo de imediato.',
+          es: 'Bloqueo de fechas futuras en efectivo y cuentas corrientes para mantener la liquidez real, con opción de programar pagos futuros sin descontar el saldo al instante.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Contas Agendadas no Calendário e Baixa Rápida',
+          es: 'Cuentas Programadas en Calendario y Pago Rápido',
+        },
+        description: {
+          pt: 'As despesas agendadas agora constam no Calendário de Vencimentos com badge "A Vencer" e botão de baixa em 1 clique para debitar quando efetivamente pagas.',
+          es: 'Los gastos programados ahora figuran en el Calendario de Vencimientos con etiqueta "Por Vencer" y botón de pago en 1 clic para debitar cuando se paguen.',
+        },
+      },
+      {
+        icon: 'PieChart',
+        title: {
+          pt: 'Filtro Interativo e Detalhe de Categorias',
+          es: 'Filtro Interactivo y Detalle de Categorías',
+        },
+        description: {
+          pt: 'Clique em qualquer grupo ou categoria para abrir o modal de lançamentos do mês e aceder diretamente ao extrato filtrado com 1 toque.',
+          es: 'Haz clic en cualquier grupo o categoría para abrir el modal con los movimientos del mes y acceder directamente al extracto filtrado con 1 toque.',
+        },
+      },
+      {
+        icon: 'Settings',
+        title: {
+          pt: 'Atalhos Rápidos de Gastos Fixos e Grupos',
+          es: 'Accesos Directos a Gastos Fijos y Grupos',
+        },
+        description: {
+          pt: 'Botão de Gastos Fixos na barra do Desktop, atalho de Grupos & Categorias no menu do telemóvel e card de boas-vindas com botão de cadastro quando a lista estiver vazia.',
+          es: 'Botón de Gastos Fijos en la barra Desktop, acceso a Grupos y Categorías en el menú móvil y tarjeta de bienvenida con botón de registro cuando la lista esté vacía.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.2',
     releaseDate: '2026-09-18',

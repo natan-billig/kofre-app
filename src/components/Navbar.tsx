@@ -1,6 +1,6 @@
 import React from 'react'
 import { supabase } from '../lib/supabase'
-import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon, Sparkles, Coins, ClipboardPaste } from 'lucide-react'
+import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon, Sparkles, Coins, ClipboardPaste, Calendar } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { useTheme } from '../lib/theme'
 import { AvatarRenderer, getAvatarColor } from '../lib/avatarHelper'
@@ -15,6 +15,7 @@ interface NavbarProps {
   onOpenCreateAccount: () => void
   onOpenFamilySettings: () => void
   onOpenProfile: () => void
+  onOpenRecurringBills?: () => void
   onOpenWhatsNew?: () => void
   hasUnreadWhatsNew?: boolean
   unseenCount?: number
@@ -34,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateAccount,
   onOpenFamilySettings,
   onOpenProfile,
+  onOpenRecurringBills,
   onOpenWhatsNew,
   hasUnreadWhatsNew,
   unseenCount,
@@ -225,6 +227,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <span className="text-sm leading-none">🍕</span>
               <span>{language === 'es' ? 'Dividir Cuenta' : 'Dividir Conta'}</span>
+            </button>
+          )}
+
+          {onOpenRecurringBills && (
+            <button
+              type="button"
+              onClick={onOpenRecurringBills}
+              className="cursor-pointer inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 shadow-xs"
+              title={language === 'es' ? 'Gastos Fijos Recurrentes' : 'Gastos Fixos Recorrentes'}
+            >
+              <Calendar className="w-4 h-4 text-purple-500" />
+              <span>{language === 'es' ? 'Gastos Fijos' : 'Gastos Fixos'}</span>
             </button>
           )}
 

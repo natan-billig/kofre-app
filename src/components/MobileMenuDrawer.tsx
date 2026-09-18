@@ -16,6 +16,7 @@ import {
   Coins,
   ClipboardPaste,
   Users,
+  Tag,
 } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { useTheme } from '../lib/theme'
@@ -34,6 +35,7 @@ interface MobileMenuDrawerProps {
   onOpenRecurringBills: () => void
   onOpenDebts: () => void
   onOpenFamilySettings: () => void
+  onOpenManageCategories?: () => void
   onOpenWhatsNew: () => void
   onOpenOnboardingTour: () => void
   onOpenCurrencyExchange: () => void
@@ -54,6 +56,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onOpenRecurringBills,
   onOpenDebts,
   onOpenFamilySettings,
+  onOpenManageCategories,
   onOpenWhatsNew,
   onOpenOnboardingTour,
   onOpenCurrencyExchange,
@@ -188,6 +191,22 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
                 </div>
                 <span>{t('nav.familyTitle')}</span>
               </button>
+
+              {onOpenManageCategories && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose()
+                    onOpenManageCategories()
+                  }}
+                  className="w-full cursor-pointer flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+                    <Tag className="w-4 h-4" />
+                  </div>
+                  <span>{language === 'es' ? 'Grupos y Categorías' : 'Grupos & Categorias'}</span>
+                </button>
+              )}
             </div>
           </div>
 

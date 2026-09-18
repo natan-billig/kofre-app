@@ -37,6 +37,8 @@ import {
   Activity,
   ClipboardPaste,
   Share2,
+  CalendarClock,
+  Settings,
 } from 'lucide-react'
 
 interface WhatsNewModalProps {
@@ -70,6 +72,8 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Activity,
   ClipboardPaste,
   Share2,
+  CalendarClock,
+  Settings,
 }
 
 export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({

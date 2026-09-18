@@ -75,6 +75,8 @@ const OPTIONAL_COLUMNS = [
   'cashback_amount',
   'cashback_percent',
   'parent_transaction_id',
+  'is_paid',
+  'status',
 ]
 
 export async function createTransaction(payload: CreateTransactionDTO): Promise<Transaction> {
@@ -305,6 +307,10 @@ export function calculateAccountBalance(wallet: Wallet, transactions: Transactio
   // saldo_atual = initial_balance + receitas - despesas + transferencias_recebidas - transferencias_enviadas
   let balance = initialBalance
   for (const t of transactions) {
+    // Ignora despesas agendadas / pendentes que ainda não foram pagas
+    if (t.is_paid === false || t.status === 'pending') {
+      continue
+    }
     if (t.type === 'income' && t.wallet_id === wallet.id) {
       balance += Number(t.amount)
     }

@@ -48,6 +48,7 @@ import { MobileMenuDrawer } from './components/MobileMenuDrawer'
 import { SmartNotificationParserModal } from './components/SmartNotificationParserModal'
 import { CurrencyExchangeModal } from './components/CurrencyExchangeModal'
 import { SplitBillModal } from './components/SplitBillModal'
+import { CategoryManagerModal } from './components/CategoryManagerModal'
 import { AuthModal } from './components/auth/AuthModal'
 import { CURRENT_APP_VERSION, getUnseenCount } from './data/changelog'
 import { Plus, Loader2 } from 'lucide-react'
@@ -98,6 +99,8 @@ export default function App() {
   const [isNotificationParserOpen, setIsNotificationParserOpen] = useState(false)
   const [isCurrencyExchangeOpen, setIsCurrencyExchangeOpen] = useState(false)
   const [isSplitBillOpen, setIsSplitBillOpen] = useState(false)
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
+  const [mobileTab, setMobileTab] = useState<'wallet' | 'planning' | 'statement'>('wallet')
 
   // WhatsNew & Onboarding Tour State
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false)
@@ -435,6 +438,7 @@ export default function App() {
         onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
         onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenRecurringBills={() => setIsRecurringBillsModalOpen(true)}
         onOpenWhatsNew={() => {
           setIsWhatsNewOpen(true)
           setUnseenWhatsNewCount(0)
@@ -472,6 +476,8 @@ export default function App() {
           </div>
         ) : (
           <DashboardLayout
+            activeMobileTab={mobileTab}
+            onMobileTabChange={setMobileTab}
             currencyDashboard={
               <CurrencyDashboard
                 balances={balances}
@@ -527,6 +533,12 @@ export default function App() {
                 currentScope={currentScope}
                 preferredCurrency={preferredCurrency}
                 onSelectCategory={(catName) => setActiveCategoryFilter(catName)}
+                onNavigateToStatement={(catName) => {
+                  setActiveCategoryFilter(catName)
+                  setMobileTab('statement')
+                  document.getElementById('transaction-list')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                onOpenManageCategories={() => setIsCategoryManagerOpen(true)}
               />
             }
             dueDatesCalendar={
@@ -538,6 +550,9 @@ export default function App() {
                 currentScope={currentScope}
                 preferredCurrency={preferredCurrency}
                 selectedMonthDate={selectedDate}
+                onTransactionPaid={async () => {
+                  await refreshData()
+                }}
               />
             }
             monthlyBills={
@@ -752,6 +767,7 @@ export default function App() {
         onOpenRecurringBills={() => setIsRecurringBillsModalOpen(true)}
         onOpenDebts={() => setIsCreateDebtOpen(true)}
         onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
+        onOpenManageCategories={() => setIsCategoryManagerOpen(true)}
         onOpenWhatsNew={() => {
           setIsWhatsNewOpen(true)
           setUnseenWhatsNewCount(0)
@@ -814,6 +830,15 @@ export default function App() {
           if (data.category) setQuickTxCategory(data.category)
           setIsQuickTxOpen(true)
         }}
+      />
+
+      {/* Category & Budget Manager Modal */}
+      <CategoryManagerModal
+        isOpen={isCategoryManagerOpen}
+        onClose={() => setIsCategoryManagerOpen(false)}
+        scope={currentScope}
+        familyId={wallets.find((w) => w.type === 'shared' && w.family_id)?.family_id}
+        onCategoriesChanged={() => refreshData()}
       />
     </div>
   )
