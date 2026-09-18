@@ -1,6 +1,6 @@
 import React from 'react'
 import { supabase } from '../lib/supabase'
-import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon } from 'lucide-react'
+import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon, Sparkles } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { useTheme } from '../lib/theme'
 import { AvatarRenderer, getAvatarColor } from '../lib/avatarHelper'
@@ -12,6 +12,8 @@ interface NavbarProps {
   onOpenCreateAccount: () => void
   onOpenFamilySettings: () => void
   onOpenProfile: () => void
+  onOpenWhatsNew?: () => void
+  hasUnreadWhatsNew?: boolean
   onSignOut: () => void
 }
 
@@ -22,6 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCreateAccount,
   onOpenFamilySettings,
   onOpenProfile,
+  onOpenWhatsNew,
+  hasUnreadWhatsNew,
   onSignOut,
 }) => {
   const { t, language, setLanguage } = useTranslation()
@@ -95,6 +99,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Moon className="w-4 h-4 text-indigo-600" />
             )}
           </button>
+
+          {/* What's New / Changelog Button */}
+          {onOpenWhatsNew && (
+            <button
+              type="button"
+              onClick={onOpenWhatsNew}
+              className="relative cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
+              title={language === 'es' ? 'Novedades de Kofre' : 'Novidades do Kofre'}
+              aria-label="Novidades"
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              {hasUnreadWhatsNew && (
+                <>
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900" />
+                </>
+              )}
+            </button>
+          )}
 
           {/* Family Sharing Modal Button */}
           <button

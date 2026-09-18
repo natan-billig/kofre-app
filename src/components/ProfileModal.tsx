@@ -26,6 +26,7 @@ import {
   Sun,
   Moon,
   Laptop,
+  Compass,
 } from 'lucide-react'
 
 interface ProfileModalProps {
@@ -35,6 +36,7 @@ interface ProfileModalProps {
   currentProfile: Profile | null
   onClose: () => void
   onProfileUpdated: (updatedProfile: Profile) => void
+  onOpenOnboardingTour?: () => void
   onSignOut: () => void
 }
 
@@ -44,6 +46,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   currentProfile,
   onClose,
   onProfileUpdated,
+  onOpenOnboardingTour,
   onSignOut,
 }) => {
   const { t } = useTranslation()
@@ -389,6 +392,37 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
               })}
             </div>
           </div>
+
+          {/* Guia Rápido / Onboarding Tour Shortcut */}
+          {onOpenOnboardingTour && (
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onOpenOnboardingTour()
+                }}
+                className="cursor-pointer w-full p-3 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-between text-left transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600/10 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <Compass className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                      {t('profile.quickGuideTitle')}
+                    </div>
+                    <div className="text-[11px] text-indigo-700/80 dark:text-indigo-400">
+                      {t('profile.quickGuideSubtitle')}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                  ➔
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* Connected Accounts / Contas Conectadas */}
           <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800/80">

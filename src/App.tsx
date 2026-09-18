@@ -38,7 +38,10 @@ import { ProfileModal } from './components/ProfileModal'
 import { CreateAccountModal } from './components/CreateAccountModal'
 import { ManageAccountModal } from './components/ManageAccountModal'
 import { FamilySettingsModal } from './components/FamilySettingsModal'
+import { WhatsNewModal } from './components/WhatsNewModal'
+import { OnboardingTourModal } from './components/OnboardingTourModal'
 import { AuthModal } from './components/auth/AuthModal'
+import { CURRENT_APP_VERSION } from './data/changelog'
 import { Plus, Loader2 } from 'lucide-react'
 import { useTranslation } from './lib/i18n/LanguageContext'
 
@@ -83,6 +86,34 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null)
 
+  // WhatsNew & Onboarding Tour State
+  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false)
+  const [isOnboardingTourOpen, setIsOnboardingTourOpen] = useState(false)
+  const [hasUnreadWhatsNew, setHasUnreadWhatsNew] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('kofre_last_seen_version') !== CURRENT_APP_VERSION
+    } catch {
+      return false
+    }
+  })
+
+  const checkInitialModals = () => {
+    try {
+      const onboardingCompleted = localStorage.getItem('kofre_onboarding_completed')
+      if (!onboardingCompleted) {
+        setIsOnboardingTourOpen(true)
+        return
+      }
+
+      const lastSeen = localStorage.getItem('kofre_last_seen_version')
+      if (lastSeen !== CURRENT_APP_VERSION) {
+        setIsWhatsNewOpen(true)
+      }
+    } catch {
+      // Ignora falhas de localStorage
+    }
+  }
+
   // 1. Supabase Auth Session listener
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -105,6 +136,8 @@ export default function App() {
             session.user.email
           ).catch((err) => console.warn('Erro ao sincronizar perfil social:', err))
         }
+
+        checkInitialModals()
       } else {
         setSessionUser(null)
       }
@@ -142,6 +175,10 @@ export default function App() {
             userName || session.user.email.split('@')[0],
             session.user.email
           ).catch((err) => console.warn('Erro ao sincronizar perfil social:', err))
+
+          if (event === 'SIGNED_IN') {
+            checkInitialModals()
+          }
         }
       } else {
         setSessionUser(null)
@@ -365,6 +402,11 @@ export default function App() {
         onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
         onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenWhatsNew={() => {
+          setIsWhatsNewOpen(true)
+          setHasUnreadWhatsNew(false)
+        }}
+        hasUnreadWhatsNew={hasUnreadWhatsNew}
         onSignOut={() => {
           setSessionUser(null)
           setWallets([])
@@ -566,6 +608,7 @@ export default function App() {
         userEmail={sessionUser.email}
         currentProfile={userProfile}
         onClose={() => setIsProfileModalOpen(false)}
+        onOpenOnboardingTour={() => setIsOnboardingTourOpen(true)}
         onProfileUpdated={(updatedProfile) => {
           setUserProfile(updatedProfile)
           if (updatedProfile.full_name) {
@@ -593,6 +636,29 @@ export default function App() {
         initialScope={currentScope}
         wallets={wallets}
         onDebtCreated={() => refreshData()}
+      />
+
+      {/* What's New / Changelog Modal */}
+      <WhatsNewModal
+        isOpen={isWhatsNewOpen}
+        onClose={() => setIsWhatsNewOpen(false)}
+        onVersionAcknowledged={() => setHasUnreadWhatsNew(false)}
+      />
+
+      {/* Onboarding Tour / Guia Rápido Modal */}
+      <OnboardingTourModal
+        isOpen={isOnboardingTourOpen}
+        onClose={() => setIsOnboardingTourOpen(false)}
+        onCompleted={() => {
+          try {
+            const lastSeen = localStorage.getItem('kofre_last_seen_version')
+            if (lastSeen !== CURRENT_APP_VERSION) {
+              setHasUnreadWhatsNew(true)
+            }
+          } catch {
+            // Ignora
+          }
+        }}
       />
     </div>
   )

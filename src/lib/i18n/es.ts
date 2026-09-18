@@ -9,6 +9,7 @@ export const es: TranslationDictionary = {
     newAccountTitle: 'Crear nueva cuenta o tarjeta',
     signOut: 'Cerrar sesión',
     user: 'Usuario',
+    whatsNew: 'Novedades de Kofre',
   },
   profile: {
     title: 'Mi Perfil',
@@ -31,6 +32,8 @@ export const es: TranslationDictionary = {
     linkGoogleError: 'No fue posible vincular la cuenta de Google. Verifica que el correo de Google sea el mismo de esta cuenta.',
     unlinkSuccess: 'Cuenta de Google desvinculada con éxito.',
     unlinkConfirm: '¿Deseas desvincular tu cuenta de Google? Deberás usar correo y contraseña para entrar.',
+    quickGuideTitle: 'Guía Rápida de Uso',
+    quickGuideSubtitle: 'Repasar primeros pasos y conceptos clave',
   },
   scope: {
     personal: 'Mis Cuentas',
@@ -503,5 +506,18 @@ export const es: TranslationDictionary = {
     light: 'Modo Claro',
     dark: 'Modo Oscuro',
     system: 'Automático',
+  },
+  whatsNew: {
+    title: 'Novedades de Kofre',
+    subtitle: 'Descubre las mejoras y nuevas funciones de esta versión',
+    currentVersion: 'Versión Actual',
+    viewHistory: 'Ver historial de actualizaciones anteriores',
+    exploreButton: '¡Entendido! Explorar Kofre',
+  },
+  onboarding: {
+    skip: 'Saltar',
+    previous: 'Anterior',
+    next: 'Siguiente',
+    finish: '¡Comenzar a Usar!',
   },
 }

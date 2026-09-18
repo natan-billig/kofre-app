@@ -7,6 +7,7 @@ export const pt = {
     newAccountTitle: 'Criar nova conta ou cartão',
     signOut: 'Sair da conta',
     user: 'Usuário',
+    whatsNew: 'Novidades do Kofre',
   },
   profile: {
     title: 'Meu Perfil',
@@ -29,6 +30,8 @@ export const pt = {
     linkGoogleError: 'Não foi possível vincular a conta Google. Verifique se o e-mail do Google é o mesmo desta conta.',
     unlinkSuccess: 'Conta Google desvinculada com sucesso.',
     unlinkConfirm: 'Deseja desvincular sua conta Google? Você precisará usar e-mail e senha para entrar.',
+    quickGuideTitle: 'Guia Rápido de Uso',
+    quickGuideSubtitle: 'Rever primeiros passos e conceitos fundamentais',
   },
   scope: {
     personal: 'Minhas Contas',
@@ -501,6 +504,19 @@ export const pt = {
     light: 'Modo Claro',
     dark: 'Modo Escuro',
     system: 'Automático',
+  },
+  whatsNew: {
+    title: 'Novidades do Kofre',
+    subtitle: 'Descubra as melhorias e novos recursos desta versão',
+    currentVersion: 'Versão Atual',
+    viewHistory: 'Ver histórico de atualizações anteriores',
+    exploreButton: 'Entendi / Explorar Novidades',
+  },
+  onboarding: {
+    skip: 'Pular',
+    previous: 'Anterior',
+    next: 'Próximo',
+    finish: 'Começar a Usar!',
   },
 }
 
