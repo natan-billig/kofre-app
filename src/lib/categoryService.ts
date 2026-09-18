@@ -14,6 +14,62 @@ export const DEFAULT_MACRO_PRESETS = [
   'Outros',
 ]
 
+export const DEFAULT_GROUP_ICONS: Record<string, string> = {
+  Moradia: '🏠',
+  Alimentação: '🍔',
+  Transporte: '🚗',
+  Lazer: '🎮',
+  Saúde: '💊',
+  Compras: '🛍️',
+  Educação: '🎓',
+  Serviços: '🛠️',
+  Investimentos: '📈',
+  Renda: '💰',
+  Outros: '📁',
+  Câmbio: '💱',
+  Transferência: '🔄',
+  'Pagamento de Fatura': '💳',
+}
+
+export function getGroupIcon(groupName: string): string {
+  try {
+    const custom = localStorage.getItem('kofre_group_icons')
+    if (custom) {
+      const parsed = JSON.parse(custom)
+      if (parsed[groupName]) return parsed[groupName]
+    }
+  } catch {
+    // Ignore JSON errors
+  }
+  return DEFAULT_GROUP_ICONS[groupName] || '📁'
+}
+
+export function setSavedGroupIcon(groupName: string, icon: string): void {
+  try {
+    const raw = localStorage.getItem('kofre_group_icons')
+    const parsed = raw ? JSON.parse(raw) : {}
+    parsed[groupName] = icon
+    localStorage.setItem('kofre_group_icons', JSON.stringify(parsed))
+  } catch (err) {
+    console.warn('Could not save group icon:', err)
+  }
+}
+
+export function migrateSavedGroupIcon(oldName: string, newName: string): void {
+  try {
+    const raw = localStorage.getItem('kofre_group_icons')
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed[oldName]) {
+      parsed[newName] = parsed[oldName]
+      delete parsed[oldName]
+      localStorage.setItem('kofre_group_icons', JSON.stringify(parsed))
+    }
+  } catch (err) {
+    console.warn('Could not migrate group icon:', err)
+  }
+}
+
 export const DEFAULT_MACRO_MAP: Record<string, string> = {
   Alimentação: 'Alimentação',
   Supermercado: 'Alimentação',
@@ -307,3 +363,160 @@ export async function deleteCategory(id: string): Promise<void> {
     throw new Error(error.message || 'Erro ao excluir categoria.')
   }
 }
+
+/**
+ * Renomeia uma macro-categoria (grupo) em cascata para todas as categorias vinculadas.
+ */
+export async function renameMacroCategory(
+  oldName: string,
+  newName: string,
+  scope: WalletScope,
+  familyId?: string | null
+): Promise<void> {
+  const cleanOld = oldName.trim()
+  const cleanNew = newName.trim()
+
+  if (!cleanNew) {
+    throw new Error('O novo nome do grupo não pode ficar vazio.')
+  }
+  if (cleanOld.toLowerCase() === cleanNew.toLowerCase()) return
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  try {
+    // 1. Atualizar todas as categorias que possuem explicitamente macro_category = cleanOld
+    let query = supabase
+      .from('categories')
+      .update({ macro_category: cleanNew })
+      .eq('scope', scope)
+      .eq('macro_category', cleanOld)
+
+    if (scope === 'shared' && familyId) {
+      query = query.eq('family_id', familyId)
+    } else if (user) {
+      query = query.eq('user_id', user.id)
+    }
+
+    const { error } = await query
+    if (error && error.code !== 'PGRST204') {
+      console.error('Erro ao renomear macro-categoria em cascata:', error)
+      throw new Error(error.message || 'Erro ao renomear grupo.')
+    }
+
+    // 2. Atualizar categorias legadas cujo macro_category seja nulo e que mapeiam para cleanOld
+    const matchingLegacyNames = Object.entries(DEFAULT_MACRO_MAP)
+      .filter(([, macro]) => macro.toLowerCase() === cleanOld.toLowerCase())
+      .map(([catName]) => catName)
+
+    if (matchingLegacyNames.length > 0) {
+      let legacyQuery = supabase
+        .from('categories')
+        .update({ macro_category: cleanNew })
+        .eq('scope', scope)
+        .is('macro_category', null)
+        .in('name', matchingLegacyNames)
+
+      if (scope === 'shared' && familyId) {
+        legacyQuery = legacyQuery.eq('family_id', familyId)
+      } else if (user) {
+        legacyQuery = legacyQuery.eq('user_id', user.id)
+      }
+
+      await legacyQuery
+    }
+
+    // 3. Migrar ícone personalizado se existir
+    migrateSavedGroupIcon(cleanOld, cleanNew)
+  } catch (err: unknown) {
+    console.error('Falha em renameMacroCategory:', err)
+    throw err instanceof Error ? err : new Error('Erro ao renomear grupo.')
+  }
+}
+
+/**
+ * Exclui um grupo reatribuindo em lote todas as suas categorias para outro grupo (padrão: 'Outros').
+ */
+export async function deleteMacroCategory(
+  groupName: string,
+  reassignTo: string = 'Outros',
+  scope: WalletScope,
+  familyId?: string | null
+): Promise<void> {
+  const cleanGroup = groupName.trim()
+  const cleanTarget = reassignTo.trim() || 'Outros'
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  try {
+    // 1. Atualizar categorias com macro_category = cleanGroup
+    let query = supabase
+      .from('categories')
+      .update({ macro_category: cleanTarget })
+      .eq('scope', scope)
+      .eq('macro_category', cleanGroup)
+
+    if (scope === 'shared' && familyId) {
+      query = query.eq('family_id', familyId)
+    } else if (user) {
+      query = query.eq('user_id', user.id)
+    }
+
+    const { error } = await query
+    if (error && error.code !== 'PGRST204') {
+      console.error('Erro ao reatribuir categorias do grupo:', error)
+      throw new Error(error.message || 'Erro ao excluir grupo.')
+    }
+
+    // 2. Atualizar categorias legadas cujo macro_category seja nulo e correspondam ao cleanGroup
+    const matchingLegacyNames = Object.entries(DEFAULT_MACRO_MAP)
+      .filter(([, macro]) => macro.toLowerCase() === cleanGroup.toLowerCase())
+      .map(([catName]) => catName)
+
+    if (matchingLegacyNames.length > 0) {
+      let legacyQuery = supabase
+        .from('categories')
+        .update({ macro_category: cleanTarget })
+        .eq('scope', scope)
+        .is('macro_category', null)
+        .in('name', matchingLegacyNames)
+
+      if (scope === 'shared' && familyId) {
+        legacyQuery = legacyQuery.eq('family_id', familyId)
+      } else if (user) {
+        legacyQuery = legacyQuery.eq('user_id', user.id)
+      }
+
+      await legacyQuery
+    }
+  } catch (err: unknown) {
+    console.error('Falha em deleteMacroCategory:', err)
+    throw err instanceof Error ? err : new Error('Erro ao excluir grupo.')
+  }
+}
+
+/**
+ * Cria um novo grupo criando uma categoria inicial no Supabase com o nome do grupo e respectivo teto.
+ */
+export async function createMacroCategory(
+  groupName: string,
+  scope: WalletScope,
+  familyId?: string | null,
+  budgetLimit?: number | null,
+  initialCategoryName?: string,
+  icon?: string
+): Promise<Category> {
+  const cleanGroup = groupName.trim()
+  if (!cleanGroup) {
+    throw new Error('Informe o nome do grupo.')
+  }
+  const catName = (initialCategoryName || cleanGroup).trim()
+  if (icon) {
+    setSavedGroupIcon(cleanGroup, icon)
+  }
+  return createCategory(catName, 'expense', scope, familyId, cleanGroup, budgetLimit)
+}
+

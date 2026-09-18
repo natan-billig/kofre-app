@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.4'
+export const CURRENT_APP_VERSION = '1.8.5'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.5',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Gestão Autônoma de Grupos e Edição em Cascata v1.8.5',
+      es: 'Gestión Autónoma de Grupos y Edición en Cascada v1.8.5',
+    },
+    highlights: [
+      {
+        icon: 'Folder',
+        title: {
+          pt: 'Gestão Autônoma de Grupos no Gerenciador',
+          es: 'Gestión Autónoma de Grupos en el Gestor',
+        },
+        description: {
+          pt: 'Nova aba dedicada de Grupos (macro-categorias) com visualização consolidada de categorias vinculadas e tetos orçamentários por grupo.',
+          es: 'Nueva pestaña dedicada de Grupos (macro-categorías) con visualización consolidada de categorías vinculadas y topes presupuestarios por grupo.',
+        },
+      },
+      {
+        icon: 'Sparkles',
+        title: {
+          pt: 'Edição em Cascata e Reatribuição Segura',
+          es: 'Edición en Cascada y Reasignación Segura',
+        },
+        description: {
+          pt: 'Renomeie grupos com propagação imediata em todas as categorias vinculadas e exclua grupos com assistente de reatribuição sem deixar itens órfãos.',
+          es: 'Renombra grupos con propagación inmediata en todas las categorías vinculadas y elimina grupos con asistente de reasignación sin dejar ítems huérfanos.',
+        },
+      },
+      {
+        icon: 'Plus',
+        title: {
+          pt: 'Criação Livre de Grupos no Formulário',
+          es: 'Creación Libre de Grupos en el Formulario',
+        },
+        description: {
+          pt: 'Opção direta "+ Criar novo grupo..." nos seletores de categoria que transforma o menu em campo de digitação imediata sem barreiras.',
+          es: 'Opción directa "+ Crear nuevo grupo..." en los selectores de categoría que transforma el menú en campo de texto inmediato sin barreras.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.4',
     releaseDate: '2026-09-18',
