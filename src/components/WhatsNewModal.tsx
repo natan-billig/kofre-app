@@ -3,6 +3,7 @@ import {
   CURRENT_APP_VERSION,
   CHANGELOG_DATA,
   type ChangelogRelease,
+  getUnseenReleases,
 } from '../data/changelog'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { formatDate } from '../lib/formatters'
@@ -57,14 +58,19 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
   onClose,
   onVersionAcknowledged,
 }) => {
-  const { language } = useTranslation()
+  const { t, language } = useTranslation()
   const [showHistory, setShowHistory] = useState(false)
   const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({})
 
   if (!isOpen) return null
 
-  const latestRelease = CHANGELOG_DATA[0]
-  const pastReleases = CHANGELOG_DATA.slice(1)
+  const unseenReleases = getUnseenReleases()
+  const displayReleases = unseenReleases.length > 0 ? unseenReleases : [CHANGELOG_DATA[0]]
+  const hasAccumulated = unseenReleases.length >= 2
+
+  const pastReleases = CHANGELOG_DATA.filter(
+    (release) => !displayReleases.some((d) => d.version === release.version)
+  )
 
   const handleAcknowledge = () => {
     try {
@@ -115,7 +121,11 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
     )
   }
 
-  const renderReleaseCard = (release: ChangelogRelease, isLatest = false) => {
+  const renderReleaseCard = (
+    release: ChangelogRelease,
+    isLatest = false,
+    isPending = false
+  ) => {
     const title = release.title[language] || release.title.pt
     const formattedDate = formatDate(release.releaseDate, language)
 
@@ -125,6 +135,8 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
         className={`rounded-2xl border transition-all ${
           isLatest
             ? 'p-4 sm:p-6 bg-gradient-to-b from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border-indigo-200 dark:border-indigo-800/60 shadow-sm'
+            : isPending
+            ? 'p-4 sm:p-6 bg-amber-50/40 dark:bg-amber-950/15 border-amber-200 dark:border-amber-800/50 shadow-sm'
             : 'p-4 sm:p-5 bg-slate-50/70 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800'
         }`}
       >
@@ -134,17 +146,24 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
               className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono tracking-wide ${
                 isLatest
                   ? 'bg-indigo-600 text-white shadow-sm'
+                  : isPending
+                  ? 'bg-amber-500 text-white shadow-sm'
                   : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
               }`}
             >
               v{release.version}
             </span>
-            {isLatest && (
+            {isLatest ? (
               <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                {language === 'es' ? 'Versión Actual' : 'Versão Atual'}
+                {t('whatsNew.currentVersion')}
               </span>
-            )}
+            ) : isPending ? (
+              <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                {t('whatsNew.pendingBadge')}
+              </span>
+            ) : null}
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             {formattedDate}
@@ -173,12 +192,10 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                {language === 'es' ? 'Novedades de Kofre' : 'Novidades do Kofre'}
+                {t('whatsNew.title')}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                {language === 'es'
-                  ? 'Descubre las mejoras y nuevas funciones de esta versión'
-                  : 'Descubra as melhorias e novos recursos desta versão'}
+                {t('whatsNew.subtitle')}
               </p>
             </div>
           </div>
@@ -195,8 +212,41 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto space-y-4 pr-1 sm:pr-2">
-          {/* Latest Version Card */}
-          {latestRelease && renderReleaseCard(latestRelease, true)}
+          {/* Accumulated Updates Celebratory Banner */}
+          {hasAccumulated && (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-indigo-500/10 border border-amber-500/30 flex items-center gap-3 animate-in fade-in">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                🎉
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                    {t('whatsNew.accumulatedBanner').replace(
+                      '{count}',
+                      unseenReleases.length.toString()
+                    )}
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-amber-500 text-white shadow-sm">
+                    {t('whatsNew.pendingBadge')}
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                  {t('whatsNew.accumulatedSubtitle')}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Pending / Featured Release Cards */}
+          <div className="space-y-4">
+            {displayReleases.map((release) =>
+              renderReleaseCard(
+                release,
+                release.version === CURRENT_APP_VERSION,
+                hasAccumulated && release.version !== CURRENT_APP_VERSION
+              )
+            )}
+          </div>
 
           {/* Past Releases Accordion Toggle */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">

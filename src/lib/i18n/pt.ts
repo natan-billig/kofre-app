@@ -32,6 +32,13 @@ export const pt = {
     unlinkConfirm: 'Deseja desvincular sua conta Google? Você precisará usar e-mail e senha para entrar.',
     quickGuideTitle: 'Guia Rápido de Uso',
     quickGuideSubtitle: 'Rever primeiros passos e conceitos fundamentais',
+    helpAndNews: 'Ajuda & Novidades',
+    whatsNewHistory: 'Histórico de Novidades',
+    whatsNewDesc: 'Veja o que mudou e os novos recursos lançados',
+    restartTour: 'Reiniciar Guia de Uso',
+    restartTourDesc: 'Repassar o tour ilustrado com as 6 etapas do Kofre',
+    appVersion: 'Versão da Aplicação',
+    developedBy: 'Desenvolvido por Natan Billig',
   },
   scope: {
     personal: 'Minhas Contas',
@@ -511,6 +518,9 @@ export const pt = {
     currentVersion: 'Versão Atual',
     viewHistory: 'Ver histórico de atualizações anteriores',
     exploreButton: 'Entendi / Explorar Novidades',
+    accumulatedBanner: '🎉 Tens {count} atualizações acumuladas!',
+    accumulatedSubtitle: 'Reunimos todos os lançamentos que você ainda não viu para ficar por dentro de tudo.',
+    pendingBadge: 'Novidades Pendentes',
   },
   onboarding: {
     skip: 'Pular',

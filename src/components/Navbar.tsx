@@ -14,6 +14,7 @@ interface NavbarProps {
   onOpenProfile: () => void
   onOpenWhatsNew?: () => void
   hasUnreadWhatsNew?: boolean
+  unseenCount?: number
   onSignOut: () => void
 }
 
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfile,
   onOpenWhatsNew,
   hasUnreadWhatsNew,
+  unseenCount,
   onSignOut,
 }) => {
   const { t, language, setLanguage } = useTranslation()
@@ -41,30 +43,37 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div className="max-w-[1680px] mx-auto px-4 lg:px-8 xl:px-12 py-3 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-indigo-600/10 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/30 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Kofre</span>
-            <span className="hidden sm:inline-block ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-              {t('nav.subtitle')}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
+                Kofre
+              </span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                Triple Frontera
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 -mt-0.5 hidden sm:block">
+              {t('nav.title')}
+            </p>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           {/* Language Switcher PT | ES */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-950/60 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-semibold">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-950/60 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setLanguage('pt')}
-              className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`cursor-pointer px-2 py-0.5 rounded-lg transition-all ${
                 language === 'pt'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
               title="Português"
@@ -74,9 +83,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setLanguage('es')}
-              className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`cursor-pointer px-2 py-0.5 rounded-lg transition-all ${
                 language === 'es'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
               title="Español"
@@ -110,12 +119,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               aria-label="Novidades"
             >
               <Sparkles className="w-4 h-4 text-amber-500" />
-              {hasUnreadWhatsNew && (
+              {unseenCount !== undefined ? (
+                unseenCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-pulse">
+                    {unseenCount}
+                  </span>
+                )
+              ) : hasUnreadWhatsNew ? (
                 <>
                   <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
                   <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900" />
                 </>
-              )}
+              ) : null}
             </button>
           )}
 

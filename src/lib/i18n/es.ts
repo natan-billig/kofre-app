@@ -34,6 +34,13 @@ export const es: TranslationDictionary = {
     unlinkConfirm: '¿Deseas desvincular tu cuenta de Google? Deberás usar correo y contraseña para entrar.',
     quickGuideTitle: 'Guía Rápida de Uso',
     quickGuideSubtitle: 'Repasar primeros pasos y conceptos clave',
+    helpAndNews: 'Ayuda y Novedades',
+    whatsNewHistory: 'Historial de Novedades',
+    whatsNewDesc: 'Revisa qué cambió y las nuevas funciones lanzadas',
+    restartTour: 'Reiniciar Guía de Uso',
+    restartTourDesc: 'Repasar el tour ilustrado con los 6 pasos de Kofre',
+    appVersion: 'Versión de la Aplicación',
+    developedBy: 'Desarrollado por Natan Billig',
   },
   scope: {
     personal: 'Mis Cuentas',
@@ -513,6 +520,9 @@ export const es: TranslationDictionary = {
     currentVersion: 'Versión Actual',
     viewHistory: 'Ver historial de actualizaciones anteriores',
     exploreButton: '¡Entendido! Explorar Kofre',
+    accumulatedBanner: '¡Tienes {count} actualizaciones acumuladas!',
+    accumulatedSubtitle: 'Reunimos todos los lanzamientos que aún no viste para que estés al día con todo.',
+    pendingBadge: 'Novedades Pendientes',
   },
   onboarding: {
     skip: 'Saltar',

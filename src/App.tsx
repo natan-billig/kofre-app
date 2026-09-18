@@ -42,7 +42,7 @@ import { WhatsNewModal } from './components/WhatsNewModal'
 import { OnboardingTourModal } from './components/OnboardingTourModal'
 import { DashboardLayout } from './components/DashboardLayout'
 import { AuthModal } from './components/auth/AuthModal'
-import { CURRENT_APP_VERSION } from './data/changelog'
+import { CURRENT_APP_VERSION, getUnseenCount } from './data/changelog'
 import { Plus, Loader2 } from 'lucide-react'
 import { useTranslation } from './lib/i18n/LanguageContext'
 
@@ -90,12 +90,8 @@ export default function App() {
   // WhatsNew & Onboarding Tour State
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false)
   const [isOnboardingTourOpen, setIsOnboardingTourOpen] = useState(false)
-  const [hasUnreadWhatsNew, setHasUnreadWhatsNew] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('kofre_last_seen_version') !== CURRENT_APP_VERSION
-    } catch {
-      return false
-    }
+  const [unseenWhatsNewCount, setUnseenWhatsNewCount] = useState<number>(() => {
+    return getUnseenCount()
   })
 
   const checkInitialModals = () => {
@@ -106,8 +102,9 @@ export default function App() {
         return
       }
 
-      const lastSeen = localStorage.getItem('kofre_last_seen_version')
-      if (lastSeen !== CURRENT_APP_VERSION) {
+      const count = getUnseenCount()
+      setUnseenWhatsNewCount(count)
+      if (count > 0) {
         setIsWhatsNewOpen(true)
       }
     } catch {
@@ -405,9 +402,9 @@ export default function App() {
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onOpenWhatsNew={() => {
           setIsWhatsNewOpen(true)
-          setHasUnreadWhatsNew(false)
+          setUnseenWhatsNewCount(0)
         }}
-        hasUnreadWhatsNew={hasUnreadWhatsNew}
+        unseenCount={unseenWhatsNewCount}
         onSignOut={() => {
           setSessionUser(null)
           setWallets([])
@@ -521,6 +518,23 @@ export default function App() {
         )}
       </main>
 
+      {/* Global Footer with Version and Developer Credit */}
+      <footer className="w-full py-6 text-center border-t border-slate-200/60 dark:border-slate-800/60 mt-auto">
+        <div className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span className="font-mono font-medium">Kofre v{CURRENT_APP_VERSION}</span>
+          <span>•</span>
+          <a
+            href="https://wa.me/595994195695"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors font-medium cursor-pointer"
+            title="WhatsApp: +595 994 195695"
+          >
+            <span>Developed by Natan Billig</span>
+          </a>
+        </div>
+      </footer>
+
       {/* Floating Action Button (+) for Quick Transaction */}
       <div className="fixed bottom-6 right-6 z-40 mb-[env(safe-area-inset-bottom)]">
         <button
@@ -606,6 +620,10 @@ export default function App() {
         currentProfile={userProfile}
         onClose={() => setIsProfileModalOpen(false)}
         onOpenOnboardingTour={() => setIsOnboardingTourOpen(true)}
+        onOpenWhatsNew={() => {
+          setIsWhatsNewOpen(true)
+          setUnseenWhatsNewCount(0)
+        }}
         onProfileUpdated={(updatedProfile) => {
           setUserProfile(updatedProfile)
           if (updatedProfile.full_name) {
@@ -639,7 +657,9 @@ export default function App() {
       <WhatsNewModal
         isOpen={isWhatsNewOpen}
         onClose={() => setIsWhatsNewOpen(false)}
-        onVersionAcknowledged={() => setHasUnreadWhatsNew(false)}
+        onVersionAcknowledged={() => {
+          setUnseenWhatsNewCount(0)
+        }}
       />
 
       {/* Onboarding Tour / Guia Rápido Modal */}
@@ -647,14 +667,7 @@ export default function App() {
         isOpen={isOnboardingTourOpen}
         onClose={() => setIsOnboardingTourOpen(false)}
         onCompleted={() => {
-          try {
-            const lastSeen = localStorage.getItem('kofre_last_seen_version')
-            if (lastSeen !== CURRENT_APP_VERSION) {
-              setHasUnreadWhatsNew(true)
-            }
-          } catch {
-            // Ignora
-          }
+          setUnseenWhatsNewCount(getUnseenCount())
         }}
       />
     </div>

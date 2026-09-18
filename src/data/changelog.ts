@@ -251,3 +251,20 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     ],
   },
 ]
+
+export function getUnseenReleases(): ChangelogRelease[] {
+  try {
+    const lastSeen = localStorage.getItem('kofre_last_seen_version')
+    if (!lastSeen) return [CHANGELOG_DATA[0]]
+    if (lastSeen === CURRENT_APP_VERSION) return []
+    const index = CHANGELOG_DATA.findIndex((r) => r.version === lastSeen)
+    if (index === -1) return [CHANGELOG_DATA[0]]
+    return CHANGELOG_DATA.slice(0, index)
+  } catch {
+    return []
+  }
+}
+
+export function getUnseenCount(): number {
+  return getUnseenReleases().length
+}

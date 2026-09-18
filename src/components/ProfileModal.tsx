@@ -27,7 +27,11 @@ import {
   Moon,
   Laptop,
   Compass,
+  Sparkles,
+  RotateCcw,
+  MessageCircle,
 } from 'lucide-react'
+import { CURRENT_APP_VERSION } from '../data/changelog'
 
 interface ProfileModalProps {
   isOpen: boolean
@@ -37,6 +41,7 @@ interface ProfileModalProps {
   onClose: () => void
   onProfileUpdated: (updatedProfile: Profile) => void
   onOpenOnboardingTour?: () => void
+  onOpenWhatsNew?: () => void
   onSignOut: () => void
 }
 
@@ -47,6 +52,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   onClose,
   onProfileUpdated,
   onOpenOnboardingTour,
+  onOpenWhatsNew,
   onSignOut,
 }) => {
   const { t } = useTranslation()
@@ -506,6 +512,65 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
             </div>
           </div>
 
+          {/* Ajuda & Novidades Section */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {t('profile.helpAndNews')}
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {onOpenWhatsNew && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose()
+                    onOpenWhatsNew()
+                  }}
+                  className="cursor-pointer p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800/80 text-left transition-colors flex items-center gap-3"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {t('profile.whatsNewHistory')}
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                      {t('profile.whatsNewDesc')}
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {onOpenOnboardingTour && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      localStorage.removeItem('kofre_onboarding_completed')
+                    } catch {
+                      // ignore
+                    }
+                    onClose()
+                    onOpenOnboardingTour()
+                  }}
+                  className="cursor-pointer p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800/80 text-left transition-colors flex items-center gap-3"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
+                    <RotateCcw className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {t('profile.restartTour')}
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                      {t('profile.restartTourDesc')}
+                    </div>
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Modal Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
             {/* Sign Out secondary button */}
@@ -543,6 +608,28 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                 <span>{isSaving ? t('profile.saving') : t('profile.saveChanges')}</span>
               </button>
             </div>
+          </div>
+
+          {/* App Version & Developer WhatsApp Credit Footer */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+                {t('profile.appVersion')}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                v{CURRENT_APP_VERSION}
+              </span>
+            </div>
+            <a
+              href="https://wa.me/595994195695"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 font-medium transition-colors cursor-pointer"
+              title="WhatsApp: +595 994 195695"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{t('profile.developedBy')}</span>
+            </a>
           </div>
         </form>
       </div>
