@@ -31,6 +31,10 @@ import {
   RotateCcw,
   MessageCircle,
   Calendar,
+  Landmark,
+  QrCode,
+  DollarSign,
+  Share2,
 } from 'lucide-react'
 import { CURRENT_APP_VERSION } from '../data/changelog'
 
@@ -67,6 +71,12 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   const [budgetStartDay, setBudgetStartDay] = useState<number>(
     currentProfile?.budget_start_day || 1
   )
+  const [baseMonthlyIncome, setBaseMonthlyIncome] = useState<string>(
+    currentProfile?.base_monthly_income != null ? String(currentProfile.base_monthly_income) : ''
+  )
+  const [pixKey, setPixKey] = useState(currentProfile?.pix_key || '')
+  const [aliasPy, setAliasPy] = useState(currentProfile?.alias_py || '')
+  const [bankDetails, setBankDetails] = useState(currentProfile?.bank_details || '')
 
   const [isSaving, setIsSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -182,6 +192,10 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
         avatar,
         preferred_currency: preferredCurrency,
         budget_start_day: budgetStartDay,
+        base_monthly_income: baseMonthlyIncome ? parseFloat(baseMonthlyIncome) : null,
+        pix_key: pixKey.trim() || null,
+        alias_py: aliasPy.trim() || null,
+        bank_details: bankDetails.trim() || null,
       })
 
       onProfileUpdated(updated)
@@ -428,6 +442,86 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {t('profile.budgetStartDayDesc')}
             </p>
+          </div>
+
+          {/* Renda Mensal Base (para DTI) */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{t('profile.baseMonthlyIncome')}</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="any"
+                value={baseMonthlyIncome}
+                onChange={(e) => setBaseMonthlyIncome(e.target.value)}
+                placeholder={t('profile.baseMonthlyIncomePlaceholder')}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none"
+              />
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {t('profile.baseMonthlyIncomeDesc')}
+            </p>
+          </div>
+
+          {/* Dados para Recebimento de Contas / Rateio */}
+          <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800/80">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Share2 className="w-3.5 h-3.5 text-indigo-500" />
+                <span>{t('profile.splitPaymentData')}</span>
+              </label>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {t('profile.splitPaymentDataDesc')}
+              </p>
+            </div>
+
+            <div className="space-y-3 bg-slate-50/70 dark:bg-slate-950/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+              {/* Chave PIX (Brasil - R$) */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <QrCode className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{t('profile.pixKey')}</span>
+                </label>
+                <input
+                  type="text"
+                  value={pixKey}
+                  onChange={(e) => setPixKey(e.target.value)}
+                  placeholder={t('profile.pixKeyPlaceholder')}
+                  className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:border-indigo-500 outline-none"
+                />
+              </div>
+
+              {/* Alias SIPAP / Bancard (Paraguai - ₲ / US$) */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Landmark className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>{t('profile.aliasPy')}</span>
+                </label>
+                <input
+                  type="text"
+                  value={aliasPy}
+                  onChange={(e) => setAliasPy(e.target.value)}
+                  placeholder={t('profile.aliasPyPlaceholder')}
+                  className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:border-indigo-500 outline-none"
+                />
+              </div>
+
+              {/* Outros Dados Bancários (Opcional) */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {t('profile.otherBankDetails')}
+                </label>
+                <input
+                  type="text"
+                  value={bankDetails}
+                  onChange={(e) => setBankDetails(e.target.value)}
+                  placeholder={t('profile.otherBankDetailsPlaceholder')}
+                  className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Guia Rápido / Onboarding Tour Shortcut */}

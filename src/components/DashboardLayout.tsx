@@ -7,8 +7,10 @@ interface DashboardLayoutProps {
 
   // Coluna 2 (Orçamento e Análise Mensal)
   monthSelector: React.ReactNode
+  financialHealth?: React.ReactNode
   monthlySummary: React.ReactNode
   categoryBreakdown: React.ReactNode
+  dueDatesCalendar?: React.ReactNode
   monthlyBills: React.ReactNode
 
   // Coluna 3 (Património, Reservas e Compromissos)
@@ -33,8 +35,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   currencyDashboard,
   transactionList,
   monthSelector,
+  financialHealth,
   monthlySummary,
   categoryBreakdown,
+  dueDatesCalendar,
   monthlyBills,
   accountList,
   savingsGoals,
@@ -59,8 +63,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Coluna 2 (Orçamento e Análise Mensal): 4 colunas */}
         <div className="col-span-12 xl:col-span-4 2xl:col-span-4 space-y-6">
           {monthSelector}
+          {financialHealth}
           {monthlySummary}
           {categoryBreakdown}
+          {dueDatesCalendar}
           {monthlyBills}
         </div>
 
@@ -84,8 +90,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Coluna Principal: Análise e Extrato */}
         <div className="lg:col-span-7 xl:col-span-8 order-2 lg:order-1 space-y-4">
           {monthSelector}
+          {financialHealth}
           {monthlySummary}
           {categoryBreakdown}
+          {dueDatesCalendar}
           {transactionList}
         </div>
 

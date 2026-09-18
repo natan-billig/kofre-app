@@ -1,6 +1,6 @@
 import React from 'react'
 import { supabase } from '../lib/supabase'
-import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon, Sparkles } from 'lucide-react'
+import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon, Sparkles, Coins, Users, ClipboardPaste } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { useTheme } from '../lib/theme'
 import { AvatarRenderer, getAvatarColor } from '../lib/avatarHelper'
@@ -16,6 +16,9 @@ interface NavbarProps {
   hasUnreadWhatsNew?: boolean
   unseenCount?: number
   onOpenMobileMenu?: () => void
+  onOpenCurrencyExchange?: () => void
+  onOpenSplitBill?: () => void
+  onOpenNotificationParser?: () => void
   onSignOut: () => void
 }
 
@@ -30,6 +33,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   hasUnreadWhatsNew,
   unseenCount,
   onOpenMobileMenu,
+  onOpenCurrencyExchange,
+  onOpenSplitBill,
+  onOpenNotificationParser,
   onSignOut,
 }) => {
   const { t, language, setLanguage } = useTranslation()
@@ -147,6 +153,40 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900" />
                 </>
               ) : null}
+            </button>
+          )}
+
+          {/* Quick Tools in Desktop Navbar */}
+          {onOpenNotificationParser && (
+            <button
+              type="button"
+              onClick={onOpenNotificationParser}
+              className="cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
+              title={t('mobileMenu.notificationParser') || 'Colar Notificação Bancária'}
+            >
+              <ClipboardPaste className="w-4 h-4 text-indigo-500" />
+            </button>
+          )}
+
+          {onOpenCurrencyExchange && (
+            <button
+              type="button"
+              onClick={onOpenCurrencyExchange}
+              className="cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
+              title={t('mobileMenu.currencyExchange') || 'Simulador de Câmbio'}
+            >
+              <Coins className="w-4 h-4 text-amber-500" />
+            </button>
+          )}
+
+          {onOpenSplitBill && (
+            <button
+              type="button"
+              onClick={onOpenSplitBill}
+              className="cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
+              title={t('mobileMenu.splitBill') || 'Divisão de Conta (Racha)'}
+            >
+              <Users className="w-4 h-4 text-emerald-500" />
             </button>
           )}
 

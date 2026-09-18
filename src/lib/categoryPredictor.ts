@@ -189,11 +189,11 @@ function normalizeText(text: string): string {
 
 /**
  * Prediz a categoria a partir do texto de descrição.
- * Retorna o nome da categoria existente na lista de categorias disponíveis ou null.
+ * Retorna o nome da categoria existente na lista de categorias disponíveis ou a categoria padrão da regra.
  */
 export function predictCategory(
   description: string,
-  availableCategories: { name: string }[]
+  availableCategories?: { name: string }[]
 ): string | null {
   if (!description || description.trim().length < 2) return null
 
@@ -203,10 +203,11 @@ export function predictCategory(
 
   if (words.length === 0) return null
 
-  const availableMap = new Map<string, string>()
-  for (const cat of availableCategories) {
-    availableMap.set(normalizeText(cat.name), cat.name)
-  }
+  const availableMap = availableCategories
+    ? new Map<string, string>(
+        availableCategories.map((cat) => [normalizeText(cat.name), cat.name])
+      )
+    : null
 
   // Avalia cada regra procurando palavras-chave
   for (const rule of PREDICTION_RULES) {
@@ -219,6 +220,10 @@ export function predictCategory(
     })
 
     if (matched) {
+      if (!availableMap) {
+        return rule.primaryTarget
+      }
+
       // Tentar encontrar o primaryTarget nas categorias do usuário
       const primaryNorm = normalizeText(rule.primaryTarget)
       if (availableMap.has(primaryNorm)) {

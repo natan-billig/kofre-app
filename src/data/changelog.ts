@@ -11,9 +11,74 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.7.1'
+export const CURRENT_APP_VERSION = '1.8.0'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.0',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Termômetro DTI, Calendário de Vencimentos, Leitor Bancário, Câmbio e Racha de Contas v1.8.0',
+      es: 'Termómetro DTI, Calendario de Vencimientos, Lector Bancario, Cambio y Vaca v1.8.0',
+    },
+    highlights: [
+      {
+        icon: 'Activity',
+        title: {
+          pt: 'Termômetro DTI (% Endividamento) e Margem Segura',
+          es: 'Termómetro DTI (% Endeudamiento) y Margen Seguro',
+        },
+        description: {
+          pt: 'Monitore o percentual de comprometimento da sua renda (faturas de cartão, contas fixas e dívidas) com cálculo isolado para Minhas Contas ou Caixa da Família e sinalização de margem livre segura.',
+          es: 'Monitoree el porcentaje de compromiso de su ingreso (tarjetas, gastos fijos y deudas) con cálculo aislado para Mis Cuentas o Caja Familiar y visualización del margen libre seguro.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Calendário de Vencimentos e Projeção de Caixa',
+          es: 'Calendario de Vencimientos y Proyección de Caja',
+        },
+        description: {
+          pt: 'Linha do tempo cronológica com todos os compromissos futuros do mês (cartões, fixas e dívidas), comparando saídas acumuladas contra sua liquidez e alertando para risco de sobregiro.',
+          es: 'Línea de tiempo cronológica con todos los compromisos futuros del mes (tarjetas, gastos fijos y deudas), comparando salidas acumuladas contra su liquidez y alertando sobre riesgo de sobregiro.',
+        },
+      },
+      {
+        icon: 'ClipboardPaste',
+        title: {
+          pt: 'Leitor Inteligente de Notificações Bancárias',
+          es: 'Lector Inteligente de Notificaciones Bancarias',
+        },
+        description: {
+          pt: 'Cole SMS ou push de bancos paraguaios (Itaú PY, Continental, Ueno, Familiar, Sudameris, SIPAP) e brasileiros (Nubank, PIX, Itaú, Bradesco, Inter) para preencher novos lançamentos com 1 toque.',
+          es: 'Pegue SMS o alertas de bancos paraguayos (Itaú PY, Continental, Ueno, Familiar, Sudameris, SIPAP) y brasileños (Nubank, PIX, Itaú, Bradesco, Inter) para cargar transacciones con 1 toque.',
+        },
+      },
+      {
+        icon: 'Coins',
+        title: {
+          pt: 'Simulador de Câmbio & Cotações da Fronteira',
+          es: 'Simulador de Cambio y Cotizaciones de Frontera',
+        },
+        description: {
+          pt: 'Conversor simultâneo entre Guaranis (PYG), Dólares (USD) e Reais (BRL) com taxas base e comparador de compras que identifica a forma de pagamento mais econômica.',
+          es: 'Conversor simultáneo entre Guaraníes (PYG), Dólares (USD) y Reales (BRL) con tasas base y comparador de compras que detecta la forma de pago más económica.',
+        },
+      },
+      {
+        icon: 'Share2',
+        title: {
+          pt: 'Divisão Rápida de Despesas (Racha de Conta)',
+          es: 'División Rápida de Gastos (Vaca / Racha)',
+        },
+        description: {
+          pt: 'Divida contas e gorjetas com amigos e gere mensagens formatadas para WhatsApp com sua Chave PIX (para gastos em BRL) ou Alias SIPAP (para PYG/USD) e botão para lançar sua parte.',
+          es: 'Divida cuentas y propinas con amigos y genere mensajes para WhatsApp con su Clave PIX (para gastos en BRL) o Alias SIPAP (para PYG/USD) y botón para registrar su parte.',
+        },
+      },
+    ],
+  },
   {
     version: '1.7.1',
     releaseDate: '2026-09-18',

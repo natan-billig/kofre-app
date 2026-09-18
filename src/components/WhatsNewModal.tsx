@@ -33,6 +33,9 @@ import {
   Calculator,
   Pin,
   MessageCircle,
+  Activity,
+  ClipboardPaste,
+  Share2,
 } from 'lucide-react'
 
 interface WhatsNewModalProps {
@@ -63,6 +66,9 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Calculator,
   Pin,
   MessageCircle,
+  Activity,
+  ClipboardPaste,
+  Share2,
 }
 
 export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({

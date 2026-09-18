@@ -13,6 +13,9 @@ import {
   LogOut,
   User,
   MessageCircle,
+  Coins,
+  ClipboardPaste,
+  Users,
 } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { useTheme } from '../lib/theme'
@@ -33,6 +36,9 @@ interface MobileMenuDrawerProps {
   onOpenFamilySettings: () => void
   onOpenWhatsNew: () => void
   onOpenOnboardingTour: () => void
+  onOpenCurrencyExchange: () => void
+  onOpenSplitBill: () => void
+  onOpenNotificationParser: () => void
   onSignOut: () => void
 }
 
@@ -50,6 +56,9 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onOpenFamilySettings,
   onOpenWhatsNew,
   onOpenOnboardingTour,
+  onOpenCurrencyExchange,
+  onOpenSplitBill,
+  onOpenNotificationParser,
   onSignOut,
 }) => {
   const { t, language, setLanguage } = useTranslation()
@@ -178,6 +187,59 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
                   <Users2 className="w-4 h-4" />
                 </div>
                 <span>{t('nav.familyTitle')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Seção Nova: Ferramentas Inteligentes */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
+              {t('mobileMenu.smartTools') || 'Ferramentas Inteligentes'}
+            </span>
+            <div className="space-y-1">
+              {/* Leitor de Notificações */}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onOpenNotificationParser()
+                }}
+                className="w-full cursor-pointer flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
+                  <ClipboardPaste className="w-4 h-4" />
+                </div>
+                <span>{t('mobileMenu.notificationParser') || 'Colar Notificação Bancária'}</span>
+              </button>
+
+              {/* Câmbio da Fronteira */}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onOpenCurrencyExchange()
+                }}
+                className="w-full cursor-pointer flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+                  <Coins className="w-4 h-4" />
+                </div>
+                <span>{t('mobileMenu.currencyExchange') || 'Simulador de Câmbio'}</span>
+              </button>
+
+              {/* Racha de Conta */}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onOpenSplitBill()
+                }}
+                className="w-full cursor-pointer flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-4 h-4" />
+                </div>
+                <span>{t('mobileMenu.splitBill') || 'Divisão de Conta (Racha)'}</span>
               </button>
             </div>
           </div>

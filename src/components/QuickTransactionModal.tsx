@@ -42,6 +42,7 @@ import {
   Sparkles,
   Layers,
   Calculator,
+  ClipboardPaste,
 } from 'lucide-react'
 import { hasMathExpression, evaluateMathExpression } from '../lib/mathParser'
 import { predictCategory } from '../lib/categoryPredictor'
@@ -66,6 +67,8 @@ interface QuickTransactionModalProps {
   initialAmount?: number
   initialCategory?: string
   initialDescription?: string
+  initialDate?: string
+  onOpenNotificationParser?: () => void
   onClose: () => void
   onTransactionCreated: () => void
 }
@@ -94,6 +97,8 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   initialAmount,
   initialCategory,
   initialDescription,
+  initialDate,
+  onOpenNotificationParser,
   onClose,
   onTransactionCreated,
 }) => {
@@ -148,7 +153,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   const [transactionDate, setTransactionDate] = useState<string>(
     editingTransaction?.transaction_date
       ? editingTransaction.transaction_date.substring(0, 10)
-      : new Date().toISOString().split('T')[0]
+      : initialDate ?? new Date().toISOString().split('T')[0]
   )
 
   // Sugestão Preditiva de Categorias
@@ -534,12 +539,25 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
               {editingTransaction ? t('quickModal.editTitle') : t('quickModal.newTitle')}
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {!editingTransaction && onOpenNotificationParser && (
+              <button
+                type="button"
+                onClick={onOpenNotificationParser}
+                className="cursor-pointer px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title={t('notificationParser.title') || 'Colar Notificação Bancária'}
+              >
+                <ClipboardPaste className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('notificationParser.buttonShort') || 'Colar Notificação'}</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="cursor-pointer p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Type Tabs */}

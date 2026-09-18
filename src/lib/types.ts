@@ -56,6 +56,10 @@ export interface Profile {
   avatar?: string | null
   preferred_currency?: CurrencyCode | null
   budget_start_day?: number | null
+  base_monthly_income?: number | null
+  pix_key?: string | null
+  alias_py?: string | null
+  bank_details?: string | null
 }
 
 export interface CurrencyBalances {
@@ -210,3 +214,40 @@ export interface DebtItem {
   target?: { full_name: string | null } | null
 }
 
+export interface FinancialHealthMetrics {
+  currency: CurrencyCode
+  baseIncome: number
+  isIncomeConfigured: boolean
+  cardInvoicesAmount: number
+  recurringBillsAmount: number
+  debtsToPayAmount: number
+  totalCommitment: number
+  dtiPercentage: number
+  safeMargin: number
+  status: 'healthy' | 'moderate' | 'critical'
+}
+
+export interface DueCommitmentItem {
+  id: string
+  title: string
+  amount: number
+  currency: CurrencyCode
+  type: 'card_invoice' | 'recurring_bill' | 'debt'
+  dueDay?: number
+  dueDate?: string
+  entityName?: string
+  scope: WalletScope
+  status?: 'pending' | 'overdue' | 'paid'
+}
+
+export interface ParsedNotification {
+  amount?: number
+  currency?: CurrencyCode
+  type: TransactionType
+  description: string
+  date: string
+  merchant?: string
+  suggestedCategory?: string
+  bankSource?: string
+  rawSnippet?: string
+}

@@ -32,6 +32,8 @@ import { MonthlySummary } from './components/MonthlySummary'
 import { CategoryBreakdown } from './components/CategoryBreakdown'
 import { MonthlyBillsWidget } from './components/MonthlyBillsWidget'
 import { DebtsWidget } from './components/DebtsWidget'
+import { FinancialHealthWidget } from './components/FinancialHealthWidget'
+import { DueDatesCalendarWidget } from './components/DueDatesCalendarWidget'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { RecurringBillsModal } from './components/RecurringBillsModal'
 import { CreateDebtModal } from './components/CreateDebtModal'
@@ -43,6 +45,9 @@ import { WhatsNewModal } from './components/WhatsNewModal'
 import { OnboardingTourModal } from './components/OnboardingTourModal'
 import { DashboardLayout } from './components/DashboardLayout'
 import { MobileMenuDrawer } from './components/MobileMenuDrawer'
+import { SmartNotificationParserModal } from './components/SmartNotificationParserModal'
+import { CurrencyExchangeModal } from './components/CurrencyExchangeModal'
+import { SplitBillModal } from './components/SplitBillModal'
 import { AuthModal } from './components/auth/AuthModal'
 import { CURRENT_APP_VERSION, getUnseenCount } from './data/changelog'
 import { Plus, Loader2 } from 'lucide-react'
@@ -87,8 +92,12 @@ export default function App() {
   const [isCreateDebtOpen, setIsCreateDebtOpen] = useState(false)
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [quickTxDate, setQuickTxDate] = useState<string | undefined>()
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isNotificationParserOpen, setIsNotificationParserOpen] = useState(false)
+  const [isCurrencyExchangeOpen, setIsCurrencyExchangeOpen] = useState(false)
+  const [isSplitBillOpen, setIsSplitBillOpen] = useState(false)
 
   // WhatsNew & Onboarding Tour State
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false)
@@ -410,6 +419,9 @@ export default function App() {
         }}
         unseenCount={unseenWhatsNewCount}
         onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        onOpenCurrencyExchange={() => setIsCurrencyExchangeOpen(true)}
+        onOpenSplitBill={() => setIsSplitBillOpen(true)}
+        onOpenNotificationParser={() => setIsNotificationParserOpen(true)}
         onSignOut={() => {
           setSessionUser(null)
           setWallets([])
@@ -464,6 +476,18 @@ export default function App() {
                 onSelectDate={setSelectedDate}
               />
             }
+            financialHealth={
+              <FinancialHealthWidget
+                wallets={wallets}
+                transactions={monthlyTransactions}
+                recurringBills={recurringBills}
+                debts={debts}
+                currentScope={currentScope}
+                preferredCurrency={preferredCurrency}
+                userProfile={userProfile}
+                onOpenProfile={() => setIsProfileModalOpen(true)}
+              />
+            }
             monthlySummary={
               <MonthlySummary
                 transactions={monthlyTransactions}
@@ -479,6 +503,17 @@ export default function App() {
                 currentScope={currentScope}
                 preferredCurrency={preferredCurrency}
                 onSelectCategory={(catName) => setActiveCategoryFilter(catName)}
+              />
+            }
+            dueDatesCalendar={
+              <DueDatesCalendarWidget
+                wallets={wallets}
+                transactions={monthlyTransactions}
+                recurringBills={recurringBills}
+                debts={debts}
+                currentScope={currentScope}
+                preferredCurrency={preferredCurrency}
+                selectedMonthDate={selectedDate}
               />
             }
             monthlyBills={
@@ -566,9 +601,12 @@ export default function App() {
         initialAmount={quickTxAmount}
         initialCategory={quickTxCategory}
         initialDescription={quickTxDescription}
+        initialDate={quickTxDate}
+        onOpenNotificationParser={() => setIsNotificationParserOpen(true)}
         onClose={() => {
           setIsQuickTxOpen(false)
           setEditingTransaction(null)
+          setQuickTxDate(undefined)
         }}
         onTransactionCreated={() => {
           refreshData()
@@ -695,6 +733,9 @@ export default function App() {
           setUnseenWhatsNewCount(0)
         }}
         onOpenOnboardingTour={() => setIsOnboardingTourOpen(true)}
+        onOpenCurrencyExchange={() => setIsCurrencyExchangeOpen(true)}
+        onOpenSplitBill={() => setIsSplitBillOpen(true)}
+        onOpenNotificationParser={() => setIsNotificationParserOpen(true)}
         onSignOut={() => {
           setSessionUser(null)
           setWallets([])
@@ -702,6 +743,52 @@ export default function App() {
           setRecurringBills([])
           setDebts([])
           setUserProfile(null)
+        }}
+      />
+
+      {/* Smart Notification Parser Modal */}
+      <SmartNotificationParserModal
+        isOpen={isNotificationParserOpen}
+        onClose={() => setIsNotificationParserOpen(false)}
+        wallets={wallets}
+        onApplyParsed={(parsed, selectedWalletId) => {
+          setQuickTxType(parsed.type)
+          if (selectedWalletId) setQuickTxSourceId(selectedWalletId)
+          if (parsed.amount) setQuickTxAmount(parsed.amount)
+          if (parsed.suggestedCategory) setQuickTxCategory(parsed.suggestedCategory)
+          if (parsed.description) setQuickTxDescription(parsed.description)
+          if (parsed.date) setQuickTxDate(parsed.date)
+          setIsQuickTxOpen(true)
+        }}
+      />
+
+      {/* Currency Exchange Simulator Modal */}
+      <CurrencyExchangeModal
+        isOpen={isCurrencyExchangeOpen}
+        onClose={() => setIsCurrencyExchangeOpen(false)}
+        preferredCurrency={preferredCurrency}
+      />
+
+      {/* Split Bill / Racha de Contas Modal */}
+      <SplitBillModal
+        isOpen={isSplitBillOpen}
+        onClose={() => setIsSplitBillOpen(false)}
+        preferredCurrency={preferredCurrency}
+        userProfile={userProfile}
+        onRecordMyShare={(data) => {
+          setQuickTxType('expense')
+          const matchingWallet =
+            wallets.find(
+              (w) =>
+                !w.is_archived &&
+                w.currency === data.currency &&
+                w.type === currentScope
+            ) || wallets.find((w) => !w.is_archived && w.currency === data.currency)
+          if (matchingWallet) setQuickTxSourceId(matchingWallet.id)
+          setQuickTxAmount(data.amount)
+          setQuickTxDescription(data.description)
+          if (data.category) setQuickTxCategory(data.category)
+          setIsQuickTxOpen(true)
         }}
       />
     </div>
