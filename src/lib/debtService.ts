@@ -269,30 +269,79 @@ export async function settleDebt(
 }
 
 /**
- * Exclui uma dívida ou empréstimo.
- * Remove explicitamente quaisquer transações vinculadas à dívida (debt_id)
- * para garantir exclusão em cascata e estorno automático de saldos.
+ * Exclui uma dívida ou empréstimo bilateralmente.
+ * Localiza e apaga o registro principal e qualquer registro recíproco/espelho
+ * (via linked_debt_id ou devedor/credor invertidos com mesmo valor e moeda),
+ * além de excluir em cascata todas as transações vinculadas (debt_id).
  */
 export async function deleteDebt(debtId: string): Promise<void> {
-  // 1. Remove quaisquer movimentações financeiras geradas por esta dívida
+  const debtIdsToDelete = new Set<string>([debtId])
+
+  try {
+    // 1. Busca a dívida principal para encontrar links e espelhos recíprocos
+    const { data: mainDebt } = await supabase
+      .from('debts')
+      .select('id, user_id, target_user_id, amount, currency, type, linked_debt_id')
+      .eq('id', debtId)
+      .maybeSingle()
+
+    if (mainDebt) {
+      if (mainDebt.linked_debt_id) {
+        debtIdsToDelete.add(mainDebt.linked_debt_id)
+      }
+
+      // Procura dívidas que apontem para esta dívida via linked_debt_id
+      const { data: linkedByRef } = await supabase
+        .from('debts')
+        .select('id')
+        .eq('linked_debt_id', debtId)
+
+      if (linkedByRef) {
+        linkedByRef.forEach((d) => debtIdsToDelete.add(d.id))
+      }
+
+      // Procura espelho recíproco por contrapartida de usuário, mesmo valor e moeda
+      if (mainDebt.user_id && mainDebt.target_user_id) {
+        const mirrorType = mainDebt.type === 'i_owe' ? 'they_owe' : 'i_owe'
+        const { data: mirrors } = await supabase
+          .from('debts')
+          .select('id')
+          .eq('user_id', mainDebt.target_user_id)
+          .eq('target_user_id', mainDebt.user_id)
+          .eq('currency', mainDebt.currency)
+          .eq('amount', mainDebt.amount)
+          .eq('type', mirrorType)
+
+        if (mirrors) {
+          mirrors.forEach((m) => debtIdsToDelete.add(m.id))
+        }
+      }
+    }
+  } catch (findErr) {
+    console.warn('Aviso ao buscar dívidas espelho para exclusão bilateral:', findErr)
+  }
+
+  const idsArray = Array.from(debtIdsToDelete)
+
+  // 2. Remove movimentações financeiras geradas por quaisquer destas dívidas
   try {
     const { error: txError } = await supabase
       .from('transactions')
       .delete()
-      .eq('debt_id', debtId)
+      .in('debt_id', idsArray)
 
     if (txError && txError.code !== 'PGRST204') {
-      console.warn('Aviso ao excluir transações associadas à dívida:', txError)
+      console.warn('Aviso ao excluir transações associadas às dívidas:', txError)
     }
   } catch (err) {
-    console.warn('Não foi possível remover transações vinculadas à dívida via debt_id:', err)
+    console.warn('Não foi possível remover transações vinculadas via debt_id:', err)
   }
 
-  // 2. Remove o registro da dívida
-  const { error } = await supabase.from('debts').delete().eq('id', debtId)
+  // 3. Remove os registros de dívidas
+  const { error } = await supabase.from('debts').delete().in('id', idsArray)
 
   if (error) {
-    console.error('Erro ao excluir dívida:', error)
+    console.error('Erro ao excluir dívidas bilaterais:', error)
     throw error
   }
 }

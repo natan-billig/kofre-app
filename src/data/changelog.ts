@@ -11,9 +11,63 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.1'
+export const CURRENT_APP_VERSION = '1.8.2'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.2',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Ergonomia Móvel em Abas, Gestão Familiar e Sincronização v1.8.2',
+      es: 'Ergonomía Móvil en Pestañas, Gestión Familiar y Sincronización v1.8.2',
+    },
+    highlights: [
+      {
+        icon: 'Smartphone',
+        title: {
+          pt: 'Feed Móvel em 3 Abas Ergonómicas',
+          es: 'Feed Móvil en 3 Pestañas Ergonómicas',
+        },
+        description: {
+          pt: 'Navegação segmentada no telemóvel dividida em Carteira (saldos e faturas), Planeamento (DTI, orçamentos e vencimentos) e Extrato (pesquisa e lançamentos), com seletor de escopo no topo fixo.',
+          es: 'Navegación segmentada en móviles dividida en Billetera (saldos y tarjetas), Planificación (DTI, presupuestos y vencimientos) y Extracto (búsqueda y movimientos), con selector de alcance en la barra fija.',
+        },
+      },
+      {
+        icon: 'Users',
+        title: {
+          pt: 'Sincronização Fiel da Família',
+          es: 'Sincronización Fiel de la Familia',
+        },
+        description: {
+          pt: 'Consulta vinculada ao grupo familiar ativo em todos os dispositivos, mapeamento correto de Administrador e Membros e bloqueio inteligente da secção redundante de entrada.',
+          es: 'Consulta vinculada al grupo familiar activo en todos los dispositivos, asignación correcta de Administrador y Miembros y bloqueo inteligente de la sección redundante de unión.',
+        },
+      },
+      {
+        icon: 'Trash2',
+        title: {
+          pt: 'Exclusão Bilateral de Dívidas e Realtime',
+          es: 'Eliminación Bilateral de Deudas y Realtime',
+        },
+        description: {
+          pt: 'A exclusão de uma dívida ou empréstimo apaga automaticamente o registo recíproco espelho e transações associadas, sincronizando em tempo real com os demais utilizadores conectados.',
+          es: 'La eliminación de una deuda o préstamo borra automáticamente el registro recíproco espejo y transacciones asociadas, sincronizándose en tiempo real con los demás usuarios conectados.',
+        },
+      },
+      {
+        icon: 'Layout',
+        title: {
+          pt: 'Barra Superior Desktop Otimizada',
+          es: 'Barra Superior Desktop Optimizada',
+        },
+        description: {
+          pt: 'Botões ergonómicos com texto e ícones claros para Leitor de Notificação, Câmbio e Dividir Conta, eliminando botões soltos redundantes.',
+          es: 'Botones ergonómicos con texto e íconos claros para Lector de Notificaciones, Cambio y Dividir Cuenta, eliminando botones sueltos redundantes.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.1',
     releaseDate: '2026-09-18',

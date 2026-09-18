@@ -19,6 +19,7 @@ import {
   joinFamilyByCode,
   fetchFamilyMembers,
   removeFamilyMember,
+  getActiveFamilyId,
 } from '../lib/familyService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 
@@ -41,6 +42,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
 }) => {
   const { t, language } = useTranslation()
   const [currentCode, setCurrentCode] = useState<string | null>(null)
+  const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null)
   const [loadingCode, setLoadingCode] = useState(true)
   const [codeError, setCodeError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -61,51 +63,51 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
   const [joining, setJoining] = useState(false)
   const [feedback, setFeedback] = useState<JoinFamilyResult | null>(null)
 
-  const refreshMembers = useCallback(async () => {
+  const loadFamilyState = useCallback(async () => {
+    setLoadingCode(true)
     setLoadingMembers(true)
+    setCodeError(null)
     setMembersError(null)
+
     try {
-      const list = await fetchFamilyMembers()
-      setMembers(list)
+      const famId = await getActiveFamilyId(userId)
+      setActiveFamilyId(famId)
+
+      const [code, memberList] = await Promise.all([
+        getFamilyCode(userId).catch((err) => {
+          throw err
+        }),
+        fetchFamilyMembers(userId).catch(() => []),
+      ])
+
+      setCurrentCode(code)
+      setMembers(memberList)
     } catch (err: unknown) {
-      console.error('Erro ao carregar membros da família:', err)
+      console.error('Erro ao carregar dados da família:', err)
       const errObj = err as Record<string, unknown> | null
       const msg =
         (typeof errObj?.message === 'string' && errObj.message) ||
-        (err instanceof Error ? err.message : 'Erro ao carregar membros da família.')
-      setMembersError(msg)
+        (typeof errObj?.error_description === 'string' && errObj.error_description) ||
+        (typeof errObj?.details === 'string' && errObj.details) ||
+        (err instanceof Error ? err.message : 'Erro ao carregar código da família.')
+      setCodeError(msg)
     } finally {
+      setLoadingCode(false)
       setLoadingMembers(false)
     }
-  }, [])
+  }, [userId])
 
   useEffect(() => {
     let isMounted = true
-
-    fetchFamilyMembers()
-      .then((list) => {
-        if (isMounted) {
-          setMembers(list)
-          setMembersError(null)
-          setLoadingMembers(false)
-        }
-      })
-      .catch((err: unknown) => {
-        if (isMounted) {
-          console.error('Erro ao carregar membros da família:', err)
-          const errObj = err as Record<string, unknown> | null
-          const msg =
-            (typeof errObj?.message === 'string' && errObj.message) ||
-            (err instanceof Error ? err.message : 'Erro ao carregar membros da família.')
-          setMembersError(msg)
-          setLoadingMembers(false)
-        }
-      })
-
+    queueMicrotask(() => {
+      if (isMounted) {
+        loadFamilyState()
+      }
+    })
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [loadFamilyState])
 
   const isCurrentUserAdmin = members.some(
     (m) => m.is_current_user && (m.role === 'admin' || m.role === 'owner')
@@ -122,7 +124,8 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
         message: res.message || t('familyModal.memberRemovedSuccess'),
       })
       setMemberToRemove(null)
-      await refreshMembers()
+      await loadFamilyState()
+      onFamilyLinked()
     } catch (err: unknown) {
       console.error('Erro ao remover membro:', err)
       const errObj = err as Record<string, unknown> | null
@@ -138,36 +141,7 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
     }
   }
 
-  // Load family invite code when mounted
-  useEffect(() => {
-    let isMounted = true
-
-    getFamilyCode(userId)
-      .then((code) => {
-        if (isMounted) {
-          setCurrentCode(code)
-          setCodeError(null)
-          setLoadingCode(false)
-        }
-      })
-      .catch((err: unknown) => {
-        console.error('Erro ao carregar código da família:', err)
-        if (isMounted) {
-          const errObj = err as Record<string, unknown> | null
-          const msg =
-            (typeof errObj?.message === 'string' && errObj.message) ||
-            (typeof errObj?.error_description === 'string' && errObj.error_description) ||
-            (typeof errObj?.details === 'string' && errObj.details) ||
-            (err instanceof Error ? err.message : 'Erro ao carregar código da família.')
-          setCodeError(msg)
-          setLoadingCode(false)
-        }
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [userId])
+  const hasLinkedFamily = Boolean(activeFamilyId)
 
   const handleCopyCode = async () => {
     if (!currentCode) return
@@ -449,13 +423,18 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Ação de remover: visível apenas se admin logado e não for a própria linha */}
-                      {isCurrentUserAdmin && !member.is_current_user && (
+                      {/* Ação de remover / sair: visível para admin remover outros OU membro sair da família */}
+                      {((isCurrentUserAdmin && !member.is_current_user) ||
+                        (!isCurrentUserAdmin && member.is_current_user)) && (
                         <button
                           type="button"
                           onClick={() => setMemberToRemove(member)}
                           className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors shrink-0"
-                          title={t('familyModal.removeMember')}
+                          title={
+                            member.is_current_user
+                              ? (language === 'es' ? 'Salir de la Familia' : 'Sair da Família')
+                              : t('familyModal.removeMember')
+                          }
                         >
                           <UserMinus className="w-4 h-4" />
                         </button>
@@ -467,79 +446,83 @@ const FamilySettingsModalContent: React.FC<FamilySettingsModalProps> = ({
             )}
           </section>
 
-          {/* Divisor */}
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
-            <span className="bg-white dark:bg-slate-900 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              {t('familyModal.or')}
-            </span>
-          </div>
-
-          {/* Bloco 2: Entrar em Outra Família */}
-          <section className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-              <Link2 className="w-4 h-4" />
-              <h3 className="text-sm font-semibold tracking-wide uppercase">
-                {t('familyModal.joinTitle')}
-              </h3>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {t('familyModal.joinDesc')}
-            </p>
-
-            <form onSubmit={handleJoinSubmit} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  {t('familyModal.joinLabel')}
-                </label>
-                <input
-                  type="text"
-                  value={inputCode}
-                  onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-                  placeholder={t('familyModal.inputPlaceholder')}
-                  maxLength={12}
-                  disabled={joining}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono text-center sm:text-left text-sm tracking-widest uppercase placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all disabled:opacity-50"
-                />
+          {/* Bloco 2: Entrar em Outra Família (Oculto se o utilizador já pertencer a uma família ativa) */}
+          {!hasLinkedFamily && (
+            <>
+              {/* Divisor */}
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
+                <span className="bg-white dark:bg-slate-900 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  {t('familyModal.or')}
+                </span>
               </div>
 
-              {/* Feedback messages */}
-              {feedback && (
-                <div
-                  className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs leading-relaxed ${
-                    feedback.success
-                      ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                      : 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300'
-                  }`}
-                >
-                  {feedback.success ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
-                  )}
-                  <span>{feedback.message}</span>
+              <section className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                  <Link2 className="w-4 h-4" />
+                  <h3 className="text-sm font-semibold tracking-wide uppercase">
+                    {t('familyModal.joinTitle')}
+                  </h3>
                 </div>
-              )}
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {t('familyModal.joinDesc')}
+                </p>
 
-              <button
-                type="submit"
-                disabled={joining || !inputCode.trim()}
-                className="cursor-pointer w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition-all"
-              >
-                {joining ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{t('familyModal.joining')}</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>{t('familyModal.joinButton')}</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </section>
+                <form onSubmit={handleJoinSubmit} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      {t('familyModal.joinLabel')}
+                    </label>
+                    <input
+                      type="text"
+                      value={inputCode}
+                      onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                      placeholder={t('familyModal.inputPlaceholder')}
+                      maxLength={12}
+                      disabled={joining}
+                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono text-center sm:text-left text-sm tracking-widest uppercase placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all disabled:opacity-50"
+                    />
+                  </div>
+
+                  {/* Feedback messages */}
+                  {feedback && (
+                    <div
+                      className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs leading-relaxed ${
+                        feedback.success
+                          ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300'
+                      }`}
+                    >
+                      {feedback.success ? (
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                      )}
+                      <span>{feedback.message}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={joining || !inputCode.trim()}
+                    className="cursor-pointer w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition-all"
+                  >
+                    {joining ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{t('familyModal.joining')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>{t('familyModal.joinButton')}</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </section>
+            </>
+          )}
         </div>
 
         {/* Footer */}

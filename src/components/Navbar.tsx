@@ -1,14 +1,17 @@
 import React from 'react'
 import { supabase } from '../lib/supabase'
-import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon, Sparkles, Coins, Users, ClipboardPaste } from 'lucide-react'
+import { ShieldCheck, LogOut, PlusCircle, Users2, Sun, Moon, Sparkles, Coins, ClipboardPaste } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { useTheme } from '../lib/theme'
 import { AvatarRenderer, getAvatarColor } from '../lib/avatarHelper'
+import type { ScopeFilterType } from '../lib/types'
 
 interface NavbarProps {
   userEmail?: string | null
   userName?: string | null
   userAvatar?: string | null
+  currentScope?: ScopeFilterType
+  onScopeChange?: (scope: ScopeFilterType) => void
   onOpenCreateAccount: () => void
   onOpenFamilySettings: () => void
   onOpenProfile: () => void
@@ -26,6 +29,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   userEmail,
   userName,
   userAvatar,
+  currentScope = 'personal',
+  onScopeChange,
   onOpenCreateAccount,
   onOpenFamilySettings,
   onOpenProfile,
@@ -67,6 +72,36 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </button>
 
+        {/* Mobile Center: Compact Scope Switcher [ 👤 Pessoal | 👥 Família ] */}
+        {onScopeChange && (
+          <div className="flex md:hidden items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-bold shadow-xs">
+            <button
+              type="button"
+              onClick={() => onScopeChange('personal')}
+              className={`cursor-pointer flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+                currentScope === 'personal'
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <span>👤</span>
+              <span>{language === 'es' ? 'Personal' : 'Pessoal'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onScopeChange('shared')}
+              className={`cursor-pointer flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+                currentScope === 'shared'
+                  ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <span>👥</span>
+              <span>{language === 'es' ? 'Familia' : 'Família'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Mobile-Only Avatar Button (Opens MobileMenuDrawer) */}
         <div className="flex md:hidden items-center">
           <button
@@ -89,11 +124,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Desktop-Only Actions (>= md) */}
         <div className="hidden md:flex items-center gap-2 sm:gap-2.5">
           {/* Language Switcher PT | ES */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-950/60 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold">
+          <div className="flex items-center h-10 bg-slate-100 dark:bg-slate-950/60 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setLanguage('pt')}
-              className={`cursor-pointer px-2 py-0.5 rounded-lg transition-all ${
+              className={`cursor-pointer h-full px-2 py-0.5 rounded-lg transition-all ${
                 language === 'pt'
                   ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -105,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setLanguage('es')}
-              className={`cursor-pointer px-2 py-0.5 rounded-lg transition-all ${
+              className={`cursor-pointer h-full px-2 py-0.5 rounded-lg transition-all ${
                 language === 'es'
                   ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -120,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={toggleTheme}
-            className="cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
+            className="cursor-pointer h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
             title={isDark ? t('theme.light') : t('theme.dark')}
             aria-label="Toggle theme"
           >
@@ -136,7 +171,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenWhatsNew}
-              className="relative cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
+              className="relative cursor-pointer h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
               title={language === 'es' ? 'Novedades de Kofre' : 'Novidades do Kofre'}
               aria-label="Novidades"
             >
@@ -156,15 +191,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Quick Tools in Desktop Navbar */}
+          {/* Quick Tools in Desktop Navbar (Ergonomic h-10 buttons with legible text & icons) */}
           {onOpenNotificationParser && (
             <button
               type="button"
               onClick={onOpenNotificationParser}
-              className="cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
-              title={t('mobileMenu.notificationParser') || 'Colar Notificação Bancária'}
+              className="cursor-pointer inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 shadow-xs"
+              title={language === 'es' ? 'Leer Notificación Bancaria' : 'Ler Notificação Bancária'}
             >
               <ClipboardPaste className="w-4 h-4 text-indigo-500" />
+              <span>{language === 'es' ? 'Notificación' : 'Notificação'}</span>
             </button>
           )}
 
@@ -172,10 +208,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenCurrencyExchange}
-              className="cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
-              title={t('mobileMenu.currencyExchange') || 'Simulador de Câmbio'}
+              className="cursor-pointer inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 shadow-xs"
+              title={language === 'es' ? 'Simulador de Cambio' : 'Simulador de Câmbio'}
             >
               <Coins className="w-4 h-4 text-amber-500" />
+              <span>{language === 'es' ? 'Cambio' : 'Câmbio'}</span>
             </button>
           )}
 
@@ -183,17 +220,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenSplitBill}
-              className="cursor-pointer p-1.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 flex items-center justify-center"
-              title={t('mobileMenu.splitBill') || 'Divisão de Conta (Racha)'}
+              className="cursor-pointer inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 transition-all active:scale-95 shadow-xs"
+              title={language === 'es' ? 'Dividir Cuenta (Vaca)' : 'Dividir Conta (Racha)'}
             >
-              <Users className="w-4 h-4 text-emerald-500" />
+              <span className="text-sm leading-none">🍕</span>
+              <span>{language === 'es' ? 'Dividir Cuenta' : 'Dividir Conta'}</span>
             </button>
           )}
 
           {/* Family Sharing Modal Button */}
           <button
             onClick={onOpenFamilySettings}
-            className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-300 hover:text-emerald-700 dark:hover:text-emerald-200 transition-all"
+            className="cursor-pointer inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-300 hover:text-emerald-700 dark:hover:text-emerald-200 transition-all shadow-xs"
             title={t('nav.familyTitle')}
           >
             <Users2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
@@ -202,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={onOpenCreateAccount}
-            className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-all"
+            className="cursor-pointer inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-all shadow-xs"
             title={t('nav.newAccountTitle')}
           >
             <PlusCircle className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
@@ -213,7 +251,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenProfile}
-            className="cursor-pointer flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-950/40 hover:bg-slate-200/80 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs transition-all active:scale-95"
+            className="cursor-pointer flex items-center gap-2 h-10 px-3 rounded-xl bg-slate-100/80 dark:bg-slate-950/40 hover:bg-slate-200/80 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs transition-all active:scale-95 shadow-xs"
             title={t('profile.title')}
           >
             <div className={`w-5 h-5 rounded-lg flex items-center justify-center border ${avatarColor}`}>
@@ -227,7 +265,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="cursor-pointer p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all"
+            className="cursor-pointer h-10 w-10 rounded-xl text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all flex items-center justify-center"
             title={t('nav.signOut')}
           >
             <LogOut className="w-4 h-4" />

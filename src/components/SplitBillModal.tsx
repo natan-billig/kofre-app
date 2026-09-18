@@ -37,7 +37,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
 }) => {
   const { t } = useTranslation()
 
-  const [billTitle, setBillTitle] = useState('Almoço / Jantar')
+  const [billTitle, setBillTitle] = useState('')
   const [amountStr, setAmountStr] = useState('')
   const [currency, setCurrency] = useState<CurrencyCode>(preferredCurrency)
   const [tipPercent, setTipPercent] = useState<number>(10)
@@ -78,9 +78,10 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     const formattedPerPerson = formatCurrency(amountPerPerson, currency)
     const tipNotice = tipPercent > 0 ? ` (+${tipPercent}% serviço)` : ''
 
-    let text = `🍕 *Divisão de Conta - ${billTitle || 'Kofre'}*\n`
-    text += `Total: ${formattedTotal}${tipNotice} (${peopleCount} pessoas)\n`
-    text += `👉 *Sua parte:* ${formattedPerPerson}\n\n`
+    const resolvedTitle = billTitle.trim() || t('splitBill.billTitlePlaceholder') || 'Almoço / Jantar'
+    let text = `🍕 *${t('splitBill.title') || 'Divisão de Conta'} - ${resolvedTitle}*\n`
+    text += `Total: ${formattedTotal}${tipNotice} (${peopleCount} ${(t('splitBill.people') || 'pessoas').toLowerCase()})\n`
+    text += `👉 *${t('splitBill.eachPays') || 'Cada um paga'}:* ${formattedPerPerson}\n\n`
 
     // Regra contextual de priorização por moeda
     const isBrl = currency === 'BRL'
@@ -127,6 +128,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     pixKey,
     aliasPy,
     bankDetails,
+    t,
   ])
 
   if (!isOpen) return null
@@ -196,7 +198,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
               type="text"
               value={billTitle}
               onChange={(e) => setBillTitle(e.target.value)}
-              placeholder="Ex: Almoço de Domingo, Pizza com Amigos..."
+              placeholder={t('splitBill.billTitlePlaceholder') || 'Almoço / Jantar'}
               className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-xs sm:text-sm font-semibold outline-none focus:border-indigo-500"
             />
           </div>
@@ -272,7 +274,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <div className="flex-1 text-center font-mono font-bold text-sm text-slate-900 dark:text-white">
-                  {peopleCount} {peopleCount === 1 ? 'pessoa' : 'pessoas'}
+                  {peopleCount} {t('splitBill.people').toLowerCase()}
                 </div>
                 <button
                   type="button"

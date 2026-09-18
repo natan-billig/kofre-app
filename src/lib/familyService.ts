@@ -2,10 +2,88 @@ import { supabase } from './supabase'
 import type { JoinFamilyResult, FamilyMemberItem } from './types'
 
 /**
- * Busca ou cria o invite_code da família ativa do usuário via RPC get_or_create_my_family.
- * Se a chamada falhar ou success for falso, propaga o erro com a mensagem técnica real.
+ * Obtém o family_id ativo do usuário verificando profiles, family_members e families por owner_id.
  */
-export async function getFamilyCode(_userId?: string): Promise<string> {
+export async function getActiveFamilyId(userId?: string): Promise<string | null> {
+  let resolvedUserId = userId
+  if (!resolvedUserId) {
+    const { data: authData } = await supabase.auth.getUser()
+    resolvedUserId = authData?.user?.id
+  }
+  if (!resolvedUserId) return null
+
+  // 1. Tenta obter pelo profile
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('family_id')
+      .eq('id', resolvedUserId)
+      .maybeSingle()
+
+    if (profile?.family_id) {
+      return profile.family_id
+    }
+  } catch (err) {
+    console.warn('Erro ao consultar profile.family_id:', err)
+  }
+
+  // 2. Tenta obter por family_members
+  try {
+    const { data: memberships } = await supabase
+      .from('family_members')
+      .select('family_id, created_at, role')
+      .eq('user_id', resolvedUserId)
+      .order('created_at', { ascending: false })
+
+    if (memberships && memberships.length > 0) {
+      const valid = memberships.find((m) => m.family_id)
+      if (valid?.family_id) return valid.family_id
+    }
+  } catch (err) {
+    console.warn('Erro ao consultar family_members em getActiveFamilyId:', err)
+  }
+
+  // 3. Tenta obter por families onde user é owner_id
+  try {
+    const { data: ownedFamily } = await supabase
+      .from('families')
+      .select('id')
+      .eq('owner_id', resolvedUserId)
+      .maybeSingle()
+
+    if (ownedFamily?.id) return ownedFamily.id
+  } catch (err) {
+    console.warn('Erro ao consultar families por owner_id:', err)
+  }
+
+  return null
+}
+
+/**
+ * Busca ou cria o invite_code da família ativa do usuário.
+ * Consulta prioritariamente a família vinculada por family_id antes de recorrer à RPC.
+ */
+export async function getFamilyCode(userId?: string): Promise<string> {
+  // 1. Busca primeiro se o usuário já possui família ativa vinculada
+  const activeFamilyId = await getActiveFamilyId(userId)
+
+  if (activeFamilyId) {
+    try {
+      const { data: family, error: famErr } = await supabase
+        .from('families')
+        .select('invite_code')
+        .eq('id', activeFamilyId)
+        .maybeSingle()
+
+      if (!famErr && family?.invite_code) {
+        return family.invite_code
+      }
+    } catch (err) {
+      console.warn('Aviso ao buscar invite_code de families:', err)
+    }
+  }
+
+  // 2. Fallback para RPC get_or_create_my_family
   const { data, error } = await supabase.rpc('get_or_create_my_family')
 
   if (error) {
@@ -110,57 +188,109 @@ export async function joinFamilyByCode(code: string): Promise<JoinFamilyResult> 
 
 /**
  * Busca a lista de membros conectados na família ativa do usuário.
- * Tenta primeiro via RPC get_family_members e, se falhar ou retornar vazio com membros na tabela, busca diretamente via Supabase.
+ * Consulta por family_id ativo para mapear perfeitamente Administrador e Membros em ambos os dispositivos.
  */
 export async function fetchFamilyMembers(currentUserId?: string): Promise<FamilyMemberItem[]> {
-  try {
-    const { data, error } = await supabase.rpc('get_family_members')
-    if (!error && data && Array.isArray(data) && data.length > 0) {
-      return data as FamilyMemberItem[]
+  let resolvedUserId = currentUserId
+  if (!resolvedUserId) {
+    const { data: authData } = await supabase.auth.getUser()
+    resolvedUserId = authData?.user?.id
+  }
+  if (!resolvedUserId) return []
+
+  const activeFamilyId = await getActiveFamilyId(resolvedUserId)
+
+  // Se não encontrou family_id, tenta via RPC como tentativa secundária
+  if (!activeFamilyId) {
+    try {
+      const { data, error } = await supabase.rpc('get_family_members')
+      if (!error && data && Array.isArray(data) && data.length > 0) {
+        return data as FamilyMemberItem[]
+      }
+    } catch (err) {
+      console.warn('RPC get_family_members falhou:', err)
     }
-  } catch (err) {
-    console.warn('RPC get_family_members indisponível ou falhou, usando fallback direto:', err)
+    return []
   }
 
-  // Fallback direto nas tabelas family_members e profiles
   try {
-    let resolvedUserId = currentUserId
-    if (!resolvedUserId) {
-      const { data: authData } = await supabase.auth.getUser()
-      resolvedUserId = authData?.user?.id
+    // 1. Obter informações da família para saber quem é o dono/administrador
+    const { data: familyData } = await supabase
+      .from('families')
+      .select('id, owner_id')
+      .eq('id', activeFamilyId)
+      .maybeSingle()
+    const ownerId = familyData?.owner_id || null
+
+    // 2. Buscar registros em family_members
+    const { data: memberRows } = await supabase
+      .from('family_members')
+      .select('user_id, role, family_id')
+      .eq('family_id', activeFamilyId)
+
+    // 3. Buscar perfis com esse family_id diretamente
+    const { data: profilesWithFamily } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar, family_id')
+      .eq('family_id', activeFamilyId)
+
+    // Coletar todos os user_ids únicos pertencentes a esta família
+    const allUserIds = new Set<string>()
+    if (ownerId) allUserIds.add(ownerId)
+    if (memberRows) {
+      memberRows.forEach((m) => {
+        if (m.user_id) allUserIds.add(m.user_id)
+      })
+    }
+    if (profilesWithFamily) {
+      profilesWithFamily.forEach((p) => {
+        if (p.id) allUserIds.add(p.id)
+      })
     }
 
-    if (!resolvedUserId) return []
+    if (allUserIds.size === 0) return []
 
-    // 1. Obter a família do usuário ativo
-    const { data: myMemberships } = await supabase
-      .from('family_members')
-      .select('family_id')
-      .eq('user_id', resolvedUserId)
+    // Buscar os perfis que possam faltar
+    const userIdsArray = Array.from(allUserIds)
+    const { data: allProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar')
+      .in('id', userIdsArray)
 
-    const familyIds = myMemberships?.map((m) => m.family_id).filter(Boolean) || []
+    const profileMap = new Map<string, { full_name: string | null; avatar: string | null }>()
+    allProfiles?.forEach((p) => {
+      profileMap.set(p.id, { full_name: p.full_name, avatar: p.avatar })
+    })
 
-    if (familyIds.length === 0) return []
+    const memberMap = new Map<string, { role?: string }>()
+    memberRows?.forEach((m) => {
+      memberMap.set(m.user_id, { role: m.role })
+    })
 
-    // 2. Buscar integrantes das famílias com os dados de perfil
-    const { data: members, error } = await supabase
-      .from('family_members')
-      .select('user_id, role, family_id, profiles:user_id(full_name, avatar)')
-      .in('family_id', familyIds)
+    const result: FamilyMemberItem[] = userIdsArray.map((uid) => {
+      const prof = profileMap.get(uid)
+      const mData = memberMap.get(uid)
+      const isOwner = uid === ownerId
+      const isAdmin = isOwner || mData?.role === 'admin' || mData?.role === 'owner'
 
-    if (error || !members) {
-      console.error('Erro ao buscar membros via fallback:', error)
-      return []
-    }
+      return {
+        user_id: uid,
+        full_name: prof?.full_name || (uid === resolvedUserId ? 'Você' : 'Membro da Família'),
+        role: isAdmin ? 'admin' : 'member',
+        is_current_user: uid === resolvedUserId,
+      }
+    })
 
-    return members.map((m: any) => ({
-      user_id: m.user_id,
-      full_name: m.profiles?.full_name || 'Membro da Família',
-      role: m.role || 'member',
-      is_current_user: m.user_id === resolvedUserId,
-    }))
-  } catch (fallbackErr) {
-    console.error('Erro no fallback de busca de membros da família:', fallbackErr)
+    // Ordenar para que admin/owner apareça primeiro, seguido do usuário logado e demais membros
+    return result.sort((a, b) => {
+      if (a.role === 'admin' && b.role !== 'admin') return -1
+      if (b.role === 'admin' && a.role !== 'admin') return 1
+      if (a.is_current_user && !b.is_current_user) return -1
+      if (!a.is_current_user && b.is_current_user) return 1
+      return (a.full_name || '').localeCompare(b.full_name || '')
+    })
+  } catch (err) {
+    console.error('Erro ao buscar membros fieis da família:', err)
     return []
   }
 }

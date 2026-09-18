@@ -57,6 +57,7 @@ export interface Profile {
   preferred_currency?: CurrencyCode | null
   budget_start_day?: number | null
   base_monthly_income?: number | null
+  family_id?: string | null
   pix_key?: string | null
   alias_py?: string | null
   bank_details?: string | null

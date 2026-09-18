@@ -230,6 +230,26 @@ export default function App() {
     }
   }, [sessionUserId])
 
+  // Realtime subscription for debts synchronization across devices
+  useEffect(() => {
+    if (!sessionUserId) return
+
+    const debtsChannel = supabase
+      .channel('kofre-debts-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'debts' },
+        () => {
+          refreshData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(debtsChannel)
+    }
+  }, [sessionUserId, refreshData])
+
   useEffect(() => {
     let isMounted = true
     if (sessionUser?.id) {
@@ -410,6 +430,8 @@ export default function App() {
         userEmail={sessionUser.email}
         userName={userProfile?.full_name || sessionUser.name}
         userAvatar={userProfile?.avatar}
+        currentScope={currentScope}
+        onScopeChange={setCurrentScope}
         onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
         onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
@@ -433,14 +455,16 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-[1680px] w-full max-w-full overflow-x-clip mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 py-4 sm:py-6 space-y-6">
-        {/* Scope Filter Bar (Minhas Contas / Caixa da Família) */}
-        <ScopeFilter
-          currentScope={currentScope}
-          onSelectScope={setCurrentScope}
-          personalCount={personalCount}
-          sharedCount={sharedCount}
-          onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
-        />
+        {/* Scope Filter Bar (Minhas Contas / Caixa da Família) - Desktop */}
+        <div className="hidden md:block">
+          <ScopeFilter
+            currentScope={currentScope}
+            onSelectScope={setCurrentScope}
+            personalCount={personalCount}
+            sharedCount={sharedCount}
+            onOpenFamilySettings={() => setIsFamilySettingsOpen(true)}
+          />
+        </div>
 
         {dataLoading ? (
           <div className="flex items-center justify-center py-16">
