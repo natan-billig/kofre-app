@@ -1,3 +1,14 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Previne zoom automático forçado em inputs em navegadores móveis (Safari iOS e Chrome Mobile) */
+@layer base {
+  @media (max-width: 640px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}

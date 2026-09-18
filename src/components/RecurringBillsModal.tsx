@@ -595,7 +595,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                           {bill.name}
                         </span>
                         <span
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 ${
                             bill.type === 'income'
                               ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20'
                               : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/20'
@@ -603,18 +603,18 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                         >
                           {bill.type === 'income' ? (
                             <>
-                              <ArrowDownLeft className="w-2.5 h-2.5" />
+                              <ArrowDownLeft className="w-3 h-3" />
                               <span>{t('recurringBills.typeIncome')}</span>
                             </>
                           ) : (
                             <>
-                              <ArrowUpRight className="w-2.5 h-2.5" />
+                              <ArrowUpRight className="w-3 h-3" />
                               <span>{t('recurringBills.typeExpense')}</span>
                             </>
                           )}
                         </span>
                         <span
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
                             bill.is_active
                               ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20'
                               : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
@@ -693,7 +693,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                               type="button"
                               onClick={() => handleDelete(bill.id)}
                               disabled={isDeleting}
-                              className="cursor-pointer text-[10px] font-bold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 px-1.5 py-0.5 rounded transition-colors"
+                              className="cursor-pointer text-xs font-bold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 px-2 py-0.5 rounded transition-colors"
                             >
                               {isDeleting ? '...' : t('transactions.confirm')}
                             </button>

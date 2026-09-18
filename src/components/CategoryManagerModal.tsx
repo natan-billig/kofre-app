@@ -192,7 +192,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 <h2 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
                   {t('categoryManager.title')}
                 </h2>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium">
                   {scope === 'shared' ? t('categoryManager.scopeShared') : t('categoryManager.scopePersonal')}
                 </span>
               </div>
@@ -266,7 +266,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 <Folder className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
                 {t('categoryManager.macroCategory')}
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">
+              <span className="text-xs text-slate-400 dark:text-slate-500">
                 {t('categoryManager.presets')}:
               </span>
             </div>
@@ -287,7 +287,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     key={preset}
                     type="button"
                     onClick={() => setNewMacro(isSelected ? '' : preset)}
-                    className={`cursor-pointer px-2 py-0.5 rounded-lg text-[10px] font-medium border transition-colors ${
+                    className={`cursor-pointer px-2 py-0.5 rounded-lg text-xs font-medium border transition-colors ${
                       isSelected
                         ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40'
                         : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'
@@ -422,7 +422,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                               key={preset}
                               type="button"
                               onClick={() => setEditingMacro(isSelected ? '' : preset)}
-                              className={`cursor-pointer px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
+                              className={`cursor-pointer px-1.5 py-0.5 rounded text-xs border transition-colors ${
                                 isSelected
                                   ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40'
                                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
@@ -436,7 +436,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     </div>
 
                     {editError && (
-                      <p className="text-[10px] text-rose-500 dark:text-rose-400 font-medium">{editError}</p>
+                      <p className="text-xs text-rose-500 dark:text-rose-400 font-medium">{editError}</p>
                     )}
                   </div>
                 )
@@ -453,7 +453,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                       <span>{t('categoryManager.deleteConfirm')}</span>
                     </div>
                     {deleteError && (
-                      <p className="text-[10px] text-rose-500 dark:text-rose-400">{deleteError}</p>
+                      <p className="text-xs text-rose-500 dark:text-rose-400">{deleteError}</p>
                     )}
                     <div className="flex justify-end gap-2">
                       <button

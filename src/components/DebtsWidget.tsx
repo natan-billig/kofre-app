@@ -184,7 +184,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
           }`}
         >
           <span>{t('debts.pending')}</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 font-medium">
             {pendingDebts.length}
           </span>
         </button>
@@ -199,7 +199,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
           }`}
         >
           <span>{t('debts.settled')}</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 font-medium">
             {settledDebts.length}
           </span>
         </button>
@@ -266,7 +266,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                          className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                             isIOwe
                               ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30'
                               : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30'
@@ -292,15 +292,15 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
                       </div>
 
                       {debt.description && (
-                        <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-0.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-0.5">
                           {debt.description}
                         </p>
                       )}
 
-                      <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[10px] text-slate-500">
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
                         {debt.due_date && (
                           <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                            <Calendar className="w-3 h-3" />
+                            <Calendar className="w-3.5 h-3.5" />
                             <span>
                               {t('debts.dueDate')}: {formatDate(debt.due_date, language)}
                             </span>
@@ -309,7 +309,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
 
                         {debt.scope === 'shared' && (
                           <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
-                            <Users className="w-3 h-3" />
+                            <Users className="w-3.5 h-3.5" />
                             <span>{t('scope.shared')}</span>
                           </span>
                         )}
@@ -345,14 +345,14 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
                             type="button"
                             onClick={() => handleDelete(debt.id)}
                             disabled={isDeleting}
-                            className="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                            className="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                           >
                             {isDeleting ? '...' : t('transactions.confirm')}
                           </button>
                           <button
                             type="button"
                             onClick={() => setDeletingId(null)}
-                            className="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-white text-[10px] rounded-lg transition-colors cursor-pointer"
+                            className="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs rounded-lg transition-colors cursor-pointer"
                           >
                             ✕
                           </button>

@@ -316,7 +316,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
                       <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs sm:text-sm truncate">
                         {translatedMacro}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 font-mono flex-shrink-0">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 font-mono font-medium flex-shrink-0">
                         {group.subcategories.length}
                       </span>
                       <ChevronDown

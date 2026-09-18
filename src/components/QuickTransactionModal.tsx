@@ -609,7 +609,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                           <option value="PYG">PYG (Guaranis)</option>
                         </select>
                       </div>
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                         {language === 'es'
                           ? 'El monto debitado de su cuenta sigue siendo el campo principal arriba.'
                           : 'O valor debitado da sua conta continua sendo o campo principal acima.'}

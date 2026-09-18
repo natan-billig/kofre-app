@@ -35,7 +35,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           <User className="w-3.5 h-3.5" />
           <span>{t('scope.myAccounts')}</span>
           <span
-            className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold ${
               currentScope === 'personal'
                 ? 'bg-indigo-700/80 text-indigo-100'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
@@ -57,7 +57,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
           <Users2 className="w-3.5 h-3.5" />
           <span>{t('scope.familyBox')}</span>
           <span
-            className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold ${
               currentScope === 'shared'
                 ? 'bg-emerald-700/80 text-emerald-100'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'

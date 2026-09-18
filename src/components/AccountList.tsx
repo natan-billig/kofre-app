@@ -101,12 +101,12 @@ export const AccountList: React.FC<AccountListProps> = ({
                             {w.name}
                           </span>
                           {w.type === 'shared' && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                            <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-medium">
                               {t('nav.family')}
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-mono block">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-mono block">
                           {w.currency}
                         </span>
                       </div>
@@ -153,12 +153,12 @@ export const AccountList: React.FC<AccountListProps> = ({
                             {w.name}
                           </span>
                           {w.type === 'shared' && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                            <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-medium">
                               {t('nav.family')}
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-mono block">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-mono block">
                           {w.currency}
                         </span>
                       </div>
@@ -207,7 +207,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                             {w.name}
                           </span>
                           {w.type === 'shared' && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                            <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-medium">
                               {t('nav.family')}
                             </span>
                           )}
@@ -216,7 +216,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                         {/* Badge discreto com as datas: "Fecha dia X • Vence dia Y" */}
                         {hasCycleDates && (
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 font-medium">
+                            <span className="text-xs px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 font-medium">
                               {details.closingDay != null && `${t('creditCard.closesDay')} ${details.closingDay}`}
                               {details.closingDay != null && details.dueDay != null && ' • '}
                               {details.dueDay != null && `${t('creditCard.dueOnDay')} ${details.dueDay}`}
@@ -224,7 +224,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                           </div>
                         )}
 
-                        <span className="text-[11px] text-purple-600 dark:text-purple-300/80 uppercase font-mono block">
+                        <span className="text-xs text-purple-600 dark:text-purple-300/80 uppercase font-mono block">
                           {t('creditCard.currentInvoice')}: {w.currency}
                         </span>
                       </div>
@@ -238,7 +238,7 @@ export const AccountList: React.FC<AccountListProps> = ({
 
                           {/* Próxima Fatura se houver compras pós-fechamento */}
                           {details.nextInvoiceAmount > 0 && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
                               <span className="text-slate-400 dark:text-slate-500">{t('creditCard.nextInvoice')}:</span>{' '}
                               <span className="text-slate-700 dark:text-slate-300">
                                 {formatCurrency(details.nextInvoiceAmount, w.currency)}
@@ -247,7 +247,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                           )}
 
                           {w.credit_limit && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                               {t('dashboard.availableLimit')}:{' '}
                               {formatCurrency(Math.max(0, Number(w.credit_limit) - details.totalDebt), w.currency)}
                             </div>
@@ -309,11 +309,11 @@ export const AccountList: React.FC<AccountListProps> = ({
                             <span className="text-sm font-medium text-slate-500 dark:text-slate-300 line-through">
                               {w.name}
                             </span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                            <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium">
                               {t('manageAccount.archivedBadge')}
                             </span>
                           </div>
-                          <span className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-mono">
+                          <span className="text-xs text-slate-400 dark:text-slate-500 uppercase font-mono">
                             {w.currency}
                           </span>
                         </div>

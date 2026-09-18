@@ -118,10 +118,20 @@ export default function App() {
           session.user.user_metadata?.name ||
           null
 
-        setSessionUser({
-          id: session.user.id,
-          email: session.user.email,
-          name: userName,
+        setSessionUser((prev) => {
+          if (
+            prev &&
+            prev.id === session.user.id &&
+            prev.email === session.user.email &&
+            prev.name === userName
+          ) {
+            return prev
+          }
+          return {
+            id: session.user.id,
+            email: session.user.email,
+            name: userName,
+          }
         })
 
         if (session.user.email && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
@@ -142,10 +152,12 @@ export default function App() {
     }
   }, [])
 
+  const sessionUserId = sessionUser?.id
+
   const refreshData = useCallback(async () => {
-    if (!sessionUser?.id) return
+    if (!sessionUserId) return
     try {
-      const loadedWallets = await ensureInitialWallets(sessionUser.id)
+      const loadedWallets = await ensureInitialWallets(sessionUserId)
       setWallets(loadedWallets)
 
       const sharedWallet = loadedWallets.find((w) => w.type === 'shared' && w.family_id)
@@ -156,8 +168,8 @@ export default function App() {
           ? fetchTransactions(loadedWallets.map((w) => w.id))
           : Promise.resolve([]),
         fetchRecurringBills('all', familyId).catch(() => []),
-        fetchUserProfile(sessionUser.id).catch(() => null),
-        fetchDebts('all', familyId, sessionUser.id).catch(() => []),
+        fetchUserProfile(sessionUserId).catch(() => null),
+        fetchDebts('all', familyId, sessionUserId).catch(() => []),
       ])
 
       setTransactions(loadedTxs)
@@ -167,7 +179,7 @@ export default function App() {
     } catch (err) {
       console.error('Error refreshing data:', err)
     }
-  }, [sessionUser])
+  }, [sessionUserId])
 
   useEffect(() => {
     let isMounted = true
@@ -210,7 +222,7 @@ export default function App() {
     return () => {
       isMounted = false
     }
-  }, [sessionUser])
+  }, [sessionUser?.id])
 
   // Compute calculated balances and credit card summaries
   const balances = calculateBalances(wallets, transactions, currentScope)
@@ -430,14 +442,15 @@ export default function App() {
       </main>
 
       {/* Floating Action Button (+) for Quick Transaction */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-6 right-6 z-40 mb-[env(safe-area-inset-bottom)]">
         <button
           type="button"
           onClick={handleOpenDefaultQuickTx}
-          className="cursor-pointer flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/40 hover:scale-105 active:scale-95 transition-all"
+          aria-label={t('quickModal.newTitle')}
+          className="cursor-pointer flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/30 active:scale-95 transition-transform"
           title={t('quickModal.newTitle')}
         >
-          <Plus className="w-7 h-7" />
+          <Plus className="w-7 h-7 stroke-[2.5]" />
         </button>
       </div>
 

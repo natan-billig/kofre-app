@@ -73,18 +73,18 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {t('dashboard.liquidBalances')}
           </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium">
             {t('accounts.cash')} + {t('accounts.checking')}
           </span>
         </div>
         <button
           type="button"
           onClick={() => setShowValues(!showValues)}
-          className="cursor-pointer flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-          title={showValues ? 'Ocultar' : 'Exibir'}
+          className="cursor-pointer p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
+          title={showValues ? 'Ocultar saldos' : 'Exibir saldos'}
+          aria-label={showValues ? 'Ocultar saldos' : 'Exibir saldos'}
         >
-          {showValues ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-          <span>{showValues ? '••••' : '👁'}</span>
+          {showValues ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
 
@@ -103,7 +103,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                   {t('dashboard.total')} {curr} ({t(cfg.nameKey)})
                 </span>
                 <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded border font-mono ${cfg.badgeClass}`}
+                  className={`text-xs font-bold px-2 py-0.5 rounded border font-mono ${cfg.badgeClass}`}
                 >
                   {curr}
                 </span>
@@ -111,7 +111,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
               <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight font-mono">
                 {showValues ? formatCurrency(balances[curr] || 0, curr) : cfg.hiddenMask}
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('dashboard.availableInAccounts')}</p>
             </div>
           )
         })}
@@ -144,11 +144,11 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="font-semibold text-slate-900 dark:text-white text-sm">{wallet.name}</h2>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">
+                        <span className="text-xs px-2 py-0.5 rounded font-bold bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">
                           {wallet.currency}
                         </span>
                         {wallet.type === 'shared' && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20">
+                          <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20 font-medium">
                             {t('nav.family')}
                           </span>
                         )}
@@ -173,7 +173,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                       {showValues ? formatCurrency(invoiceAmount, wallet.currency) : '••••••'}
                     </div>
                     {hasLimit && availableLimit !== null && (
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                         {t('dashboard.availableLimit')}: {showValues ? formatCurrency(availableLimit, wallet.currency) : '••••'}
                       </span>
                     )}
@@ -190,7 +190,7 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                           style={{ width: `${pctUsed}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                      <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                         <span>{t('createAccount.creditLimit')}: {formatCurrency(limit, wallet.currency)}</span>
                         <span>{pctUsed.toFixed(0)}%</span>
                       </div>
