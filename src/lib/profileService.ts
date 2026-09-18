@@ -3,6 +3,18 @@ import type { Profile } from './types'
 
 export async function fetchUserProfile(userId: string): Promise<Profile | null> {
   try {
+    // 1. Ler dados salvos localmente
+    let localExtra: Record<string, unknown> = {}
+    try {
+      const stored = localStorage.getItem(`kofre_profile_extra_${userId}`)
+      if (stored) {
+        localExtra = JSON.parse(stored)
+      }
+    } catch {
+      // Ignora erro de localStorage
+    }
+
+    // 2. Buscar perfil no Supabase
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -15,24 +27,61 @@ export async function fetchUserProfile(userId: string): Promise<Profile | null> 
 
     let profile = (data as Profile) || null
 
-    // Mesclar com dados locais caso as colunas novas ainda não existam no Supabase
+    if (!profile && Object.keys(localExtra).length === 0) {
+      return null
+    }
+
+    if (!profile) {
+      profile = {
+        id: userId,
+        full_name: null,
+      } as Profile
+    }
+
+    // 3. Merge inteligente: se o Supabase devolver base_monthly_income ou alias_py como null, undefined ou vazio, preservar do local
+    const mergedIncome =
+      profile.base_monthly_income != null && profile.base_monthly_income !== 0
+        ? profile.base_monthly_income
+        : localExtra.base_monthly_income != null && localExtra.base_monthly_income !== 0
+        ? Number(localExtra.base_monthly_income)
+        : (profile.base_monthly_income ?? (localExtra.base_monthly_income != null ? Number(localExtra.base_monthly_income) : null))
+
+    const pickString = (dbVal: string | null | undefined, localVal: unknown): string | null => {
+      if (typeof dbVal === 'string' && dbVal.trim() !== '') return dbVal.trim()
+      if (typeof localVal === 'string' && localVal.trim() !== '') return localVal.trim()
+      return null
+    }
+
+    const mergedBudgetStartDay =
+      profile.budget_start_day != null && profile.budget_start_day > 0
+        ? profile.budget_start_day
+        : typeof localExtra.budget_start_day === 'number' && localExtra.budget_start_day > 0
+        ? localExtra.budget_start_day
+        : 1
+
+    profile = {
+      ...profile,
+      budget_start_day: mergedBudgetStartDay,
+      base_monthly_income: mergedIncome,
+      pix_key: pickString(profile.pix_key, localExtra.pix_key),
+      alias_py: pickString(profile.alias_py, localExtra.alias_py),
+      bank_details: pickString(profile.bank_details, localExtra.bank_details),
+    }
+
+    // 4. Salvar estado consolidado no localStorage
     try {
-      const localExtra = localStorage.getItem(`kofre_profile_extra_${userId}`)
-      if (localExtra) {
-        const parsed = JSON.parse(localExtra)
-        profile = {
-          ...parsed,
-          ...(profile || { id: userId, full_name: null }),
-          // Campos locais como fallback caso venham undefined do Supabase
-          budget_start_day: profile?.budget_start_day ?? parsed.budget_start_day,
-          base_monthly_income: profile?.base_monthly_income ?? parsed.base_monthly_income,
-          pix_key: profile?.pix_key ?? parsed.pix_key,
-          alias_py: profile?.alias_py ?? parsed.alias_py,
-          bank_details: profile?.bank_details ?? parsed.bank_details,
-        }
-      }
+      localStorage.setItem(
+        `kofre_profile_extra_${userId}`,
+        JSON.stringify({
+          budget_start_day: profile.budget_start_day,
+          base_monthly_income: profile.base_monthly_income,
+          pix_key: profile.pix_key,
+          alias_py: profile.alias_py,
+          bank_details: profile.bank_details,
+        })
+      )
     } catch {
-      // Ignora erro de localStorage
+      // Ignora erro
     }
 
     return profile
@@ -55,6 +104,24 @@ export async function updateUserProfile(
     } catch (err) {
       console.warn('Could not update auth user metadata:', err)
     }
+  }
+
+  // Persistência local garantida SEMPRE antes de chamar Supabase (fallback e integridade)
+  let localExtra: Record<string, unknown> = {}
+  try {
+    const existing = localStorage.getItem(`kofre_profile_extra_${userId}`)
+    const parsed = existing ? JSON.parse(existing) : {}
+    localExtra = {
+      ...parsed,
+      budget_start_day: data.budget_start_day !== undefined ? data.budget_start_day : parsed.budget_start_day,
+      base_monthly_income: data.base_monthly_income !== undefined ? data.base_monthly_income : parsed.base_monthly_income,
+      pix_key: data.pix_key !== undefined ? data.pix_key : parsed.pix_key,
+      alias_py: data.alias_py !== undefined ? data.alias_py : parsed.alias_py,
+      bank_details: data.bank_details !== undefined ? data.bank_details : parsed.bank_details,
+    }
+    localStorage.setItem(`kofre_profile_extra_${userId}`, JSON.stringify(localExtra))
+  } catch {
+    // Ignora erro de localStorage
   }
 
   // Garantir que a coluna correta 'id' seja enviada com o userId para satisfazer RLS
@@ -80,23 +147,6 @@ export async function updateUserProfile(
   }
   if (data.bank_details !== undefined) {
     payload.bank_details = data.bank_details
-  }
-
-  // Persistência local garantida (fallback)
-  try {
-    const existing = localStorage.getItem(`kofre_profile_extra_${userId}`)
-    const parsed = existing ? JSON.parse(existing) : {}
-    const updated = {
-      ...parsed,
-      budget_start_day: data.budget_start_day ?? parsed.budget_start_day,
-      base_monthly_income: data.base_monthly_income ?? parsed.base_monthly_income,
-      pix_key: data.pix_key ?? parsed.pix_key,
-      alias_py: data.alias_py ?? parsed.alias_py,
-      bank_details: data.bank_details ?? parsed.bank_details,
-    }
-    localStorage.setItem(`kofre_profile_extra_${userId}`, JSON.stringify(updated))
-  } catch {
-    // Ignora erro de localStorage
   }
 
   let { data: result, error } = await supabase
@@ -141,11 +191,11 @@ export async function updateUserProfile(
   const finalProfile = (result as Profile) || (payload as unknown as Profile)
   return {
     ...finalProfile,
-    budget_start_day: data.budget_start_day ?? finalProfile.budget_start_day,
-    base_monthly_income: data.base_monthly_income ?? finalProfile.base_monthly_income,
-    pix_key: data.pix_key ?? finalProfile.pix_key,
-    alias_py: data.alias_py ?? finalProfile.alias_py,
-    bank_details: data.bank_details ?? finalProfile.bank_details,
+    budget_start_day: data.budget_start_day !== undefined ? data.budget_start_day : (finalProfile.budget_start_day ?? (localExtra.budget_start_day as number) ?? 1),
+    base_monthly_income: data.base_monthly_income !== undefined ? data.base_monthly_income : (finalProfile.base_monthly_income ?? (localExtra.base_monthly_income as number | null) ?? null),
+    pix_key: data.pix_key !== undefined ? data.pix_key : (finalProfile.pix_key ?? (localExtra.pix_key as string | null) ?? null),
+    alias_py: data.alias_py !== undefined ? data.alias_py : (finalProfile.alias_py ?? (localExtra.alias_py as string | null) ?? null),
+    bank_details: data.bank_details !== undefined ? data.bank_details : (finalProfile.bank_details ?? (localExtra.bank_details as string | null) ?? null),
   }
 }
 

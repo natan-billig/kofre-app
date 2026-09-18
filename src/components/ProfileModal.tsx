@@ -63,20 +63,37 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
 
+  const extraFallback = (() => {
+    try {
+      const stored = localStorage.getItem(`kofre_profile_extra_${userId}`)
+      return stored ? JSON.parse(stored) : {}
+    } catch {
+      return {}
+    }
+  })()
+
   const [fullName, setFullName] = useState(currentProfile?.full_name || '')
   const [avatar, setAvatar] = useState(currentProfile?.avatar || 'user')
   const [preferredCurrency, setPreferredCurrency] = useState<CurrencyCode>(
     currentProfile?.preferred_currency || 'PYG'
   )
-  const [budgetStartDay, setBudgetStartDay] = useState<number>(
-    currentProfile?.budget_start_day || 1
-  )
-  const [baseMonthlyIncome, setBaseMonthlyIncome] = useState<string>(
-    currentProfile?.base_monthly_income != null ? String(currentProfile.base_monthly_income) : ''
-  )
-  const [pixKey, setPixKey] = useState(currentProfile?.pix_key || '')
-  const [aliasPy, setAliasPy] = useState(currentProfile?.alias_py || '')
-  const [bankDetails, setBankDetails] = useState(currentProfile?.bank_details || '')
+  const [budgetStartDay, setBudgetStartDay] = useState<number>(() => {
+    return currentProfile?.budget_start_day || (extraFallback.budget_start_day as number) || 1
+  })
+  const [baseMonthlyIncome, setBaseMonthlyIncome] = useState<string>(() => {
+    if (currentProfile?.base_monthly_income != null) return String(currentProfile.base_monthly_income)
+    if (extraFallback.base_monthly_income != null) return String(extraFallback.base_monthly_income)
+    return ''
+  })
+  const [pixKey, setPixKey] = useState<string>(() => {
+    return currentProfile?.pix_key || (extraFallback.pix_key as string) || ''
+  })
+  const [aliasPy, setAliasPy] = useState<string>(() => {
+    return currentProfile?.alias_py || (extraFallback.alias_py as string) || ''
+  })
+  const [bankDetails, setBankDetails] = useState<string>(() => {
+    return currentProfile?.bank_details || (extraFallback.bank_details as string) || ''
+  })
 
   const [isSaving, setIsSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -192,7 +209,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
         avatar,
         preferred_currency: preferredCurrency,
         budget_start_day: budgetStartDay,
-        base_monthly_income: baseMonthlyIncome ? parseFloat(baseMonthlyIncome) : null,
+        base_monthly_income: baseMonthlyIncome.trim() !== '' ? Number(baseMonthlyIncome) : null,
         pix_key: pixKey.trim() || null,
         alias_py: aliasPy.trim() || null,
         bank_details: bankDetails.trim() || null,
@@ -765,7 +782,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
 export const ProfileModal: React.FC<ProfileModalProps> = (props) => {
   if (!props.isOpen) return null
 
-  const formKey = `${props.userId}-${props.currentProfile?.full_name || ''}-${props.currentProfile?.avatar || ''}-${props.currentProfile?.preferred_currency || ''}`
+  const formKey = `${props.userId}-${props.currentProfile?.full_name || ''}-${props.currentProfile?.avatar || ''}-${props.currentProfile?.preferred_currency || ''}-${props.currentProfile?.budget_start_day || 1}-${props.currentProfile?.base_monthly_income ?? ''}-${props.currentProfile?.pix_key || ''}-${props.currentProfile?.alias_py || ''}-${props.currentProfile?.bank_details || ''}`
 
   return <ProfileModalForm key={formKey} {...props} />
 }
