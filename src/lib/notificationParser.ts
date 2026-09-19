@@ -2,13 +2,13 @@ import type { CurrencyCode, TransactionType, ParsedNotification } from './types'
 import { predictCategory } from './categoryPredictor'
 
 /**
- * Normaliza montantes em formato brasileiro (1.500,50) ou paraguaio (150.000, 120,000 ou 150.000,00)
+ * Normaliza montantes em formato brasileiro (1.500,50) ou paraguayo (150.000, 120,000 ou 150.000,00)
  */
 function parseRawAmount(raw: string, currency: CurrencyCode): number {
   const cleaned = raw.trim().replace(/\s/g, '')
 
   if (currency === 'PYG') {
-    // Guaranis são números inteiros; no Paraguai tanto ponto quanto vírgula são usados como separador de milhar (ex: 120,000 ou 150.000)
+    // Guaranis são números inteiros; no Paraguay tanto ponto quanto vírgula são usados como separador de milhar (ex: 120,000 ou 150.000)
     // Se termina com centavos irrelevantes (,00 ou .00), descarta
     const withoutCents = cleaned.replace(/[,.]00$/, '')
     const digitsOnly = withoutCents.replace(/[.,]/g, '')

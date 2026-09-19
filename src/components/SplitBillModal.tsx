@@ -35,7 +35,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
   preferredCurrency = 'PYG',
   onRecordMyShare,
 }) => {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   const [billTitle, setBillTitle] = useState('')
   const [amountStr, setAmountStr] = useState('')
@@ -76,47 +76,83 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
   const generatedWhatsAppMessage = useMemo(() => {
     const formattedTotal = formatCurrency(totalWithTip, currency)
     const formattedPerPerson = formatCurrency(amountPerPerson, currency)
-    const tipNotice = tipPercent > 0 ? ` (+${tipPercent}% serviço)` : ''
+    const isEs = language === 'es'
 
-    const resolvedTitle = billTitle.trim() || t('splitBill.billTitlePlaceholder') || 'Almoço / Jantar'
-    let text = `🍕 *${t('splitBill.title') || 'Divisão de Conta'} - ${resolvedTitle}*\n`
-    text += `Total: ${formattedTotal}${tipNotice} (${peopleCount} ${(t('splitBill.people') || 'pessoas').toLowerCase()})\n`
-    text += `👉 *${t('splitBill.eachPays') || 'Cada um paga'}:* ${formattedPerPerson}\n\n`
+    const tipNotice =
+      tipPercent > 0
+        ? isEs
+          ? ` (+${tipPercent}% propina)`
+          : ` (+${tipPercent}% serviço)`
+        : ''
+
+    const defaultTitle = isEs ? 'Almuerzo / Cena' : 'Almoço / Jantar'
+    const resolvedTitle = billTitle.trim() || defaultTitle
+
+    const header = isEs
+      ? `🍕 *División de Cuenta / Vaca - ${resolvedTitle}*\n`
+      : `🍕 *Divisão de Conta / Racha - ${resolvedTitle}*\n`
+
+    const peopleUnit = isEs ? 'personas' : 'pessoas'
+    const totalLine = `💰 Total: ${formattedTotal}${tipNotice} (${peopleCount} ${peopleUnit})\n`
+
+    const eachPaysText = isEs ? 'Cada uno paga' : 'Cada um paga'
+    const eachPaysLine = `👉 *${eachPaysText}: ${formattedPerPerson}*\n\n`
+
+    let text = header + totalLine + eachPaysLine
 
     // Regra contextual de priorização por moeda
     const isBrl = currency === 'BRL'
     const isPyOrUsd = currency === 'PYG' || currency === 'USD'
 
-    if (isBrl) {
-      if (pixKey) {
-        text += `📲 *Dados para pagamento (Brasil):*\n`
-        text += `Chave PIX: ${pixKey}\n`
-        if (aliasPy) {
-          text += `(Ou via Alias SIPAP Paraguai: ${aliasPy})\n`
-        }
-      } else if (aliasPy) {
-        text += `📲 *Dados para transferência:*\nAlias SIPAP: ${aliasPy}\n`
-      }
-    } else if (isPyOrUsd) {
-      if (aliasPy) {
-        text += `📲 *Dados para transferência (Paraguai):*\n`
-        text += `Alias SIPAP: ${aliasPy}\n`
+    const hasBankDetails = Boolean(aliasPy || pixKey || bankDetails)
+
+    if (hasBankDetails) {
+      if (isBrl) {
         if (pixKey) {
-          text += `(Ou via PIX caso prefira: ${pixKey})\n`
+          text += isEs
+            ? `📲 *Datos para pago (Brasil):*\nClave PIX: ${pixKey}\n`
+            : `📲 *Dados para pagamento (Brasil):*\nChave PIX: ${pixKey}\n`
+          if (aliasPy) {
+            text += isEs
+              ? `(O vía Alias SIPAP Paraguay: ${aliasPy})\n`
+              : `(Ou via Alias SIPAP Paraguay: ${aliasPy})\n`
+          }
+        } else if (aliasPy) {
+          text += isEs
+            ? `📲 *Datos para transferencia (Paraguay):*\nAlias SIPAP: ${aliasPy}\n`
+            : `📲 *Dados para transferência (Paraguay):*\nAlias SIPAP: ${aliasPy}\n`
         }
-      } else if (pixKey) {
-        text += `📲 *Dados para pagamento (PIX):*\nChave PIX: ${pixKey}\n`
+      } else if (isPyOrUsd) {
+        if (aliasPy) {
+          text += isEs
+            ? `📲 *Datos para transferencia (Paraguay):*\nAlias SIPAP: ${aliasPy}\n`
+            : `📲 *Dados para transferência (Paraguay):*\nAlias SIPAP: ${aliasPy}\n`
+          if (pixKey) {
+            text += isEs
+              ? `(O vía PIX si prefieres: ${pixKey})\n`
+              : `(Ou via PIX caso prefira: ${pixKey})\n`
+          }
+        } else if (pixKey) {
+          text += isEs
+            ? `📲 *Datos para pago (PIX):*\nClave PIX: ${pixKey}\n`
+            : `📲 *Dados para pagamento (PIX):*\nChave PIX: ${pixKey}\n`
+        }
+      } else {
+        text += isEs
+          ? `📲 *Datos para transferencia (Paraguay):*\n`
+          : `📲 *Dados para transferência (Paraguay):*\n`
+        if (aliasPy) text += `Alias SIPAP: ${aliasPy}\n`
+        if (pixKey) text += isEs ? `Clave PIX: ${pixKey}\n` : `Chave PIX: ${pixKey}\n`
       }
-    } else {
-      if (aliasPy) text += `Alias SIPAP: ${aliasPy}\n`
-      if (pixKey) text += `Chave PIX: ${pixKey}\n`
+
+      if (bankDetails) {
+        text += isEs ? `Otros datos: ${bankDetails}\n` : `Outros dados: ${bankDetails}\n`
+      }
+      text += '\n'
     }
 
-    if (bankDetails) {
-      text += `Outros dados: ${bankDetails}\n`
-    }
-
-    text += `\n_Calculado no Kofre 🛡️_`
+    const calculatedInText = isEs ? 'Calculado en Kofre' : 'Calculado no Kofre'
+    text += `🛡️ _${calculatedInText}_`
     return text
   }, [
     billTitle,
@@ -128,7 +164,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     pixKey,
     aliasPy,
     bankDetails,
-    t,
+    language,
   ])
 
   if (!isOpen) return null
@@ -143,9 +179,29 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     }
   }
 
-  const handleOpenWhatsApp = () => {
+  const handleOpenWhatsApp = async () => {
+    // 1. Mobile nativo via navigator.share se suportado
+    const isMobile =
+      typeof navigator !== 'undefined' &&
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+    if (isMobile && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          text: generatedWhatsAppMessage,
+        })
+        return
+      } catch (err: unknown) {
+        if ((err as Error)?.name === 'AbortError') return
+      }
+    }
+
+    // 2. Desktop / Fallback: encodeURIComponent em todo o corpo da mensagem
     const encoded = encodeURIComponent(generatedWhatsAppMessage)
-    window.open(`https://wa.me/?text=${encoded}`, '_blank')
+    const url = isMobile
+      ? `https://wa.me/?text=${encoded}`
+      : `https://web.whatsapp.com/send?text=${encoded}`
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const handleRecordShare = () => {
@@ -153,7 +209,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     onRecordMyShare({
       amount: amountPerPerson,
       currency,
-      description: `${billTitle || 'Racha de Conta'} (minha parte de ${peopleCount} pessoas)`,
+      description: `${billTitle || (language === 'es' ? 'Vaca' : 'Racha de Conta')} (${language === 'es' ? 'mi parte de' : 'minha parte de'} ${peopleCount} ${language === 'es' ? 'personas' : 'pessoas'})`,
       category: 'Alimentação',
     })
     onClose()
@@ -274,7 +330,13 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <div className="flex-1 text-center font-mono font-bold text-sm text-slate-900 dark:text-white">
-                  {peopleCount} {t('splitBill.people').toLowerCase()}
+                  {peopleCount}{' '}
+                  {(t('splitBill.people') && !t('splitBill.people').includes('.')
+                    ? t('splitBill.people')
+                    : language === 'es'
+                    ? 'personas'
+                    : 'pessoas'
+                  ).toLowerCase()}
                 </div>
                 <button
                   type="button"
@@ -291,13 +353,24 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
           {evaluatedBaseAmount > 0 && (
             <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-amber-500/5 to-transparent border border-indigo-200 dark:border-indigo-800/60 space-y-2 text-center">
               <span className="text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400">
-                {t('splitBill.eachPersonPays') || 'Total por Pessoa:'}
+                {t('splitBill.eachPersonPays') && !t('splitBill.eachPersonPays').includes('.')
+                  ? t('splitBill.eachPersonPays')
+                  : language === 'es'
+                  ? 'Cada uno paga'
+                  : 'Cada um paga'}:
               </span>
               <div className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight font-mono">
                 {formatCurrency(amountPerPerson, currency)}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
-                <span>Total com serviço: {formatCurrency(totalWithTip, currency)}</span>
+                <span>
+                  {t('splitBill.totalWithService') && !t('splitBill.totalWithService').includes('.')
+                    ? `${t('splitBill.totalWithService')}:`
+                    : language === 'es'
+                    ? 'Total con propina/servicio:'
+                    : 'Total com serviço:'}{' '}
+                  {formatCurrency(totalWithTip, currency)}
+                </span>
                 <span>•</span>
                 <span>{peopleCount} partes</span>
               </div>
@@ -308,7 +381,11 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
           {(aliasPy || pixKey) && (
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-xs space-y-1">
               <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                Dados Vinculados para Recebimento:
+                {t('splitBill.linkedDetailsTitle') && !t('splitBill.linkedDetailsTitle').includes('.')
+                  ? t('splitBill.linkedDetailsTitle')
+                  : language === 'es'
+                  ? 'DATOS VINCULADOS PARA RECEPCIÓN:'
+                  : 'DADOS VINCULADOS PARA RECEBIMENTO:'}
               </span>
               <div className="space-y-0.5 text-slate-700 dark:text-slate-300">
                 {currency === 'BRL' ? (
@@ -356,7 +433,15 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
               className="cursor-pointer px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copiado!' : 'Copiar'}</span>
+              <span>
+                {copied
+                  ? language === 'es'
+                    ? '¡Copiado!'
+                    : 'Copiado!'
+                  : language === 'es'
+                  ? 'Copiar'
+                  : 'Copiar'}
+              </span>
             </button>
 
             <button

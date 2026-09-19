@@ -11,9 +11,41 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.6'
+export const CURRENT_APP_VERSION = '1.8.7'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.7',
+    releaseDate: '2026-09-19',
+    title: {
+      pt: 'Correção de Emojis no Desktop, Padronização Paraguay e Ajustes no Racha v1.8.7',
+      es: 'Corrección de Emojis en Escritorio, Estandarización Paraguay y Ajustes en Vaca v1.8.7',
+    },
+    highlights: [
+      {
+        icon: 'Share2',
+        title: {
+          pt: 'Codificação de Emojis no WhatsApp Desktop',
+          es: 'Codificación de Emojis en WhatsApp Escritorio',
+        },
+        description: {
+          pt: 'Compartilhamento no desktop com encodeURIComponent integral, garantindo a renderização perfeita de emojis (🍕, 👉, 📲, 🛡️) sem quebras de caracteres, com suporte nativo em dispositivos móveis.',
+          es: 'Compartir en escritorio con encodeURIComponent integral, garantizando la representación perfecta de emojis (🍕, 👉, 📲, 🛡️) sin caracteres rotos, con soporte nativo en dispositivos móviles.',
+        },
+      },
+      {
+        icon: 'Sparkles',
+        title: {
+          pt: 'Padronização "Paraguay" e Textos do Racha',
+          es: 'Estandarización "Paraguay" y Textos de Vaca',
+        },
+        description: {
+          pt: 'Grafia oficial "Paraguay" padronizada estritamente com "y" em todos os idiomas, tradução defensiva das etiquetas de rateio e mensagens coerentes com a língua ativa.',
+          es: 'Grafía oficial "Paraguay" estandarizada estrictamente con "y" en todos los idiomas, traducción defensiva de las etiquetas de división y mensajes coherentes con el idioma activo.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.6',
     releaseDate: '2026-09-18',
@@ -331,7 +363,7 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
           es: 'Lector Inteligente de Notificaciones Bancarias',
         },
         description: {
-          pt: 'Cole SMS ou push de bancos paraguaios (Itaú PY, Continental, Ueno, Familiar, Sudameris, SIPAP) e brasileiros (Nubank, PIX, Itaú, Bradesco, Inter) para preencher novos lançamentos com 1 toque.',
+          pt: 'Cole SMS ou push de bancos de Paraguay (Itaú PY, Continental, Ueno, Familiar, Sudameris, SIPAP) e brasileiros (Nubank, PIX, Itaú, Bradesco, Inter) para preencher novos lançamentos com 1 toque.',
           es: 'Pegue SMS o alertas de bancos paraguayos (Itaú PY, Continental, Ueno, Familiar, Sudameris, SIPAP) y brasileños (Nubank, PIX, Itaú, Bradesco, Inter) para cargar transacciones con 1 toque.',
         },
       },

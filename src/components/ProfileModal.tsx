@@ -510,7 +510,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
                 />
               </div>
 
-              {/* Alias SIPAP / Bancard (Paraguai - ₲ / US$) */}
+              {/* Alias SIPAP / Bancard (Paraguay - ₲ / US$) */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <Landmark className="w-3.5 h-3.5 text-indigo-500" />

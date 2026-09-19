@@ -375,7 +375,7 @@ export const CurrencyExchangeModal: React.FC<CurrencyExchangeModalProps> = ({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <Coins className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Guarani Paraguaio (PYG)</span>
+                      <span>Guarani (Paraguay - PYG)</span>
                     </span>
                     {activeInput === 'PYG' && (
                       <span className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400">
