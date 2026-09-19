@@ -415,7 +415,10 @@ export function calculateCategoryExpenses(
       categoryTotals[currency] = {}
     }
 
-    const amount = Number(tx.amount) || 0
+    let amount = Number(tx.amount) || 0
+    if (tx.is_shared && tx.my_share_amount != null && Number(tx.my_share_amount) > 0) {
+      amount = Number(tx.my_share_amount)
+    }
     if (amount <= 0) continue
 
     const category = tx.category?.trim() || 'Outros'

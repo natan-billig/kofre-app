@@ -127,10 +127,15 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     if (bill.currency !== currencyToUse) continue
 
     const isIncome = bill.type === 'income'
+    // Na saída da fatura do cartão ou débito em conta, considerar o valor total bruto para refletir o débito integral real
+    const grossAmount = (!isIncome && bill.total_amount != null && Number(bill.total_amount) > 0)
+      ? Number(bill.total_amount)
+      : Number(bill.amount)
+
     commitments.push({
       id: `bill-${bill.id}`,
       title: bill.name,
-      amount: bill.amount,
+      amount: grossAmount,
       currency: currencyToUse,
       type: isIncome ? 'recurring_income' : 'recurring_bill',
       flowType: isIncome ? 'in' : 'out',

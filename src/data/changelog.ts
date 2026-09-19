@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.5'
+export const CURRENT_APP_VERSION = '1.8.6'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.6',
+    releaseDate: '2026-09-18',
+    title: {
+      pt: 'Calculadora em Contas Fixas, Cota Pessoal em Assinaturas e Atualização Instantânea PWA v1.8.6',
+      es: 'Calculadora en Cuentas Fijas, Cuota Personal en Suscripciones y Actualización Instantánea PWA v1.8.6',
+    },
+    highlights: [
+      {
+        icon: 'Calculator',
+        title: {
+          pt: 'Calculadora Aritmética no Valor Previsto',
+          es: 'Calculadora Aritmética en el Monto Previsto',
+        },
+        description: {
+          pt: 'Digite expressões livres (+, -, *, /) diretamente no campo de valor das contas recorrentes, com resolução instantânea ao sair ou pressionar Enter.',
+          es: 'Escribe expresiones libres (+, -, *, /) directamente en el campo de monto de las cuentas recurrentes, con resolución instantánea al salir o pulsar Enter.',
+        },
+      },
+      {
+        icon: 'Users',
+        title: {
+          pt: 'Cota Pessoal em Despesas Compartilhadas',
+          es: 'Cuota Personal en Gastos Compartidos',
+        },
+        description: {
+          pt: 'Divida assinaturas e contas fixas com amigos ou família: registre o valor total faturado no cartão e sua cota individual sem distorcer tetos e limites de orçamento.',
+          es: 'Divide suscripciones y cuentas fijas con amigos o familia: registra el monto total facturado en la tarjeta y tu cuota individual sin distorsionar topes ni límites de presupuesto.',
+        },
+      },
+      {
+        icon: 'Zap',
+        title: {
+          pt: 'Atualização Transparente do PWA em Segundo Plano',
+          es: 'Actualización Transparente del PWA en Segundo Plano',
+        },
+        description: {
+          pt: 'Invalidação automática de cache e sincronização contínua do Service Worker ao retomar o aplicativo, garantindo sempre a versão mais recente.',
+          es: 'Invalidación automática de caché y sincronización continua del Service Worker al reanudar la app, garantizando siempre la versión más reciente.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.5',
     releaseDate: '2026-09-18',

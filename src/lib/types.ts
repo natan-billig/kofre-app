@@ -48,6 +48,10 @@ export interface Transaction {
   parent_transaction_id?: string | null
   is_paid?: boolean | null
   status?: 'pending' | 'completed' | null
+  is_shared?: boolean | null
+  total_amount?: number | null
+  my_share_amount?: number | null
+  split_participants?: number | null
 }
 
 export interface Profile {
@@ -98,6 +102,10 @@ export interface CreateTransactionDTO {
   parent_transaction_id?: string | null
   is_paid?: boolean | null
   status?: 'pending' | 'completed' | null
+  is_shared?: boolean | null
+  total_amount?: number | null
+  my_share_amount?: number | null
+  split_participants?: number | null
 }
 
 export type UpdateTransactionDTO = Partial<Omit<CreateTransactionDTO, 'user_id'>>
@@ -193,6 +201,10 @@ export interface RecurringBill {
   scope: WalletScope
   family_id?: string | null
   type?: 'expense' | 'income'
+  is_shared?: boolean
+  total_amount?: number
+  my_share_amount?: number
+  split_participants?: number
 }
 
 export type DebtType = 'i_owe' | 'they_owe'

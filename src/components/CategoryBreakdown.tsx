@@ -7,6 +7,7 @@ import type {
   Category,
   MacroCategoryExpenseItem,
   CategoryExpenseItem,
+  RecurringBill,
 } from '../lib/types'
 import { calculateCategoryExpenses, getActiveCurrencies } from '../lib/accountingService'
 import { fetchCategories, DEFAULT_MACRO_MAP } from '../lib/categoryService'
@@ -43,6 +44,7 @@ interface CategoryBreakdownProps {
   currentScope?: ScopeFilterType
   preferredCurrency?: CurrencyCode
   categories?: Category[]
+  recurringBills?: RecurringBill[]
   onSelectCategory?: (categoryName: string) => void
   onNavigateToStatement?: (categoryName: string) => void
   onOpenManageCategories?: () => void
@@ -69,6 +71,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
   currentScope = 'personal',
   preferredCurrency = 'PYG',
   categories: propCategories,
+  recurringBills: _recurringBills,
   onSelectCategory,
   onNavigateToStatement,
   onOpenManageCategories,
@@ -716,7 +719,12 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
                     <span>&bull;</span>
                     <span className="font-semibold text-rose-600 dark:text-rose-400 font-mono">
                       {formatCurrency(
-                        drilldownTransactions.reduce((acc, t) => acc + Number(t.amount), 0),
+                        drilldownTransactions.reduce((acc, t) => {
+                          const eff = (t.is_shared && t.my_share_amount != null && Number(t.my_share_amount) > 0)
+                            ? Number(t.my_share_amount)
+                            : Number(t.amount)
+                          return acc + eff
+                        }, 0),
                         selectedCurrency
                       )}
                     </span>
@@ -782,8 +790,18 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
 
                       <div className="text-right shrink-0">
                         <div className="font-bold text-rose-600 dark:text-rose-400 font-mono text-xs sm:text-sm">
-                          - {formatCurrency(Number(tx.amount), selectedCurrency)}
+                          - {formatCurrency(
+                            (tx.is_shared && tx.my_share_amount != null && Number(tx.my_share_amount) > 0)
+                              ? Number(tx.my_share_amount)
+                              : Number(tx.amount),
+                            selectedCurrency
+                          )}
                         </div>
+                        {tx.is_shared && tx.my_share_amount != null && Number(tx.my_share_amount) > 0 && (
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            Total: {formatCurrency(Number(tx.total_amount || tx.amount), selectedCurrency)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )

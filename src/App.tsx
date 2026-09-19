@@ -340,9 +340,12 @@ export default function App() {
     setQuickTxType(bill.type === 'income' ? 'income' : 'expense')
     setQuickTxSourceId(bill.wallet_id)
     setQuickTxDestId(undefined)
-    setQuickTxAmount(bill.amount)
+    const effectiveAmount = (bill.is_shared && bill.my_share_amount && bill.my_share_amount > 0)
+      ? bill.my_share_amount
+      : bill.amount
+    setQuickTxAmount(effectiveAmount)
     setQuickTxCategory(bill.category)
-    setQuickTxDescription(bill.name)
+    setQuickTxDescription(bill.is_shared ? `${bill.name} (Cota)` : bill.name)
     setIsQuickTxOpen(true)
   }
 
@@ -532,6 +535,7 @@ export default function App() {
                 wallets={wallets}
                 currentScope={currentScope}
                 preferredCurrency={preferredCurrency}
+                recurringBills={recurringBills}
                 onSelectCategory={(catName) => setActiveCategoryFilter(catName)}
                 onNavigateToStatement={(catName) => {
                   setActiveCategoryFilter(catName)

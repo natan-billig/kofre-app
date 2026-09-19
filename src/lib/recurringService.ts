@@ -2,6 +2,43 @@ import { supabase } from './supabase'
 import type { RecurringBill, Transaction, WalletScope } from './types'
 
 const RECURRING_TYPES_STORAGE_KEY = 'kofre_recurring_types'
+const RECURRING_SHARED_META_STORAGE_KEY = 'kofre_recurring_shared_meta'
+
+export interface RecurringSharedMeta {
+  is_shared?: boolean
+  total_amount?: number
+  my_share_amount?: number
+  split_participants?: number
+}
+
+function getLocalRecurringSharedMeta(): Record<string, RecurringSharedMeta> {
+  try {
+    const raw = localStorage.getItem(RECURRING_SHARED_META_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function saveLocalRecurringSharedMeta(id: string, meta: RecurringSharedMeta): void {
+  try {
+    const current = getLocalRecurringSharedMeta()
+    current[id] = { ...current[id], ...meta }
+    localStorage.setItem(RECURRING_SHARED_META_STORAGE_KEY, JSON.stringify(current))
+  } catch {
+    // ignore
+  }
+}
+
+function removeLocalRecurringSharedMeta(id: string): void {
+  try {
+    const current = getLocalRecurringSharedMeta()
+    delete current[id]
+    localStorage.setItem(RECURRING_SHARED_META_STORAGE_KEY, JSON.stringify(current))
+  } catch {
+    // ignore
+  }
+}
 
 function getLocalRecurringTypes(): Record<string, 'expense' | 'income'> {
   try {
@@ -65,10 +102,18 @@ export async function fetchRecurringBills(
 
   const rawList = (data as RecurringBill[]) || []
   const localTypes = getLocalRecurringTypes()
-  return rawList.map((item) => ({
-    ...item,
-    type: item.type || localTypes[item.id] || 'expense',
-  }))
+  const localShared = getLocalRecurringSharedMeta()
+  return rawList.map((item) => {
+    const meta = localShared[item.id] || {}
+    return {
+      ...item,
+      type: item.type || localTypes[item.id] || 'expense',
+      is_shared: item.is_shared !== undefined ? item.is_shared : meta.is_shared,
+      total_amount: item.total_amount !== undefined ? item.total_amount : meta.total_amount,
+      my_share_amount: item.my_share_amount !== undefined ? item.my_share_amount : meta.my_share_amount,
+      split_participants: item.split_participants !== undefined ? item.split_participants : meta.split_participants,
+    }
+  })
 }
 
 /**
@@ -83,7 +128,7 @@ export async function createRecurringBill(
     userId = authData?.user?.id
   }
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     ...bill,
     type: bill.type || 'expense',
     user_id: userId,
@@ -95,20 +140,28 @@ export async function createRecurringBill(
     .select()
     .single()
 
-  // Fallback resiliente caso a coluna type ainda não exista no schema do banco
-  if (error && (error.code === 'PGRST204' || error.message?.includes('type'))) {
+  // Fallback resiliente caso colunas novas ainda não existam no schema do banco
+  if (
+    error &&
+    (error.code === 'PGRST204' ||
+      error.message?.includes('type') ||
+      error.message?.includes('is_shared') ||
+      error.message?.includes('total_amount') ||
+      error.message?.includes('my_share_amount') ||
+      error.message?.includes('split_participants'))
+  ) {
     const fallbackPayload = {
-      name: payload.name,
-      amount: payload.amount,
-      currency: payload.currency,
-      category: payload.category,
-      wallet_id: payload.wallet_id,
-      due_day: payload.due_day,
-      start_date: payload.start_date,
-      is_active: payload.is_active,
-      scope: payload.scope,
-      family_id: payload.family_id,
-      user_id: payload.user_id,
+      name: bill.name,
+      amount: bill.amount,
+      currency: bill.currency,
+      category: bill.category,
+      wallet_id: bill.wallet_id,
+      due_day: bill.due_day,
+      start_date: bill.start_date,
+      is_active: bill.is_active,
+      scope: bill.scope,
+      family_id: bill.family_id,
+      user_id: userId,
     }
     const retry = await supabase
       .from('recurring_bills')
@@ -125,13 +178,27 @@ export async function createRecurringBill(
   }
 
   const finalType = (data as RecurringBill)?.type || bill.type || 'expense'
-  if (data?.id) {
-    saveLocalRecurringType(data.id, finalType)
+  const finalId = data?.id
+
+  if (finalId) {
+    saveLocalRecurringType(finalId, finalType)
+    if (bill.is_shared !== undefined || bill.my_share_amount !== undefined) {
+      saveLocalRecurringSharedMeta(finalId, {
+        is_shared: bill.is_shared,
+        total_amount: bill.total_amount,
+        my_share_amount: bill.my_share_amount,
+        split_participants: bill.split_participants,
+      })
+    }
   }
 
   return {
     ...(data as RecurringBill),
     type: finalType,
+    is_shared: bill.is_shared,
+    total_amount: bill.total_amount,
+    my_share_amount: bill.my_share_amount,
+    split_participants: bill.split_participants,
   }
 }
 
@@ -142,17 +209,32 @@ export async function updateRecurringBill(
   id: string,
   partialBill: Partial<RecurringBill>
 ): Promise<RecurringBill> {
+  const updatePayload: Record<string, unknown> = { ...partialBill }
+
   let { data, error } = await supabase
     .from('recurring_bills')
-    .update(partialBill)
+    .update(updatePayload)
     .eq('id', id)
     .select()
     .single()
 
-  // Fallback resiliente se a coluna type não existir no schema
-  if (error && (error.code === 'PGRST204' || error.message?.includes('type'))) {
-    const { type: _unused, ...fallbackPartial } = partialBill
-    void _unused
+  // Fallback resiliente se colunas novas não existirem no schema do banco
+  if (
+    error &&
+    (error.code === 'PGRST204' ||
+      error.message?.includes('type') ||
+      error.message?.includes('is_shared') ||
+      error.message?.includes('total_amount') ||
+      error.message?.includes('my_share_amount') ||
+      error.message?.includes('split_participants'))
+  ) {
+    const fallbackPartial = { ...updatePayload }
+    delete fallbackPartial.type
+    delete fallbackPartial.is_shared
+    delete fallbackPartial.total_amount
+    delete fallbackPartial.my_share_amount
+    delete fallbackPartial.split_participants
+
     const retry = await supabase
       .from('recurring_bills')
       .update(fallbackPartial)
@@ -173,9 +255,24 @@ export async function updateRecurringBill(
     saveLocalRecurringType(id, partialBill.type)
   }
 
+  if (id && (partialBill.is_shared !== undefined || partialBill.my_share_amount !== undefined)) {
+    saveLocalRecurringSharedMeta(id, {
+      is_shared: partialBill.is_shared,
+      total_amount: partialBill.total_amount,
+      my_share_amount: partialBill.my_share_amount,
+      split_participants: partialBill.split_participants,
+    })
+  }
+
+  const localShared = getLocalRecurringSharedMeta()[id] || {}
+
   return {
     ...(data as RecurringBill),
     type: finalType,
+    is_shared: partialBill.is_shared !== undefined ? partialBill.is_shared : localShared.is_shared,
+    total_amount: partialBill.total_amount !== undefined ? partialBill.total_amount : localShared.total_amount,
+    my_share_amount: partialBill.my_share_amount !== undefined ? partialBill.my_share_amount : localShared.my_share_amount,
+    split_participants: partialBill.split_participants !== undefined ? partialBill.split_participants : localShared.split_participants,
   }
 }
 
@@ -184,6 +281,7 @@ export async function updateRecurringBill(
  */
 export async function deleteRecurringBill(id: string): Promise<void> {
   removeLocalRecurringType(id)
+  removeLocalRecurringSharedMeta(id)
   const { error } = await supabase
     .from('recurring_bills')
     .delete()

@@ -104,7 +104,11 @@ export function calculateFinancialHealth({
     if (bill.currency !== currency) continue
     if (bill.type === 'income') continue
 
-    recurringBillsAmount += Number(bill.amount) || 0
+    const effectiveAmount =
+      bill.is_shared && bill.my_share_amount != null && Number(bill.my_share_amount) > 0
+        ? Number(bill.my_share_amount)
+        : Number(bill.amount) || 0
+    recurringBillsAmount += effectiveAmount
   }
 
   // 5. Dívidas a pagar no período (i_owe e status pending)

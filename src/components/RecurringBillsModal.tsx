@@ -8,6 +8,7 @@ import {
 } from '../lib/recurringService'
 import { fetchCategories } from '../lib/categoryService'
 import { formatCurrency } from '../lib/formatters'
+import { evaluateMathExpression } from '../lib/mathParser'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
@@ -23,6 +24,7 @@ import {
   Tag,
   ArrowUpRight,
   ArrowDownLeft,
+  Users,
 } from 'lucide-react'
 
 interface RecurringBillsModalProps {
@@ -63,6 +65,25 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     scope === 'shared' ? 'shared' : 'personal'
   )
   const [isActive, setIsActive] = useState(true)
+
+  // Shared bill state
+  const [isShared, setIsShared] = useState(false)
+  const [totalAmount, setTotalAmount] = useState('')
+  const [splitParticipants, setSplitParticipants] = useState('2')
+  const [myShareAmount, setMyShareAmount] = useState('')
+
+  const handleEvaluateInput = (val: string, setter: (v: string) => void): number | null => {
+    if (!val || !val.trim()) return null
+    const result = evaluateMathExpression(val)
+    if (result !== null && !isNaN(result) && result >= 0) {
+      const formatted = Number.isInteger(result)
+        ? String(result)
+        : String(Math.round(result * 100) / 100)
+      setter(formatted)
+      return Number(formatted)
+    }
+    return null
+  }
 
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -139,6 +160,10 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     setBillType('expense')
     setName('')
     setAmount('')
+    setIsShared(false)
+    setTotalAmount('')
+    setSplitParticipants('2')
+    setMyShareAmount('')
     const defaultWallet = selectableWallets[0]
     setWalletId(defaultWallet?.id || '')
     setCurrency(defaultWallet?.currency || 'PYG')
@@ -157,6 +182,10 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     setBillType(bill.type || 'expense')
     setName(bill.name)
     setAmount(String(bill.amount))
+    setIsShared(Boolean(bill.is_shared))
+    setTotalAmount(bill.total_amount != null ? String(bill.total_amount) : String(bill.amount))
+    setSplitParticipants(bill.split_participants != null ? String(bill.split_participants) : '2')
+    setMyShareAmount(bill.my_share_amount != null ? String(bill.my_share_amount) : '')
     setCurrency(bill.currency)
     setCategory(bill.category)
     setWalletId(bill.wallet_id)
@@ -217,7 +246,13 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     setFormError(null)
 
     const trimmedName = name.trim()
-    const numAmount = parseFloat(amount)
+    let numAmount = parseFloat(amount)
+    const evaluatedAmount = evaluateMathExpression(amount)
+    if (evaluatedAmount !== null && !isNaN(evaluatedAmount) && evaluatedAmount >= 0) {
+      numAmount = evaluatedAmount
+      setAmount(Number.isInteger(evaluatedAmount) ? String(evaluatedAmount) : String(Math.round(evaluatedAmount * 100) / 100))
+    }
+
     const numDay = parseInt(dueDay, 10)
 
     if (!trimmedName || !amount || !walletId || !category) {
@@ -235,6 +270,39 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
       return
     }
 
+    // Processamento de despesa compartilhada
+    let finalIsShared = false
+    let finalTotalAmount: number | undefined
+    let finalMyShare: number | undefined
+    let finalParticipants: number | undefined
+
+    if (billType === 'expense' && isShared) {
+      finalIsShared = true
+      let numTot = parseFloat(totalAmount)
+      const evaluatedTot = evaluateMathExpression(totalAmount)
+      if (evaluatedTot !== null && !isNaN(evaluatedTot) && evaluatedTot >= 0) {
+        numTot = evaluatedTot
+      }
+      if (isNaN(numTot) || numTot <= 0) {
+        numTot = numAmount
+      }
+
+      const parts = parseInt(splitParticipants, 10) || 2
+      let numShare = parseFloat(myShareAmount)
+      const evaluatedShare = evaluateMathExpression(myShareAmount)
+      if (evaluatedShare !== null && !isNaN(evaluatedShare) && evaluatedShare >= 0) {
+        numShare = evaluatedShare
+      }
+      if (isNaN(numShare) || numShare <= 0) {
+        numShare = Math.round((numTot / parts) * 100) / 100
+      }
+
+      finalTotalAmount = numTot
+      finalMyShare = numShare
+      finalParticipants = parts
+      numAmount = numTot // O valor bruto para débito no cartão é o valor total
+    }
+
     setIsSaving(true)
     try {
       if (editingBill) {
@@ -250,6 +318,10 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           scope: billScope,
           family_id: billScope === 'shared' ? familyId || null : null,
           type: billType,
+          is_shared: finalIsShared,
+          total_amount: finalTotalAmount,
+          my_share_amount: finalMyShare,
+          split_participants: finalParticipants,
         })
         setBills((prev) => prev.map((b) => (b.id === editingBill.id ? updated : b)))
         setFeedbackMsg(t('recurringBills.updatedSuccess'))
@@ -266,6 +338,10 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
           scope: billScope,
           family_id: billScope === 'shared' ? familyId || null : null,
           type: billType,
+          is_shared: finalIsShared,
+          total_amount: finalTotalAmount,
+          my_share_amount: finalMyShare,
+          split_participants: finalParticipants,
         })
         setBills((prev) => [...prev, created].sort((a, b) => a.due_day - b.due_day))
         setFeedbackMsg(t('recurringBills.createdSuccess'))
@@ -421,11 +497,17 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                     {t('recurringBills.expectedAmount')}
                   </label>
                   <input
-                    type="number"
-                    step="any"
-                    min="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    onBlur={() => handleEvaluateInput(amount, setAmount)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleEvaluateInput(amount, setAmount)
+                      }
+                    }}
                     placeholder="0.00"
                     className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/60 transition-colors font-mono"
                     required
@@ -447,6 +529,121 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                   </select>
                 </div>
               </div>
+
+              {/* Cota Pessoal / Despesa Compartilhada (Apenas para despesas fixas) */}
+              {billType === 'expense' && (
+                <div className="p-3.5 bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={isShared}
+                        onChange={(e) => {
+                          const checked = e.target.checked
+                          setIsShared(checked)
+                          if (checked) {
+                            if (!totalAmount) setTotalAmount(amount)
+                            const numParts = parseInt(splitParticipants, 10) || 2
+                            const numTot = parseFloat(totalAmount || amount) || 0
+                            if (!myShareAmount && numTot > 0) {
+                              setMyShareAmount(String(Math.round((numTot / numParts) * 100) / 100))
+                            }
+                          }
+                        }}
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer"
+                      />
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>{t('recurringBills.sharedExpense')}</span>
+                      </span>
+                    </label>
+                  </div>
+
+                  {isShared && (
+                    <div className="space-y-2.5 pt-1 animate-in fade-in">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {t('recurringBills.sharedExpenseSubtitle')}
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider block">
+                            {t('recurringBills.totalCardAmount')}
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={totalAmount}
+                            onChange={(e) => setTotalAmount(e.target.value)}
+                            onBlur={() => {
+                              const evaluated = handleEvaluateInput(totalAmount, setTotalAmount)
+                              if (evaluated && evaluated > 0) {
+                                const parts = parseInt(splitParticipants, 10) || 2
+                                setMyShareAmount(String(Math.round((evaluated / parts) * 100) / 100))
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                const evaluated = handleEvaluateInput(totalAmount, setTotalAmount)
+                                if (evaluated && evaluated > 0) {
+                                  const parts = parseInt(splitParticipants, 10) || 2
+                                  setMyShareAmount(String(Math.round((evaluated / parts) * 100) / 100))
+                                }
+                              }
+                            }}
+                            placeholder="0.00"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 font-mono focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-700 dark:text-slate-400 uppercase tracking-wider block">
+                            {t('recurringBills.splitParticipants')}
+                          </label>
+                          <input
+                            type="number"
+                            min="2"
+                            max="50"
+                            value={splitParticipants}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setSplitParticipants(val)
+                              const parts = parseInt(val, 10)
+                              const tot = parseFloat(totalAmount)
+                              if (parts && parts > 1 && tot && tot > 0) {
+                                setMyShareAmount(String(Math.round((tot / parts) * 100) / 100))
+                              }
+                            }}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider block">
+                            {t('recurringBills.myShareAmount')}
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={myShareAmount}
+                            onChange={(e) => setMyShareAmount(e.target.value)}
+                            onBlur={() => handleEvaluateInput(myShareAmount, setMyShareAmount)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleEvaluateInput(myShareAmount, setMyShareAmount)
+                              }
+                            }}
+                            placeholder="0.00"
+                            className="w-full bg-white dark:bg-slate-900 border border-indigo-400 dark:border-indigo-500/60 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Category & Debit Account Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -624,6 +821,12 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                             ? t('recurringBills.active')
                             : t('recurringBills.paused')}
                         </span>
+                        {bill.is_shared && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/20">
+                            <Users className="w-3 h-3" />
+                            <span>{t('recurringBills.myShare')} (1/{bill.split_participants || 2})</span>
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -654,13 +857,24 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                     {/* Right: Amount & Actions */}
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
-                        <span
-                          className={`text-sm font-bold tracking-tight block font-mono ${
-                            bill.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
-                          }`}
-                        >
-                          {bill.type === 'income' ? '+' : ''}{formatCurrency(bill.amount, bill.currency)}
-                        </span>
+                        {bill.is_shared && bill.my_share_amount && bill.my_share_amount > 0 ? (
+                          <>
+                            <span className="text-sm font-bold tracking-tight block font-mono text-slate-900 dark:text-white">
+                              {formatCurrency(bill.my_share_amount, bill.currency)}
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-mono">
+                              Total: {formatCurrency(bill.total_amount || bill.amount, bill.currency)}
+                            </span>
+                          </>
+                        ) : (
+                          <span
+                            className={`text-sm font-bold tracking-tight block font-mono ${
+                              bill.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
+                            }`}
+                          >
+                            {bill.type === 'income' ? '+' : ''}{formatCurrency(bill.amount, bill.currency)}
+                          </span>
+                        )}
                       </div>
 
                       {/* Action buttons */}
