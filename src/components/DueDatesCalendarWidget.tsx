@@ -11,6 +11,7 @@ import type {
 } from '../lib/types'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
 import { calculateBalances, getActiveCurrencies, updateTransaction } from '../lib/accountingService'
+import { convertAmount } from '../lib/exchangeRateService'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
@@ -70,14 +71,15 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   // 3. Montar lista de movimentações previstas com data de vencimento/recebimento
   const commitments: DueCommitmentItem[] = []
 
-  // A. Salário Base do Perfil (se configurado > 0 e moeda compatível)
+  // A. Salário Base do Perfil (se configurado > 0 com conversão multi-moeda)
   const profileBaseIncome =
     userProfile?.base_monthly_income != null && userProfile.base_monthly_income > 0
       ? Number(userProfile.base_monthly_income)
       : 0
   const profileCurrency = userProfile?.preferred_currency || preferredCurrency
 
-  if (profileBaseIncome > 0 && currencyToUse === profileCurrency) {
+  if (profileBaseIncome > 0) {
+    const convertedSalary = convertAmount(profileBaseIncome, profileCurrency, currencyToUse)
     const salaryDay =
       userProfile?.budget_start_day &&
       userProfile.budget_start_day > 0 &&
@@ -88,7 +90,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     commitments.push({
       id: 'profile-base-salary',
       title: t('calendar.baseSalary') || (language === 'es' ? 'Sueldo Base' : 'Salário Base'),
-      amount: profileBaseIncome,
+      amount: convertedSalary,
       currency: currencyToUse,
       type: 'base_salary',
       flowType: 'in',
@@ -99,17 +101,18 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   }
 
   // B. Faturas de Cartão de Crédito
-  const creditCards = scopedWallets.filter(
-    (w) => w.account_type === 'credit_card' && w.currency === currencyToUse
-  )
+  const creditCards = scopedWallets.filter((w) => w.account_type === 'credit_card')
 
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, selectedMonthDate)
-    if (details.currentInvoiceAmount > 0 && card.due_day) {
+    const invoiceAmount = Math.max(0, details.currentInvoiceAmount)
+    if (invoiceAmount > 0 && card.due_day) {
+      const convertedInvoice = convertAmount(invoiceAmount, card.currency, currencyToUse)
+      const titleSuffix = card.currency !== currencyToUse ? ` (${formatCurrency(invoiceAmount, card.currency)})` : ''
       commitments.push({
         id: `card-${card.id}`,
-        title: `${t('calendar.cardInvoice') || 'Fatura'}: ${card.name}`,
-        amount: details.currentInvoiceAmount,
+        title: `${t('calendar.cardInvoice') || 'Fatura'}: ${card.name}${titleSuffix}`,
+        amount: convertedInvoice,
         currency: currencyToUse,
         type: 'card_invoice',
         flowType: 'out',
@@ -120,11 +123,10 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     }
   }
 
-  // C. Contas Fixas Vigentes (Despesas e Receitas)
+  // C. Contas Fixas Vigentes (Despesas e Receitas com conversão cambial)
   for (const bill of recurringBills) {
     if (!bill.is_active) continue
     if (bill.scope !== currentScope) continue
-    if (bill.currency !== currencyToUse) continue
 
     const isIncome = bill.type === 'income'
     // Na saída da fatura do cartão ou débito em conta, considerar o valor total bruto para refletir o débito integral real
@@ -132,10 +134,15 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       ? Number(bill.total_amount)
       : Number(bill.amount)
 
+    if (grossAmount <= 0) continue
+
+    const convertedAmount = convertAmount(grossAmount, bill.currency, currencyToUse)
+    const titleSuffix = bill.currency !== currencyToUse ? ` (${formatCurrency(grossAmount, bill.currency)})` : ''
+
     commitments.push({
       id: `bill-${bill.id}`,
-      title: bill.name,
-      amount: grossAmount,
+      title: `${bill.name}${titleSuffix}`,
+      amount: convertedAmount,
       currency: currencyToUse,
       type: isIncome ? 'recurring_income' : 'recurring_bill',
       flowType: isIncome ? 'in' : 'out',
@@ -145,12 +152,17 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     })
   }
 
-  // D. Dívidas / Empréstimos a Pagar (i_owe)
+  // D. Dívidas / Empréstimos a Pagar (i_owe com conversão cambial)
   for (const debt of debts) {
     if (debt.status !== 'pending') continue
     if (debt.scope !== currentScope) continue
-    if (debt.currency !== currencyToUse) continue
     if (debt.type !== 'i_owe') continue
+
+    const debtAmt = Number(debt.amount) || 0
+    if (debtAmt <= 0) continue
+
+    const convertedDebt = convertAmount(debtAmt, debt.currency, currencyToUse)
+    const titleSuffix = debt.currency !== currencyToUse ? ` (${formatCurrency(debtAmt, debt.currency)})` : ''
 
     let dueDay = 28 // fallback
     if (debt.due_date) {
@@ -162,8 +174,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
     commitments.push({
       id: `debt-${debt.id}`,
-      title: `${t('calendar.debtPayment') || 'Pagamento'}: ${debt.contact_name}`,
-      amount: debt.amount,
+      title: `${t('calendar.debtPayment') || 'Pagamento'}: ${debt.contact_name}${titleSuffix}`,
+      amount: convertedDebt,
       currency: currencyToUse,
       type: 'debt',
       flowType: 'out',
@@ -184,7 +196,14 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     if (t.is_paid !== false && t.status !== 'pending') continue
 
     const wallet = scopedWalletMap.get(t.wallet_id)
-    if (!wallet || wallet.currency !== currencyToUse) continue
+    if (!wallet) continue
+
+    const txCurrency = (t.original_currency || wallet.currency || 'PYG') as CurrencyCode
+    const rawTxAmount = Number(t.amount) || 0
+    if (rawTxAmount <= 0) continue
+
+    const convertedTxAmount = convertAmount(rawTxAmount, txCurrency, currencyToUse)
+    const titleSuffix = txCurrency !== currencyToUse ? ` (${formatCurrency(rawTxAmount, txCurrency)})` : ''
 
     let dueDay = 1
     if (t.transaction_date) {
@@ -197,11 +216,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     if (t.type === 'expense') {
       commitments.push({
         id: `tx-${t.id}`,
-        title:
-          t.description ||
-          t.category ||
-          (language === 'es' ? 'Gasto Programado' : 'Despesa Agendada'),
-        amount: Number(t.amount),
+        title: `${t.description || t.category || (language === 'es' ? 'Gasto Programado' : 'Despesa Agendada')}${titleSuffix}`,
+        amount: convertedTxAmount,
         currency: currencyToUse,
         type: 'scheduled_expense',
         flowType: 'out',
@@ -215,11 +231,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     } else if (t.type === 'income') {
       commitments.push({
         id: `tx-${t.id}`,
-        title:
-          t.description ||
-          t.category ||
-          (language === 'es' ? 'Ingreso Programado' : 'Receita Agendada'),
-        amount: Number(t.amount),
+        title: `${t.description || t.category || (language === 'es' ? 'Ingreso Programado' : 'Receita Agendada')}${titleSuffix}`,
+        amount: convertedTxAmount,
         currency: currencyToUse,
         type: 'scheduled_income',
         flowType: 'in',

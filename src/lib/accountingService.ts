@@ -449,6 +449,7 @@ export function calculateCategoryExpenses(
 export const calculateExpensesByCategory = calculateCategoryExpenses
 
 export { getCreditCardInvoiceDetails } from './creditCardService'
+export { convertAmount } from './exchangeRateService'
 
 /**
  * Retorna a lista estável de moedas ativas que devem ser exibidas no dashboard:

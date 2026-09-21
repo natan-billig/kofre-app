@@ -11,9 +11,74 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.7'
+export const CURRENT_APP_VERSION = '1.8.8'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.8',
+    releaseDate: '2026-09-21',
+    title: {
+      pt: 'DTI Estrutural de Perfil, Rendimento em Caixinhas, Fixos Multi-Moeda e WhatsApp Desktop v1.8.8',
+      es: 'DTI Estructural de Perfil, Rendimiento en Ahorros, Fijos Multi-Moneda y WhatsApp Escritorio v1.8.8',
+    },
+    highlights: [
+      {
+        icon: 'ShieldCheck',
+        title: {
+          pt: 'DTI Estrutural e Deduplicação de Passivos',
+          es: 'DTI Estructural y Deduplicación de Pasivos',
+        },
+        description: {
+          pt: 'Denominador de capacidade financeira estritamente amarrado à receita base do perfil convertida para a moeda ativa. Deduplicação inteligente de despesas fixas vinculadas a cartão de crédito para eliminar contagem dupla no cálculo de endividamento.',
+          es: 'Denominador de capacidad financiera estrictamente vinculado a los ingresos base del perfil convertidos a la moneda activa. Deduplicación inteligente de gastos fijos vinculados a tarjeta de crédito para eliminar el doble conteo en el cálculo de endeudamiento.',
+        },
+      },
+      {
+        icon: 'TrendingUp',
+        title: {
+          pt: 'Projeção de Rendimento em Poupanças e Caixinhas',
+          es: 'Proyección de Rendimiento en Ahorros y Metas',
+        },
+        description: {
+          pt: 'Configuração flexível de taxa de retorno (% CDI, % a.a. ou % a.m.) em contas poupança, exibindo badge com estimativa de rendimentos mensais e diários por dia útil diretamente no card da conta.',
+          es: 'Configuración flexible de tasa de retorno (% CDI, % a.a. o % a.m.) en cuentas de ahorro, mostrando un distintivo con estimación de rendimientos mensuales y diarios por día hábil directamente en la tarjeta.',
+        },
+      },
+      {
+        icon: 'ArrowLeftRight',
+        title: {
+          pt: 'Conversão Cambial em Fixos e Calendário',
+          es: 'Conversión de Divisas en Fijos y Calendario',
+        },
+        description: {
+          pt: 'Contas fixas, receitas e faturas em moedas distintas são convertidas automaticamente pelas taxas de câmbio vigentes, evitando misturas nominais e exibindo a moeda original de origem.',
+          es: 'Cuentas fijas, ingresos y facturas en monedas distintas se convierten automáticamente según las tasas de cambio vigentes, evitando mezclas nominales y mostrando la moneda de origen.',
+        },
+      },
+      {
+        icon: 'Share2',
+        title: {
+          pt: 'WhatsApp Desktop Nativo e Cópia 1-Clique',
+          es: 'WhatsApp Escritorio Nativo y Copia 1-Clic',
+        },
+        description: {
+          pt: 'Abertura instantânea através do protocolo nativo do aplicativo desktop do WhatsApp e botões de cópia rápida 1-clique para Alias SIPAP e Chave PIX com confirmação visual individual.',
+          es: 'Apertura instantánea mediante el protocolo nativo de la aplicación de escritorio de WhatsApp y botones de copia rápida de 1 clic para Alias SIPAP y Clave PIX con confirmación visual individual.',
+        },
+      },
+      {
+        icon: 'Calculator',
+        title: {
+          pt: 'Calculadora em Dívidas & Empréstimos',
+          es: 'Calculadora en Deudas y Préstamos',
+        },
+        description: {
+          pt: 'Digitação livre de operações matemáticas (+, -, *, /) no valor da dívida com cálculo automático ao perder o foco, pressionar Enter ou salvar.',
+          es: 'Entrada libre de operaciones matemáticas (+, -, *, /) en el monto de la deuda con cálculo automático al salir del campo, presionar Enter o guardar.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.7',
     releaseDate: '2026-09-19',

@@ -43,6 +43,8 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
   const [tipPercent, setTipPercent] = useState<number>(10)
   const [peopleCount, setPeopleCount] = useState<number>(3)
   const [copied, setCopied] = useState(false)
+  const [copiedAlias, setCopiedAlias] = useState(false)
+  const [copiedPix, setCopiedPix] = useState(false)
 
   // Dados bancários locais ou do perfil
   const pixKey = userProfile?.pix_key || ''
@@ -78,13 +80,6 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     const formattedPerPerson = formatCurrency(amountPerPerson, currency)
     const isEs = language === 'es'
 
-    const tipNotice =
-      tipPercent > 0
-        ? isEs
-          ? ` (+${tipPercent}% propina)`
-          : ` (+${tipPercent}% serviço)`
-        : ''
-
     const defaultTitle = isEs ? 'Almuerzo / Cena' : 'Almoço / Jantar'
     const resolvedTitle = billTitle.trim() || defaultTitle
 
@@ -92,11 +87,20 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
       ? `🍕 *División de Cuenta / Vaca - ${resolvedTitle}*\n`
       : `🍕 *Divisão de Conta / Racha - ${resolvedTitle}*\n`
 
-    const peopleUnit = isEs ? 'personas' : 'pessoas'
-    const totalLine = `💰 Total: ${formattedTotal}${tipNotice} (${peopleCount} ${peopleUnit})\n`
+    const serviceText =
+      tipPercent > 0
+        ? isEs
+          ? ` (incluye ${tipPercent}% de propina/servicio)`
+          : ` (inclui ${tipPercent}% de serviço)`
+        : ''
 
-    const eachPaysText = isEs ? 'Cada uno paga' : 'Cada um paga'
-    const eachPaysLine = `👉 *${eachPaysText}: ${formattedPerPerson}*\n\n`
+    const totalLine = isEs
+      ? `Total: *${formattedTotal}*${serviceText}\n`
+      : `Total: *${formattedTotal}*${serviceText}\n`
+
+    const eachPaysLine = isEs
+      ? `👉 *Cada uno paga: ${formattedPerPerson}* (${peopleCount} personas)\n\n`
+      : `👉 *Cada um paga: ${formattedPerPerson}* (${peopleCount} pessoas)\n\n`
 
     let text = header + totalLine + eachPaysLine
 
@@ -179,6 +183,28 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     }
   }
 
+  const handleCopyAlias = async () => {
+    if (!aliasPy) return
+    try {
+      await navigator.clipboard.writeText(aliasPy)
+      setCopiedAlias(true)
+      setTimeout(() => setCopiedAlias(false), 2000)
+    } catch {
+      // Ignora erro de clipboard
+    }
+  }
+
+  const handleCopyPix = async () => {
+    if (!pixKey) return
+    try {
+      await navigator.clipboard.writeText(pixKey)
+      setCopiedPix(true)
+      setTimeout(() => setCopiedPix(false), 2000)
+    } catch {
+      // Ignora erro de clipboard
+    }
+  }
+
   const handleOpenWhatsApp = async () => {
     // 1. Mobile nativo via navigator.share se suportado
     const isMobile =
@@ -198,10 +224,12 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
 
     // 2. Desktop / Fallback: encodeURIComponent em todo o corpo da mensagem
     const encoded = encodeURIComponent(generatedWhatsAppMessage)
-    const url = isMobile
-      ? `https://wa.me/?text=${encoded}`
-      : `https://web.whatsapp.com/send?text=${encoded}`
-    window.open(url, '_blank', 'noopener,noreferrer')
+    if (isMobile) {
+      window.open(`https://wa.me/?text=${encoded}`, '_blank', 'noopener,noreferrer')
+    } else {
+      // Desktop: abrir via protocolo nativo do aplicativo desktop WhatsApp
+      window.location.href = `whatsapp://send?text=${encoded}`
+    }
   }
 
   const handleRecordShare = () => {
@@ -406,6 +434,53 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
                     )}
                     {pixKey && <p className="text-[11px] text-slate-400">PIX: {pixKey}</p>}
                   </>
+                )}
+              </div>
+
+              {/* Botões de Cópia Rápida 1-Clique */}
+              <div className="pt-2 mt-1 border-t border-slate-200/60 dark:border-slate-800/80 flex flex-wrap gap-2">
+                {aliasPy && (
+                  <button
+                    type="button"
+                    onClick={handleCopyAlias}
+                    className="cursor-pointer px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/50 text-[11px] font-medium flex items-center gap-1.5 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                  >
+                    {copiedAlias ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          {language === 'es' ? '¡Alias Copiado!' : 'Alias Copiado!'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>{language === 'es' ? 'Copiar Alias SIPAP' : 'Copiar Alias SIPAP'}</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {pixKey && (
+                  <button
+                    type="button"
+                    onClick={handleCopyPix}
+                    className="cursor-pointer px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/50 text-[11px] font-medium flex items-center gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                  >
+                    {copiedPix ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          {language === 'es' ? '¡PIX Copiado!' : 'PIX Copiado!'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>{language === 'es' ? 'Copiar PIX' : 'Copiar PIX'}</span>
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
             </div>

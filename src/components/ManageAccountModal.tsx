@@ -15,6 +15,7 @@ import {
   CreditCard,
   PiggyBank,
   Check,
+  TrendingUp,
 } from 'lucide-react'
 
 interface ManageAccountModalProps {
@@ -63,6 +64,26 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
   const [isUpdatingTarget, setIsUpdatingTarget] = useState(false)
   const [targetError, setTargetError] = useState<string | null>(null)
   const [targetSuccess, setTargetSuccess] = useState(false)
+
+  // Savings yield state
+  const initialHasYield = Boolean(
+    (wallet.yield_benchmark && wallet.yield_benchmark !== null) ||
+    (wallet.yield_percentage != null && wallet.yield_percentage > 0) ||
+    (wallet.annual_yield_rate != null && wallet.annual_yield_rate > 0)
+  )
+  const [hasYield, setHasYield] = useState(initialHasYield)
+  const [yieldBenchmark, setYieldBenchmark] = useState<'cdi' | 'fixed_annual' | 'fixed_monthly'>(
+    wallet.yield_benchmark || 'cdi'
+  )
+  const [yieldPercentage, setYieldPercentage] = useState(
+    wallet.yield_percentage != null ? wallet.yield_percentage.toString() : '100'
+  )
+  const [annualYieldRate, setAnnualYieldRate] = useState(
+    wallet.annual_yield_rate != null ? wallet.annual_yield_rate.toString() : '12'
+  )
+  const [isUpdatingYield, setIsUpdatingYield] = useState(false)
+  const [yieldError, setYieldError] = useState<string | null>(null)
+  const [yieldSuccess, setYieldSuccess] = useState(false)
 
   // Checking overdraft limit state
   const initOverdraftStr = wallet.credit_limit != null ? wallet.credit_limit.toString() : ''
@@ -266,6 +287,49 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
       setTargetError(err instanceof Error ? err.message : 'Erro ao atualizar meta financeira.')
     } finally {
       setIsUpdatingTarget(false)
+    }
+  }
+
+  const handleSaveYield = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wallet) return
+
+    setYieldError(null)
+    setYieldSuccess(false)
+
+    let parsedAnnual: number | null = null
+    let parsedPercentage: number | null = null
+
+    if (hasYield) {
+      if (yieldBenchmark === 'cdi') {
+        parsedPercentage = yieldPercentage.trim() ? parseFloat(yieldPercentage.trim()) : 100
+        if (isNaN(parsedPercentage) || parsedPercentage <= 0) {
+          setYieldError(t('manageAccount.invalidNumber'))
+          return
+        }
+      } else {
+        parsedAnnual = annualYieldRate.trim() ? parseFloat(annualYieldRate.trim()) : 0
+        if (isNaN(parsedAnnual) || parsedAnnual <= 0) {
+          setYieldError(t('manageAccount.invalidNumber'))
+          return
+        }
+      }
+    }
+
+    setIsUpdatingYield(true)
+    try {
+      await updateWallet(wallet.id, {
+        yield_benchmark: hasYield ? yieldBenchmark : null,
+        yield_percentage: hasYield ? parsedPercentage : null,
+        annual_yield_rate: hasYield ? parsedAnnual : null,
+      })
+      setYieldSuccess(true)
+      onAccountUpdated()
+    } catch (err: unknown) {
+      console.error('Error updating wallet yield:', err)
+      setYieldError(err instanceof Error ? err.message : 'Erro ao atualizar rendimento.')
+    } finally {
+      setIsUpdatingYield(false)
     }
   }
 
@@ -505,6 +569,166 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" />
                 <span>{t('manageAccount.targetAmountUpdated')}</span>
+              </p>
+            )}
+          </form>
+        )}
+
+        {/* Edit Yield Projection Form for Savings */}
+        {wallet.account_type === 'savings' && (
+          <form
+            onSubmit={handleSaveYield}
+            className="space-y-3 p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20"
+          >
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>{language === 'es' ? 'Rendimiento / Rentabilidad' : 'Rendimento / Rentabilidade'}</span>
+              </label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasYield}
+                  onChange={(e) => {
+                    setHasYield(e.target.checked)
+                    setYieldSuccess(false)
+                    setYieldError(null)
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            {hasYield && (
+              <div className="space-y-3 pt-1 border-t border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in duration-150">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                    {language === 'es' ? 'Tipo de Rentabilidad' : 'Tipo de Rentabilidade'}
+                  </span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setYieldBenchmark('cdi')
+                        setYieldSuccess(false)
+                      }}
+                      className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                        yieldBenchmark === 'cdi'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                      }`}
+                    >
+                      % CDI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setYieldBenchmark('fixed_annual')
+                        setYieldSuccess(false)
+                      }}
+                      className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                        yieldBenchmark === 'fixed_annual'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                      }`}
+                    >
+                      % a.a.
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setYieldBenchmark('fixed_monthly')
+                        setYieldSuccess(false)
+                      }}
+                      className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                        yieldBenchmark === 'fixed_monthly'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                      }`}
+                    >
+                      % a.m.
+                    </button>
+                  </div>
+                </div>
+
+                {yieldBenchmark === 'cdi' ? (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                      {language === 'es' ? 'Porcentaje del CDI (% do CDI)' : 'Percentual do CDI (% do CDI)'}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={yieldPercentage}
+                      onChange={(e) => {
+                        setYieldPercentage(e.target.value)
+                        setYieldSuccess(false)
+                        setYieldError(null)
+                      }}
+                      placeholder="Ex: 100"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      {language === 'es'
+                        ? 'Calcula la proyección mensual considerando la tasa CDI de mercado (~10.5% a.a.).'
+                        : 'Calcula a projeção mensal considerando o CDI de mercado (~10,5% a.a.).'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                      {yieldBenchmark === 'fixed_annual'
+                        ? language === 'es'
+                          ? 'Tasa Fija Anual (% a.a.)'
+                          : 'Taxa Fixa Anual (% a.a.)'
+                        : language === 'es'
+                        ? 'Tasa Fija Mensual (% a.m.)'
+                        : 'Taxa Fixa Mensal (% a.m.)'}
+                    </label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="any"
+                      value={annualYieldRate}
+                      onChange={(e) => {
+                        setAnnualYieldRate(e.target.value)
+                        setYieldSuccess(false)
+                        setYieldError(null)
+                      }}
+                      placeholder={yieldBenchmark === 'fixed_annual' ? 'Ex: 12' : 'Ex: 0.8'}
+                      className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                disabled={isUpdatingYield}
+                className="cursor-pointer px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                {isUpdatingYield ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{language === 'es' ? 'Guardar Rendimiento' : 'Salvar Rendimento'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {yieldError && (
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">{yieldError}</p>
+            )}
+            {yieldSuccess && (
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                <span>{language === 'es' ? '¡Rendimiento actualizado con éxito!' : 'Rendimento atualizado com sucesso!'}</span>
               </p>
             )}
           </form>

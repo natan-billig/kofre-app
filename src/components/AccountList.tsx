@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { Wallet, Transaction, ScopeFilterType } from '../lib/types'
 import { calculateAccountBalance } from '../lib/accountingService'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
+import { calculateYieldProjection } from '../lib/walletService'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
@@ -14,6 +15,7 @@ import {
   ChevronUp,
   Settings,
   Archive,
+  TrendingUp,
 } from 'lucide-react'
 
 interface AccountListProps {
@@ -31,7 +33,7 @@ export const AccountList: React.FC<AccountListProps> = ({
   onOpenCreateAccount,
   onManageAccount,
 }) => {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
@@ -223,13 +225,14 @@ export const AccountList: React.FC<AccountListProps> = ({
                   const bal = calculateAccountBalance(w, transactions)
                   const hasTarget = w.target_amount != null && Number(w.target_amount) > 0
                   const target = hasTarget ? Number(w.target_amount) : 0
+                  const yieldProj = calculateYieldProjection(w, bal)
 
                   return (
                     <div
                       key={w.id}
-                      className="p-3 rounded-xl bg-amber-50/40 dark:bg-amber-950/15 border border-amber-200 dark:border-amber-500/20 flex items-center justify-between hover:border-amber-300 dark:hover:border-amber-500/40 transition-all group"
+                      className="p-3 rounded-xl bg-amber-50/40 dark:bg-amber-950/15 border border-amber-200 dark:border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:border-amber-300 dark:hover:border-amber-500/40 transition-all group"
                     >
-                      <div className="space-y-0.5 min-w-0 pr-2">
+                      <div className="space-y-1 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {w.name}
@@ -243,9 +246,20 @@ export const AccountList: React.FC<AccountListProps> = ({
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-amber-700/70 dark:text-amber-300/70 uppercase font-mono block">
-                          {w.currency}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-amber-700/70 dark:text-amber-300/70 uppercase font-mono">
+                            {w.currency}
+                          </span>
+                          {yieldProj && (
+                            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              <TrendingUp className="w-3 h-3 text-emerald-500 shrink-0" />
+                              <span>
+                                {language === 'es' ? 'Rinde aprox.' : 'Rende aprox.'}{' '}
+                                <strong className="font-mono">{formatCurrency(yieldProj.monthlyYield, w.currency)}</strong> / {language === 'es' ? 'mes' : 'mês'} (~{formatCurrency(yieldProj.dailyBusinessYield, w.currency)} / {language === 'es' ? 'día hábil' : 'dia útil'})
+                              </span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <div className="text-right space-y-0.5">

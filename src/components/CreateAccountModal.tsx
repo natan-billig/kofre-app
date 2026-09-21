@@ -3,7 +3,7 @@ import type { AccountType, CurrencyCode, WalletScope } from '../lib/types'
 import { createWallet } from '../lib/walletService'
 import { getOrCreateMyFamilyId } from '../lib/familyService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
-import { X, Loader2, Building2, Banknote, CreditCard, PiggyBank, Users2, User } from 'lucide-react'
+import { X, Loader2, Building2, Banknote, CreditCard, PiggyBank, Users2, User, TrendingUp } from 'lucide-react'
 
 interface CreateAccountModalProps {
   userId: string
@@ -18,7 +18,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   onClose,
   onAccountCreated,
 }) => {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [name, setName] = useState('')
   const [accountType, setAccountType] = useState<AccountType>('checking')
   const [currency, setCurrency] = useState<CurrencyCode>('PYG')
@@ -26,6 +26,10 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [initialBalance, setInitialBalance] = useState<string>('0')
   const [creditLimit, setCreditLimit] = useState<string>('')
   const [targetAmount, setTargetAmount] = useState<string>('')
+  const [hasYield, setHasYield] = useState(false)
+  const [yieldBenchmark, setYieldBenchmark] = useState<'cdi' | 'fixed_annual' | 'fixed_monthly'>('cdi')
+  const [yieldPercentage, setYieldPercentage] = useState<string>('100')
+  const [annualYieldRate, setAnnualYieldRate] = useState<string>('12')
   const [closingDay, setClosingDay] = useState<string>('')
   const [dueDay, setDueDay] = useState<string>('')
   const [loading, setLoading] = useState(false)
@@ -89,12 +93,26 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           accountType === 'savings' && parsedTargetAmount !== null && !isNaN(parsedTargetAmount)
             ? parsedTargetAmount
             : null,
+        annual_yield_rate:
+          accountType === 'savings' && hasYield && annualYieldRate.trim()
+            ? parseFloat(annualYieldRate.trim())
+            : null,
+        yield_benchmark:
+          accountType === 'savings' && hasYield ? yieldBenchmark : null,
+        yield_percentage:
+          accountType === 'savings' && hasYield && yieldPercentage.trim()
+            ? parseFloat(yieldPercentage.trim())
+            : null,
       })
 
       setName('')
       setInitialBalance('0')
       setCreditLimit('')
       setTargetAmount('')
+      setHasYield(false)
+      setYieldBenchmark('cdi')
+      setYieldPercentage('100')
+      setAnnualYieldRate('12')
       setClosingDay('')
       setDueDay('')
       onAccountCreated()
@@ -317,6 +335,115 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 placeholder={t('createAccount.targetAmountPlaceholder')}
                 className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-amber-200 dark:border-amber-500/30 focus:border-amber-500 text-slate-900 dark:text-slate-100 text-sm outline-none font-mono"
               />
+            </div>
+          )}
+
+          {/* Rendimento / Rentabilidade Estimada para Poupança */}
+          {accountType === 'savings' && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>{language === 'es' ? 'Rendimiento / Rentabilidad' : 'Rendimento / Rentabilidade'}</span>
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasYield}
+                    onChange={(e) => setHasYield(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+
+              {hasYield && (
+                <div className="space-y-3 pt-1 border-t border-emerald-200/50 dark:border-emerald-800/30 animate-in fade-in duration-150">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                      {language === 'es' ? 'Tipo de Rentabilidad' : 'Tipo de Rentabilidade'}
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setYieldBenchmark('cdi')}
+                        className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                          yieldBenchmark === 'cdi'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                        }`}
+                      >
+                        % CDI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setYieldBenchmark('fixed_annual')}
+                        className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                          yieldBenchmark === 'fixed_annual'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                        }`}
+                      >
+                        % a.a.
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setYieldBenchmark('fixed_monthly')}
+                        className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                          yieldBenchmark === 'fixed_monthly'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                        }`}
+                      >
+                        % a.m.
+                      </button>
+                    </div>
+                  </div>
+
+                  {yieldBenchmark === 'cdi' ? (
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        {language === 'es' ? 'Porcentaje del CDI (% do CDI)' : 'Percentual do CDI (% do CDI)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="any"
+                        value={yieldPercentage}
+                        onChange={(e) => setYieldPercentage(e.target.value)}
+                        placeholder="Ex: 100"
+                        className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
+                      />
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {language === 'es'
+                          ? 'Calcula la proyección mensual considerando la tasa CDI de mercado (~10.5% a.a.).'
+                          : 'Calcula a projeção mensal considerando o CDI de mercado (~10,5% a.a.).'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        {yieldBenchmark === 'fixed_annual'
+                          ? language === 'es'
+                            ? 'Tasa Fija Anual (% a.a.)'
+                            : 'Taxa Fixa Anual (% a.a.)'
+                          : language === 'es'
+                          ? 'Tasa Fija Mensual (% a.m.)'
+                          : 'Taxa Fixa Mensal (% a.m.)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="any"
+                        value={annualYieldRate}
+                        onChange={(e) => setAnnualYieldRate(e.target.value)}
+                        placeholder={yieldBenchmark === 'fixed_annual' ? 'Ex: 12' : 'Ex: 0.8'}
+                        className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

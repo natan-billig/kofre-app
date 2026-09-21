@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import type { CurrencyCode, DebtType, FamilyMemberItem, Wallet, WalletScope } from '../lib/types'
 import { createDebt } from '../lib/debtService'
+import { evaluateMathExpression } from '../lib/mathParser'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { supabase } from '../lib/supabase'
 import {
@@ -160,11 +161,25 @@ export function CreateDebtModal({
 
   const isOtherContact = selectedContactKey === 'other'
 
+  const handleEvaluateInput = (val: string, setter: (v: string) => void): number | null => {
+    if (!val || !val.trim()) return null
+    const result = evaluateMathExpression(val)
+    if (result !== null && !isNaN(result) && result >= 0) {
+      const formatted = Number.isInteger(result)
+        ? String(result)
+        : String(Math.round(result * 100) / 100)
+      setter(formatted)
+      return Number(formatted)
+    }
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage(null)
 
-    const parsedAmount = parseFloat(amount)
+    const evaluated = evaluateMathExpression(amount)
+    const parsedAmount = evaluated !== null && evaluated > 0 ? evaluated : parseFloat(amount)
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setErrorMessage(t('recurringBills.fillRequired'))
       return
@@ -355,10 +370,17 @@ export function CreateDebtModal({
               <div className="relative">
                 <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
-                  type="number"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  onBlur={() => handleEvaluateInput(amount, setAmount)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleEvaluateInput(amount, setAmount)
+                    }
+                  }}
                   placeholder="0.00"
                   className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors font-mono"
                   required

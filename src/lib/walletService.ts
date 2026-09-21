@@ -1,6 +1,43 @@
 import { supabase } from './supabase'
 import type { Wallet, WalletScope, AccountType, CurrencyCode } from './types'
 
+const YIELD_META_STORAGE_KEY = 'kofre_wallet_yield_meta'
+
+export interface WalletYieldMeta {
+  annual_yield_rate?: number | null
+  yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
+  yield_percentage?: number | null
+}
+
+export function getLocalYieldMap(): Record<string, WalletYieldMeta> {
+  try {
+    const raw = localStorage.getItem(YIELD_META_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function saveLocalYieldMeta(walletId: string, meta: WalletYieldMeta): void {
+  try {
+    const map = getLocalYieldMap()
+    map[walletId] = { ...(map[walletId] || {}), ...meta }
+    localStorage.setItem(YIELD_META_STORAGE_KEY, JSON.stringify(map))
+  } catch (e) {
+    console.warn('Erro ao salvar meta de rendimento local:', e)
+  }
+}
+
+export function deleteLocalYieldMeta(walletId: string): void {
+  try {
+    const map = getLocalYieldMap()
+    delete map[walletId]
+    localStorage.setItem(YIELD_META_STORAGE_KEY, JSON.stringify(map))
+  } catch (e) {
+    console.warn('Erro ao remover meta de rendimento local:', e)
+  }
+}
+
 export async function fetchWallets(userId: string): Promise<Wallet[]> {
   // 1. Busca todos os vínculos de família do usuário sem usar .single()
   let activeFamilyId: string | null = null
@@ -59,43 +96,55 @@ export async function fetchWallets(userId: string): Promise<Wallet[]> {
   const personal = loadedWallets.filter((w) => w.type === 'personal')
   const shared = loadedWallets.filter((w) => w.type === 'shared')
 
-  if (shared.length <= 1) {
-    return loadedWallets
-  }
+  let targetWallets = loadedWallets
+  if (shared.length > 1) {
+    const filteredShared: Wallet[] = []
 
-  const filteredShared: Wallet[] = []
+    for (const sharedWallet of shared) {
+      const isFromActiveFamily = activeFamilyId && sharedWallet.family_id === activeFamilyId
 
-  for (const sharedWallet of shared) {
-    const isFromActiveFamily = activeFamilyId && sharedWallet.family_id === activeFamilyId
-
-    if (isFromActiveFamily) {
-      filteredShared.push(sharedWallet)
-    } else {
-      // Verifica se a carteira compartilhada secundária possui movimentações
-      try {
-        const { count, error: countErr } = await supabase
-          .from('transactions')
-          .select('id', { count: 'exact', head: true })
-          .or(`wallet_id.eq.${sharedWallet.id},destination_wallet_id.eq.${sharedWallet.id}`)
-
-        if (!countErr && (count ?? 0) > 0) {
-          filteredShared.push(sharedWallet)
-        } else {
-          // 0 transações: oculta para não duplicar caixas na interface
-          console.info(
-            `Ocultando caixa compartilhado antigo/vazio (${sharedWallet.id} - ${sharedWallet.name})`
-          )
-        }
-      } catch {
+      if (isFromActiveFamily) {
         filteredShared.push(sharedWallet)
+      } else {
+        // Verifica se a carteira compartilhada secundária possui movimentações
+        try {
+          const { count, error: countErr } = await supabase
+            .from('transactions')
+            .select('id', { count: 'exact', head: true })
+            .or(`wallet_id.eq.${sharedWallet.id},destination_wallet_id.eq.${sharedWallet.id}`)
+
+          if (!countErr && (count ?? 0) > 0) {
+            filteredShared.push(sharedWallet)
+          } else {
+            // 0 transações: oculta para não duplicar caixas na interface
+            console.info(
+              `Ocultando caixa compartilhado antigo/vazio (${sharedWallet.id} - ${sharedWallet.name})`
+            )
+          }
+        } catch {
+          filteredShared.push(sharedWallet)
+        }
       }
     }
+
+    // Se por alguma razão todos foram filtrados, mantém pelo menos o mais recente
+    const finalShared = filteredShared.length > 0 ? filteredShared : [shared[shared.length - 1]]
+    targetWallets = [...personal, ...finalShared]
   }
 
-  // Se por alguma razão todos foram filtrados, mantém pelo menos o mais recente
-  const finalShared = filteredShared.length > 0 ? filteredShared : [shared[shared.length - 1]]
-
-  return [...personal, ...finalShared]
+  const yieldMap = getLocalYieldMap()
+  return targetWallets.map((w) => {
+    const meta = yieldMap[w.id]
+    if (meta) {
+      return {
+        ...w,
+        annual_yield_rate: w.annual_yield_rate ?? meta.annual_yield_rate,
+        yield_benchmark: w.yield_benchmark ?? meta.yield_benchmark,
+        yield_percentage: w.yield_percentage ?? meta.yield_percentage,
+      }
+    }
+    return w
+  })
 }
 
 export async function ensureInitialWallets(userId: string): Promise<Wallet[]> {
@@ -155,6 +204,9 @@ export async function createWallet(payload: {
   closing_day?: number | null
   due_day?: number | null
   target_amount?: number | null
+  annual_yield_rate?: number | null
+  yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
+  yield_percentage?: number | null
 }): Promise<Wallet> {
   const insertPayload: Record<string, unknown> = {
     ...payload,
@@ -167,9 +219,12 @@ export async function createWallet(payload: {
     .select()
     .single()
 
-  // Fallback seguro caso a coluna target_amount não exista ainda na tabela do Supabase
-  if (error && (error.code === 'PGRST204' || error.message?.includes('target_amount'))) {
-    delete insertPayload.target_amount
+  // Fallback seguro caso as colunas target_amount ou de rendimento não existam ainda no Supabase
+  const YIELD_COLUMNS = ['target_amount', 'annual_yield_rate', 'yield_benchmark', 'yield_percentage']
+  if (error && (error.code === 'PGRST204' || YIELD_COLUMNS.some((col) => error?.message?.includes(col)))) {
+    for (const col of YIELD_COLUMNS) {
+      delete insertPayload[col]
+    }
     const retry = await supabase
       .from('wallets')
       .insert([insertPayload])
@@ -184,10 +239,23 @@ export async function createWallet(payload: {
     throw error
   }
 
-  return data as Wallet
+  const createdWallet = data as Wallet
+  if (payload.yield_benchmark || payload.annual_yield_rate || payload.yield_percentage) {
+    saveLocalYieldMeta(createdWallet.id, {
+      annual_yield_rate: payload.annual_yield_rate,
+      yield_benchmark: payload.yield_benchmark,
+      yield_percentage: payload.yield_percentage,
+    })
+    createdWallet.annual_yield_rate = payload.annual_yield_rate
+    createdWallet.yield_benchmark = payload.yield_benchmark
+    createdWallet.yield_percentage = payload.yield_percentage
+  }
+
+  return createdWallet
 }
 
 export async function deleteWallet(walletId: string): Promise<void> {
+  deleteLocalYieldMeta(walletId)
   const { error } = await supabase.from('wallets').delete().eq('id', walletId)
   if (error) {
     console.error('Error deleting wallet:', error)
@@ -232,6 +300,9 @@ export async function updateWallet(
     closing_day?: number | null
     due_day?: number | null
     target_amount?: number | null
+    annual_yield_rate?: number | null
+    yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
+    yield_percentage?: number | null
   }
 ): Promise<Wallet> {
   const updateData: Record<string, unknown> = {}
@@ -241,6 +312,22 @@ export async function updateWallet(
   if (payload.closing_day !== undefined) updateData.closing_day = payload.closing_day
   if (payload.due_day !== undefined) updateData.due_day = payload.due_day
   if (payload.target_amount !== undefined) updateData.target_amount = payload.target_amount
+  if (payload.annual_yield_rate !== undefined) updateData.annual_yield_rate = payload.annual_yield_rate
+  if (payload.yield_benchmark !== undefined) updateData.yield_benchmark = payload.yield_benchmark
+  if (payload.yield_percentage !== undefined) updateData.yield_percentage = payload.yield_percentage
+
+  // Salva no cache local para resiliência imediata
+  if (
+    payload.yield_benchmark !== undefined ||
+    payload.annual_yield_rate !== undefined ||
+    payload.yield_percentage !== undefined
+  ) {
+    saveLocalYieldMeta(walletId, {
+      annual_yield_rate: payload.annual_yield_rate,
+      yield_benchmark: payload.yield_benchmark,
+      yield_percentage: payload.yield_percentage,
+    })
+  }
 
   let { data, error } = await supabase
     .from('wallets')
@@ -249,9 +336,12 @@ export async function updateWallet(
     .select()
     .single()
 
-  // Fallback se target_amount não existir no Supabase
-  if (error && (error.code === 'PGRST204' || error.message?.includes('target_amount'))) {
-    delete updateData.target_amount
+  // Fallback se target_amount ou colunas de rendimento não existirem no Supabase
+  const YIELD_COLUMNS = ['target_amount', 'annual_yield_rate', 'yield_benchmark', 'yield_percentage']
+  if (error && (error.code === 'PGRST204' || YIELD_COLUMNS.some((col) => error?.message?.includes(col)))) {
+    for (const col of YIELD_COLUMNS) {
+      delete updateData[col]
+    }
     const retry = await supabase
       .from('wallets')
       .update(updateData)
@@ -267,6 +357,72 @@ export async function updateWallet(
     throw error
   }
 
-  return data as Wallet
+  const updatedWallet = data as Wallet
+  if (payload.yield_benchmark !== undefined) updatedWallet.yield_benchmark = payload.yield_benchmark
+  if (payload.annual_yield_rate !== undefined) updatedWallet.annual_yield_rate = payload.annual_yield_rate
+  if (payload.yield_percentage !== undefined) updatedWallet.yield_percentage = payload.yield_percentage
+
+  return updatedWallet
+}
+
+export interface YieldProjectionResult {
+  monthlyYield: number
+  dailyBusinessYield: number
+  annualRatePercent: number
+  benchmarkLabel: string
+}
+
+export const DEFAULT_REFERENCE_CDI = 10.5 // 10.5% a.a. padrão de mercado
+
+/**
+ * Calcula a projeção estimada de rendimento mensal e diário por dia útil
+ * para contas de poupança, caixinhas ou investimentos.
+ */
+export function calculateYieldProjection(
+  wallet: Wallet,
+  currentBalance: number,
+  cdiRate: number = DEFAULT_REFERENCE_CDI
+): YieldProjectionResult | null {
+  if (wallet.account_type !== 'savings' || currentBalance <= 0) return null
+  if (!wallet.yield_benchmark) return null
+
+  let annualRate = 0
+  let benchmarkLabel = ''
+
+  if (wallet.yield_benchmark === 'cdi') {
+    const percentage =
+      wallet.yield_percentage != null && wallet.yield_percentage > 0
+        ? wallet.yield_percentage
+        : 100
+    annualRate = (percentage / 100) * (cdiRate / 100)
+    benchmarkLabel = `${percentage}% do CDI`
+  } else if (wallet.yield_benchmark === 'fixed_annual') {
+    const rate = wallet.annual_yield_rate != null ? Number(wallet.annual_yield_rate) : 0
+    annualRate = rate / 100
+    benchmarkLabel = `${rate}% a.a.`
+  } else if (wallet.yield_benchmark === 'fixed_monthly') {
+    const monthlyRate = (wallet.annual_yield_rate != null ? Number(wallet.annual_yield_rate) : 0) / 100
+    annualRate = Math.pow(1 + monthlyRate, 12) - 1
+    benchmarkLabel = `${wallet.annual_yield_rate}% a.m.`
+  }
+
+  if (annualRate <= 0) return null
+
+  // Taxa mensal efetiva: (1 + i_ano)^(1/12) - 1
+  const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1
+  const monthlyYield = currentBalance * monthlyRate
+  // Rendimento por dia útil (convenção financeira de 21 dias úteis/mês)
+  const dailyBusinessYield = monthlyYield / 21
+
+  return {
+    monthlyYield:
+      wallet.currency === 'PYG' ? Math.round(monthlyYield) : parseFloat(monthlyYield.toFixed(2)),
+    dailyBusinessYield:
+      wallet.currency === 'PYG'
+        ? Math.round(dailyBusinessYield)
+        : parseFloat(dailyBusinessYield.toFixed(2)),
+    annualRatePercent: parseFloat((annualRate * 100).toFixed(2)),
+    benchmarkLabel,
+  }
 }
 

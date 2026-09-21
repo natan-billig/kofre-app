@@ -1,3 +1,5 @@
+import type { CurrencyCode } from './types'
+
 /**
  * Serviço de Cotações de Câmbio em Tempo Real
  * Endpoint público sem necessidade de chave de API: https://open.er-api.com/v6/latest/USD
@@ -147,4 +149,41 @@ export async function fetchLiveRates(forceRefresh = false): Promise<LiveExchange
       error: errorMessage,
     }
   }
+}
+
+/**
+ * Converte montantes de forma síncrona entre quaisquer moedas suportadas (PYG, USD, BRL)
+ * utilizando o cache ativo ou taxas padrão da fronteira.
+ */
+export function convertAmount(
+  amount: number,
+  from: CurrencyCode,
+  to: CurrencyCode,
+  customRates?: { usdToPyg?: number; usdToBrl?: number }
+): number {
+  if (from === to || !amount || isNaN(amount)) return amount
+  const cached = getCachedExchangeRates()
+  const usdToPyg = customRates?.usdToPyg ?? cached?.usdToPyg ?? DEFAULT_EXCHANGE_RATES.usdToPyg
+  const usdToBrl = customRates?.usdToBrl ?? cached?.usdToBrl ?? DEFAULT_EXCHANGE_RATES.usdToBrl
+
+  // 1. Converte moeda de origem para base USD
+  let inUsd = amount
+  if (from === 'PYG') {
+    inUsd = usdToPyg > 0 ? amount / usdToPyg : amount
+  } else if (from === 'BRL') {
+    inUsd = usdToBrl > 0 ? amount / usdToBrl : amount
+  }
+
+  // 2. Converte de base USD para moeda de destino
+  if (to === 'USD') {
+    return parseFloat(inUsd.toFixed(2))
+  }
+  if (to === 'PYG') {
+    return Math.round(inUsd * usdToPyg)
+  }
+  if (to === 'BRL') {
+    return parseFloat((inUsd * usdToBrl).toFixed(2))
+  }
+
+  return amount
 }

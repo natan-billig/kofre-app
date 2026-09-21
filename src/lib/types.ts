@@ -23,7 +23,12 @@ export interface Wallet {
   due_day?: number | null
   is_archived?: boolean | null
   target_amount?: number | null
+  annual_yield_rate?: number | null
+  yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
+  yield_percentage?: number | null
 }
+
+export type WalletAccount = Wallet
 
 export interface Transaction {
   id: string
