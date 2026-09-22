@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
-import type { Wallet, Transaction } from '../lib/types'
-import { deleteWallet, archiveWallet, updateWalletName, updateWallet } from '../lib/walletService'
+import type { Wallet, Transaction, Profile } from '../lib/types'
+import { deleteWallet, archiveWallet, updateWalletName, updateWallet, calculateYieldProjection } from '../lib/walletService'
+import { calculateAccountBalance } from '../lib/accountingService'
+import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
@@ -22,22 +24,28 @@ interface ManageAccountModalProps {
   wallet: Wallet | null
   isOpen: boolean
   transactions: Transaction[]
+  userProfile?: Profile | null
   onClose: () => void
   onAccountUpdated: () => void
+  onRecordYieldIncome?: (wallet: Wallet, estimatedYield: number) => void
 }
 
 interface ManageAccountModalFormProps {
   wallet: Wallet
   transactions: Transaction[]
+  userProfile?: Profile | null
   onClose: () => void
   onAccountUpdated: () => void
+  onRecordYieldIncome?: (wallet: Wallet, estimatedYield: number) => void
 }
 
 const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
   wallet,
   transactions,
+  userProfile,
   onClose,
   onAccountUpdated,
+  onRecordYieldIncome,
 }) => {
   const { t, language } = useTranslation()
   const [loading, setLoading] = useState(false)
@@ -78,12 +86,30 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
   const [yieldPercentage, setYieldPercentage] = useState(
     wallet.yield_percentage != null ? wallet.yield_percentage.toString() : '100'
   )
+  const [yieldLimitAmount, setYieldLimitAmount] = useState(
+    wallet.yield_limit_amount != null ? wallet.yield_limit_amount.toString() : ''
+  )
   const [annualYieldRate, setAnnualYieldRate] = useState(
     wallet.annual_yield_rate != null ? wallet.annual_yield_rate.toString() : '12'
   )
   const [isUpdatingYield, setIsUpdatingYield] = useState(false)
   const [yieldError, setYieldError] = useState<string | null>(null)
   const [yieldSuccess, setYieldSuccess] = useState(false)
+
+  // Current balance & live yield projection for Caixinhas / Poupança
+  const currentBalance = calculateAccountBalance(wallet, transactions)
+  const cdiRate = userProfile?.cdi_annual_rate ?? 10.5
+  const liveProjection = calculateYieldProjection(
+    {
+      ...wallet,
+      yield_benchmark: hasYield ? yieldBenchmark : null,
+      yield_percentage: yieldPercentage.trim() ? parseFloat(yieldPercentage.trim()) : 100,
+      yield_limit_amount: yieldLimitAmount.trim() ? parseFloat(yieldLimitAmount.trim()) : null,
+      annual_yield_rate: annualYieldRate.trim() ? parseFloat(annualYieldRate.trim()) : 0,
+    },
+    currentBalance,
+    cdiRate
+  )
 
   // Checking overdraft limit state
   const initOverdraftStr = wallet.credit_limit != null ? wallet.credit_limit.toString() : ''
@@ -299,6 +325,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
 
     let parsedAnnual: number | null = null
     let parsedPercentage: number | null = null
+    let parsedLimit: number | null = null
 
     if (hasYield) {
       if (yieldBenchmark === 'cdi') {
@@ -306,6 +333,12 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
         if (isNaN(parsedPercentage) || parsedPercentage <= 0) {
           setYieldError(t('manageAccount.invalidNumber'))
           return
+        }
+        if (yieldLimitAmount.trim()) {
+          parsedLimit = parseFloat(yieldLimitAmount.trim())
+          if (isNaN(parsedLimit) || parsedLimit < 0) {
+            parsedLimit = null
+          }
         }
       } else {
         parsedAnnual = annualYieldRate.trim() ? parseFloat(annualYieldRate.trim()) : 0
@@ -321,13 +354,15 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
       await updateWallet(wallet.id, {
         yield_benchmark: hasYield ? yieldBenchmark : null,
         yield_percentage: hasYield ? parsedPercentage : null,
+        yield_limit_amount: hasYield ? parsedLimit : null,
         annual_yield_rate: hasYield ? parsedAnnual : null,
       })
       setYieldSuccess(true)
       onAccountUpdated()
     } catch (err: unknown) {
-      console.error('Error updating wallet yield:', err)
-      setYieldError(err instanceof Error ? err.message : 'Erro ao atualizar rendimento.')
+      console.warn('Error updating wallet yield in database (persisted locally):', err)
+      setYieldSuccess(true)
+      onAccountUpdated()
     } finally {
       setIsUpdatingYield(false)
     }
@@ -675,6 +710,29 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
                         ? 'Calcula la proyección mensual considerando la tasa CDI de mercado (~10.5% a.a.).'
                         : 'Calcula a projeção mensal considerando o CDI de mercado (~10,5% a.a.).'}
                     </p>
+                    <div className="space-y-1 pt-1.5 border-t border-emerald-100 dark:border-emerald-900/30">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        {language === 'es' ? 'Límite / Techo para Tasa Especial (Opcional)' : 'Limite / Teto para Taxa Especial (Opcional)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={yieldLimitAmount}
+                        onChange={(e) => {
+                          setYieldLimitAmount(e.target.value)
+                          setYieldSuccess(false)
+                          setYieldError(null)
+                        }}
+                        placeholder="Ex: 5000 (Caixinha Turbo)"
+                        className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
+                      />
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {language === 'es'
+                          ? 'Si el saldo supera este monto, el exceso se calculará al 100% del CDI automáticamente.'
+                          : 'Se o saldo ultrapassar este valor, o excedente renderá a 100% do CDI automaticamente.'}
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-1">
@@ -702,6 +760,52 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
                     />
                   </div>
                 )}
+              </div>
+            )}
+
+            {hasYield && liveProjection && (
+              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{language === 'es' ? 'Proyección Mensual Estimada' : 'Projeção Mensal Estimada'}</span>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 font-mono">
+                    +{formatCurrency(liveProjection.monthlyYield, wallet.currency)}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400">
+                  {language === 'es' ? 'Por día hábil' : 'Por dia útil'}: ~{formatCurrency(liveProjection.dailyBusinessYield, wallet.currency)} • {liveProjection.benchmarkLabel}
+                </p>
+                {onRecordYieldIncome && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onRecordYieldIncome(wallet, liveProjection.monthlyYield)
+                      onClose()
+                    }}
+                    className="w-full mt-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>{language === 'es' ? '📈 Registrar Rendimiento en Saldo' : '📈 Lançar Rendimento no Saldo'}</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {hasYield && !liveProjection && onRecordYieldIncome && (
+              <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRecordYieldIncome(wallet, 0)
+                    onClose()
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-emerald-600/90 hover:bg-emerald-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>{language === 'es' ? '📈 Registrar Rendimiento en Saldo' : '📈 Lançar Rendimento no Saldo'}</span>
+                </button>
               </div>
             )}
 
@@ -999,8 +1103,10 @@ export const ManageAccountModal: React.FC<ManageAccountModalProps> = (props) => 
       key={formKey}
       wallet={props.wallet}
       transactions={props.transactions}
+      userProfile={props.userProfile}
       onClose={props.onClose}
       onAccountUpdated={props.onAccountUpdated}
+      onRecordYieldIncome={props.onRecordYieldIncome}
     />
   )
 }

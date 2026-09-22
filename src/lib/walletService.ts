@@ -7,6 +7,7 @@ export interface WalletYieldMeta {
   annual_yield_rate?: number | null
   yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
   yield_percentage?: number | null
+  yield_limit_amount?: number | null
 }
 
 export function getLocalYieldMap(): Record<string, WalletYieldMeta> {
@@ -141,6 +142,7 @@ export async function fetchWallets(userId: string): Promise<Wallet[]> {
         annual_yield_rate: w.annual_yield_rate ?? meta.annual_yield_rate,
         yield_benchmark: w.yield_benchmark ?? meta.yield_benchmark,
         yield_percentage: w.yield_percentage ?? meta.yield_percentage,
+        yield_limit_amount: w.yield_limit_amount ?? meta.yield_limit_amount,
       }
     }
     return w
@@ -207,6 +209,7 @@ export async function createWallet(payload: {
   annual_yield_rate?: number | null
   yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
   yield_percentage?: number | null
+  yield_limit_amount?: number | null
 }): Promise<Wallet> {
   const insertPayload: Record<string, unknown> = {
     ...payload,
@@ -220,7 +223,7 @@ export async function createWallet(payload: {
     .single()
 
   // Fallback seguro caso as colunas target_amount ou de rendimento não existam ainda no Supabase
-  const YIELD_COLUMNS = ['target_amount', 'annual_yield_rate', 'yield_benchmark', 'yield_percentage']
+  const YIELD_COLUMNS = ['target_amount', 'annual_yield_rate', 'yield_benchmark', 'yield_percentage', 'yield_limit_amount']
   if (error && (error.code === 'PGRST204' || YIELD_COLUMNS.some((col) => error?.message?.includes(col)))) {
     for (const col of YIELD_COLUMNS) {
       delete insertPayload[col]
@@ -240,15 +243,22 @@ export async function createWallet(payload: {
   }
 
   const createdWallet = data as Wallet
-  if (payload.yield_benchmark || payload.annual_yield_rate || payload.yield_percentage) {
+  if (
+    payload.yield_benchmark ||
+    payload.annual_yield_rate ||
+    payload.yield_percentage ||
+    payload.yield_limit_amount
+  ) {
     saveLocalYieldMeta(createdWallet.id, {
       annual_yield_rate: payload.annual_yield_rate,
       yield_benchmark: payload.yield_benchmark,
       yield_percentage: payload.yield_percentage,
+      yield_limit_amount: payload.yield_limit_amount,
     })
     createdWallet.annual_yield_rate = payload.annual_yield_rate
     createdWallet.yield_benchmark = payload.yield_benchmark
     createdWallet.yield_percentage = payload.yield_percentage
+    createdWallet.yield_limit_amount = payload.yield_limit_amount
   }
 
   return createdWallet
@@ -303,6 +313,7 @@ export async function updateWallet(
     annual_yield_rate?: number | null
     yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
     yield_percentage?: number | null
+    yield_limit_amount?: number | null
   }
 ): Promise<Wallet> {
   const updateData: Record<string, unknown> = {}
@@ -315,17 +326,20 @@ export async function updateWallet(
   if (payload.annual_yield_rate !== undefined) updateData.annual_yield_rate = payload.annual_yield_rate
   if (payload.yield_benchmark !== undefined) updateData.yield_benchmark = payload.yield_benchmark
   if (payload.yield_percentage !== undefined) updateData.yield_percentage = payload.yield_percentage
+  if (payload.yield_limit_amount !== undefined) updateData.yield_limit_amount = payload.yield_limit_amount
 
   // Salva no cache local para resiliência imediata
   if (
     payload.yield_benchmark !== undefined ||
     payload.annual_yield_rate !== undefined ||
-    payload.yield_percentage !== undefined
+    payload.yield_percentage !== undefined ||
+    payload.yield_limit_amount !== undefined
   ) {
     saveLocalYieldMeta(walletId, {
       annual_yield_rate: payload.annual_yield_rate,
       yield_benchmark: payload.yield_benchmark,
       yield_percentage: payload.yield_percentage,
+      yield_limit_amount: payload.yield_limit_amount,
     })
   }
 
@@ -337,7 +351,7 @@ export async function updateWallet(
     .single()
 
   // Fallback se target_amount ou colunas de rendimento não existirem no Supabase
-  const YIELD_COLUMNS = ['target_amount', 'annual_yield_rate', 'yield_benchmark', 'yield_percentage']
+  const YIELD_COLUMNS = ['target_amount', 'annual_yield_rate', 'yield_benchmark', 'yield_percentage', 'yield_limit_amount']
   if (error && (error.code === 'PGRST204' || YIELD_COLUMNS.some((col) => error?.message?.includes(col)))) {
     for (const col of YIELD_COLUMNS) {
       delete updateData[col]
@@ -361,6 +375,7 @@ export async function updateWallet(
   if (payload.yield_benchmark !== undefined) updatedWallet.yield_benchmark = payload.yield_benchmark
   if (payload.annual_yield_rate !== undefined) updatedWallet.annual_yield_rate = payload.annual_yield_rate
   if (payload.yield_percentage !== undefined) updatedWallet.yield_percentage = payload.yield_percentage
+  if (payload.yield_limit_amount !== undefined) updatedWallet.yield_limit_amount = payload.yield_limit_amount
 
   return updatedWallet
 }
@@ -376,7 +391,8 @@ export const DEFAULT_REFERENCE_CDI = 10.5 // 10.5% a.a. padrão de mercado
 
 /**
  * Calcula a projeção estimada de rendimento mensal e diário por dia útil
- * para contas de poupança, caixinhas ou investimentos.
+ * para contas de poupança, caixinhas ou investimentos, com suporte a teto especial
+ * (Regra Caixinha Turbo Nubank: até o teto rende a taxa especial, excedente a 100% CDI).
  */
 export function calculateYieldProjection(
   wallet: Wallet,
@@ -388,29 +404,60 @@ export function calculateYieldProjection(
 
   let annualRate = 0
   let benchmarkLabel = ''
+  let monthlyYield = 0
 
   if (wallet.yield_benchmark === 'cdi') {
     const percentage =
       wallet.yield_percentage != null && wallet.yield_percentage > 0
         ? wallet.yield_percentage
         : 100
-    annualRate = (percentage / 100) * (cdiRate / 100)
-    benchmarkLabel = `${percentage}% do CDI`
+    const limit =
+      wallet.yield_limit_amount != null && wallet.yield_limit_amount > 0
+        ? Number(wallet.yield_limit_amount)
+        : null
+
+    const baseCdiAnnualRate = 1.0 * (cdiRate / 100) // 100% do CDI
+    const specialCdiAnnualRate = (percentage / 100) * (cdiRate / 100)
+
+    if (limit != null && limit > 0 && currentBalance > limit) {
+      // Cálculo em camadas:
+      // Parcela 1: até o teto com taxa especial
+      const specialBalance = limit
+      const overflowBalance = currentBalance - limit
+
+      const specialMonthlyRate = Math.pow(1 + specialCdiAnnualRate, 1 / 12) - 1
+      const baseMonthlyRate = Math.pow(1 + baseCdiAnnualRate, 1 / 12) - 1
+
+      monthlyYield = specialBalance * specialMonthlyRate + overflowBalance * baseMonthlyRate
+
+      // Taxa ponderada anual nominal
+      const totalAnnualYield = specialBalance * specialCdiAnnualRate + overflowBalance * baseCdiAnnualRate
+      annualRate = totalAnnualYield / currentBalance
+
+      const formattedLimit = limit.toLocaleString('pt-BR')
+      benchmarkLabel = `${percentage}% CDI (até ${formattedLimit}) + 100% CDI`
+    } else {
+      // Todo o saldo rende à taxa configurada
+      annualRate = specialCdiAnnualRate
+      const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1
+      monthlyYield = currentBalance * monthlyRate
+      benchmarkLabel = `${percentage}% do CDI`
+    }
   } else if (wallet.yield_benchmark === 'fixed_annual') {
     const rate = wallet.annual_yield_rate != null ? Number(wallet.annual_yield_rate) : 0
     annualRate = rate / 100
     benchmarkLabel = `${rate}% a.a.`
+    const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1
+    monthlyYield = currentBalance * monthlyRate
   } else if (wallet.yield_benchmark === 'fixed_monthly') {
     const monthlyRate = (wallet.annual_yield_rate != null ? Number(wallet.annual_yield_rate) : 0) / 100
     annualRate = Math.pow(1 + monthlyRate, 12) - 1
     benchmarkLabel = `${wallet.annual_yield_rate}% a.m.`
+    monthlyYield = currentBalance * monthlyRate
   }
 
-  if (annualRate <= 0) return null
+  if (annualRate <= 0 || monthlyYield <= 0) return null
 
-  // Taxa mensal efetiva: (1 + i_ano)^(1/12) - 1
-  const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1
-  const monthlyYield = currentBalance * monthlyRate
   // Rendimento por dia útil (convenção financeira de 21 dias úteis/mês)
   const dailyBusinessYield = monthlyYield / 21
 

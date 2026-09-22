@@ -29,6 +29,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [hasYield, setHasYield] = useState(false)
   const [yieldBenchmark, setYieldBenchmark] = useState<'cdi' | 'fixed_annual' | 'fixed_monthly'>('cdi')
   const [yieldPercentage, setYieldPercentage] = useState<string>('100')
+  const [yieldLimitAmount, setYieldLimitAmount] = useState<string>('')
   const [annualYieldRate, setAnnualYieldRate] = useState<string>('12')
   const [closingDay, setClosingDay] = useState<string>('')
   const [dueDay, setDueDay] = useState<string>('')
@@ -74,6 +75,10 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       const parsedInitialBalance = initialBalance.trim() ? Number(initialBalance.trim()) : 0
       const parsedCreditLimit = creditLimit.trim() ? Number(creditLimit.trim()) : null
       const parsedTargetAmount = targetAmount.trim() ? Number(targetAmount.trim()) : null
+      const parsedYieldLimit =
+        accountType === 'savings' && hasYield && yieldBenchmark === 'cdi' && yieldLimitAmount.trim()
+          ? parseFloat(yieldLimitAmount.trim())
+          : null
 
       await createWallet({
         owner_id: userId,
@@ -103,6 +108,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           accountType === 'savings' && hasYield && yieldPercentage.trim()
             ? parseFloat(yieldPercentage.trim())
             : null,
+        yield_limit_amount: parsedYieldLimit,
       })
 
       setName('')
@@ -112,6 +118,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       setHasYield(false)
       setYieldBenchmark('cdi')
       setYieldPercentage('100')
+      setYieldLimitAmount('')
       setAnnualYieldRate('12')
       setClosingDay('')
       setDueDay('')
@@ -419,6 +426,25 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                           ? 'Calcula la proyección mensual considerando la tasa CDI de mercado (~10.5% a.a.).'
                           : 'Calcula a projeção mensal considerando o CDI de mercado (~10,5% a.a.).'}
                       </p>
+                      <div className="space-y-1 pt-1.5 border-t border-emerald-100 dark:border-emerald-900/30">
+                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                          {language === 'es' ? 'Límite / Techo para Tasa Especial (Opcional)' : 'Limite / Teto para Taxa Especial (Opcional)'}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={yieldLimitAmount}
+                          onChange={(e) => setYieldLimitAmount(e.target.value)}
+                          placeholder="Ex: 5000 (Caixinha Turbo)"
+                          className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
+                        />
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {language === 'es'
+                            ? 'Si el saldo supera este monto, el exceso se calculará al 100% del CDI automáticamente.'
+                            : 'Se o saldo ultrapassar este valor, o excedente renderá a 100% do CDI automaticamente.'}
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-1">

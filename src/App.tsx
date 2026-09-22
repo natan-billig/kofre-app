@@ -377,6 +377,18 @@ export default function App() {
     setIsQuickTxOpen(true)
   }
 
+  // Quick Action: Lançar Rendimento no Saldo (Receita em Investimentos)
+  const handleRecordYieldIncome = (wallet: Wallet, estimatedYield: number) => {
+    setEditingTransaction(null)
+    setQuickTxType('income')
+    setQuickTxSourceId(wallet.id)
+    setQuickTxDestId(undefined)
+    setQuickTxAmount(estimatedYield > 0 ? Number(estimatedYield.toFixed(2)) : undefined)
+    setQuickTxCategory('Investimentos')
+    setQuickTxDescription(`Rendimento ${wallet.name}`)
+    setIsQuickTxOpen(true)
+  }
+
   // Open default Quick Transaction (+)
   const handleOpenDefaultQuickTx = () => {
     setEditingTransaction(null)
@@ -576,6 +588,7 @@ export default function App() {
                 wallets={wallets}
                 transactions={transactions}
                 currentScope={currentScope}
+                userProfile={userProfile}
                 onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
                 onManageAccount={(wallet) => setManagingWallet(wallet)}
               />
@@ -683,10 +696,12 @@ export default function App() {
         wallet={managingWallet}
         isOpen={Boolean(managingWallet)}
         transactions={transactions}
+        userProfile={userProfile}
         onClose={() => setManagingWallet(null)}
         onAccountUpdated={() => {
           refreshData()
         }}
+        onRecordYieldIncome={handleRecordYieldIncome}
       />
 
       {/* Family Settings & Invite Code Modal */}

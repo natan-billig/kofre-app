@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { Wallet, Transaction, ScopeFilterType } from '../lib/types'
+import type { Wallet, Transaction, ScopeFilterType, Profile } from '../lib/types'
 import { calculateAccountBalance } from '../lib/accountingService'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
 import { calculateYieldProjection } from '../lib/walletService'
@@ -22,6 +22,7 @@ interface AccountListProps {
   wallets: Wallet[]
   transactions: Transaction[]
   currentScope: ScopeFilterType
+  userProfile?: Profile | null
   onOpenCreateAccount: () => void
   onManageAccount?: (wallet: Wallet) => void
 }
@@ -30,6 +31,7 @@ export const AccountList: React.FC<AccountListProps> = ({
   wallets,
   transactions,
   currentScope,
+  userProfile,
   onOpenCreateAccount,
   onManageAccount,
 }) => {
@@ -225,7 +227,8 @@ export const AccountList: React.FC<AccountListProps> = ({
                   const bal = calculateAccountBalance(w, transactions)
                   const hasTarget = w.target_amount != null && Number(w.target_amount) > 0
                   const target = hasTarget ? Number(w.target_amount) : 0
-                  const yieldProj = calculateYieldProjection(w, bal)
+                  const cdiRate = userProfile?.cdi_annual_rate ?? 10.5
+                  const yieldProj = calculateYieldProjection(w, bal, cdiRate)
 
                   return (
                     <div
@@ -255,7 +258,7 @@ export const AccountList: React.FC<AccountListProps> = ({
                               <TrendingUp className="w-3 h-3 text-emerald-500 shrink-0" />
                               <span>
                                 {language === 'es' ? 'Rinde aprox.' : 'Rende aprox.'}{' '}
-                                <strong className="font-mono">{formatCurrency(yieldProj.monthlyYield, w.currency)}</strong> / {language === 'es' ? 'mes' : 'mês'} (~{formatCurrency(yieldProj.dailyBusinessYield, w.currency)} / {language === 'es' ? 'día hábil' : 'dia útil'})
+                                <strong className="font-mono">{formatCurrency(yieldProj.monthlyYield, w.currency)}</strong> / {language === 'es' ? 'mes' : 'mês'} (~{formatCurrency(yieldProj.dailyBusinessYield, w.currency)} / {language === 'es' ? 'día hábil' : 'dia útil'}) • {yieldProj.benchmarkLabel}
                               </span>
                             </span>
                           )}

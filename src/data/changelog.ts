@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.8'
+export const CURRENT_APP_VERSION = '1.8.9'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.9',
+    releaseDate: '2026-09-22',
+    title: {
+      pt: 'Caixinha Turbo com Teto Especial, CDI no Perfil e Fim da Duplicação de Receitas v1.8.9',
+      es: 'Ahorro Turbo con Techo Especial, CDI en Perfil y Fin de Duplicación de Ingresos v1.8.9',
+    },
+    highlights: [
+      {
+        icon: 'TrendingUp',
+        title: {
+          pt: 'Caixinhas com Teto Especial (Turbo) e CDI Centralizado',
+          es: 'Ahorros con Techo Especial (Turbo) y CDI Centralizado',
+        },
+        description: {
+          pt: 'Suporte a regras de rendimento escalonado (ex: 115% do CDI até R$ 5.000 e 100% do CDI sobre o excedente), taxa CDI de referência configurável no perfil e novo botão para lançar rendimento diretamente no saldo.',
+          es: 'Soporte para reglas de rendimiento escalonado (ej: 115% del CDI hasta R$ 5.000 y 100% del CDI sobre el excedente), tasa CDI de referencia configurable en el perfil y nuevo botón para registrar rendimientos directamente en el saldo.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Deduplicação Definitiva de Entradas no Calendário de Caixa',
+          es: 'Deduplicación Definitiva de Ingresos en Calendario de Caja',
+        },
+        description: {
+          pt: 'Eliminação da injeção forçada do salário base quando já existem receitas recorrentes ativas ou lançamentos agendados, garantindo a projeção líquida fiel sem duplicação de proventos.',
+          es: 'Eliminación de la inyección forzada del salario base cuando ya existen ingresos recurrentes activos o transacciones programadas, garantizando la proyección neta fiel sin duplicación de ingresos.',
+        },
+      },
+      {
+        icon: 'ShieldCheck',
+        title: {
+          pt: 'Persistência Resiliente e Sincronização em Camadas',
+          es: 'Persistencia Resiliente y Sincronización en Capas',
+        },
+        description: {
+          pt: 'Armazenamento offline-first das configurações de rendimento e teto especial por conta, garantindo funcionamento impecável e blindagem contra erros de colunas remotas no Supabase.',
+          es: 'Almacenamiento offline-first de configuraciones de rendimiento y techo especial por cuenta, asegurando funcionamiento impecable y blindaje contra errores de columnas remotas en Supabase.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.8',
     releaseDate: '2026-09-21',

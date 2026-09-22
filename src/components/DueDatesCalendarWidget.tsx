@@ -71,14 +71,38 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   // 3. Montar lista de movimentações previstas com data de vencimento/recebimento
   const commitments: DueCommitmentItem[] = []
 
-  // A. Salário Base do Perfil (se configurado > 0 com conversão multi-moeda)
+  // Checagem de desduplicação de receitas:
+  // Se existirem receitas fixas recorrentes cadastradas para o escopo atual,
+  // ou receitas agendadas no mês selecionado, NÃO injetar o Salário Base do perfil
+  // de forma redundante no fluxo de caixa.
+  const activeRecurringIncomes = recurringBills.filter(
+    (b) => b.is_active && b.type === 'income' && b.scope === currentScope
+  )
+
+  const selectedYear = selectedMonthDate.getFullYear()
+  const selectedMonth = selectedMonthDate.getMonth() + 1
+
+  const hasScheduledIncomes = transactions.some((t) => {
+    if (t.is_paid !== false && t.status !== 'pending') return false
+    if (t.type !== 'income') return false
+    if (!t.transaction_date) return false
+    const parts = t.transaction_date.split('-')
+    if (parts.length < 2) return false
+    const tYear = parseInt(parts[0], 10)
+    const tMonth = parseInt(parts[1], 10)
+    return tYear === selectedYear && tMonth === selectedMonth
+  })
+
+  const hasExplicitIncomes = activeRecurringIncomes.length > 0 || hasScheduledIncomes
+
+  // A. Salário Base do Perfil (injetado estritamente como fallback se NÃO houver receitas cadastradas)
   const profileBaseIncome =
     userProfile?.base_monthly_income != null && userProfile.base_monthly_income > 0
       ? Number(userProfile.base_monthly_income)
       : 0
   const profileCurrency = userProfile?.preferred_currency || preferredCurrency
 
-  if (profileBaseIncome > 0) {
+  if (!hasExplicitIncomes && profileBaseIncome > 0) {
     const convertedSalary = convertAmount(profileBaseIncome, profileCurrency, currencyToUse)
     const salaryDay =
       userProfile?.budget_start_day &&

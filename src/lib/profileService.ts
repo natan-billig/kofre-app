@@ -59,6 +59,16 @@ export async function fetchUserProfile(userId: string): Promise<Profile | null> 
         ? localExtra.budget_start_day
         : 1
 
+    const storedCdi = localStorage.getItem('kofre_profile_cdi_rate')
+    const mergedCdiRate =
+      profile.cdi_annual_rate != null && profile.cdi_annual_rate > 0
+        ? profile.cdi_annual_rate
+        : typeof localExtra.cdi_annual_rate === 'number' && localExtra.cdi_annual_rate > 0
+        ? localExtra.cdi_annual_rate
+        : storedCdi && !isNaN(parseFloat(storedCdi)) && parseFloat(storedCdi) > 0
+        ? parseFloat(storedCdi)
+        : 10.5
+
     profile = {
       ...profile,
       budget_start_day: mergedBudgetStartDay,
@@ -66,6 +76,7 @@ export async function fetchUserProfile(userId: string): Promise<Profile | null> 
       pix_key: pickString(profile.pix_key, localExtra.pix_key),
       alias_py: pickString(profile.alias_py, localExtra.alias_py),
       bank_details: pickString(profile.bank_details, localExtra.bank_details),
+      cdi_annual_rate: mergedCdiRate,
     }
 
     // 4. Salvar estado consolidado no localStorage
@@ -78,8 +89,12 @@ export async function fetchUserProfile(userId: string): Promise<Profile | null> 
           pix_key: profile.pix_key,
           alias_py: profile.alias_py,
           bank_details: profile.bank_details,
+          cdi_annual_rate: profile.cdi_annual_rate,
         })
       )
+      if (profile.cdi_annual_rate != null) {
+        localStorage.setItem('kofre_profile_cdi_rate', String(profile.cdi_annual_rate))
+      }
     } catch {
       // Ignora erro
     }
@@ -118,8 +133,12 @@ export async function updateUserProfile(
       pix_key: data.pix_key !== undefined ? data.pix_key : parsed.pix_key,
       alias_py: data.alias_py !== undefined ? data.alias_py : parsed.alias_py,
       bank_details: data.bank_details !== undefined ? data.bank_details : parsed.bank_details,
+      cdi_annual_rate: data.cdi_annual_rate !== undefined ? data.cdi_annual_rate : parsed.cdi_annual_rate,
     }
     localStorage.setItem(`kofre_profile_extra_${userId}`, JSON.stringify(localExtra))
+    if (data.cdi_annual_rate !== undefined && data.cdi_annual_rate != null) {
+      localStorage.setItem('kofre_profile_cdi_rate', String(data.cdi_annual_rate))
+    }
   } catch {
     // Ignora erro de localStorage
   }
@@ -148,6 +167,9 @@ export async function updateUserProfile(
   if (data.bank_details !== undefined) {
     payload.bank_details = data.bank_details
   }
+  if (data.cdi_annual_rate !== undefined) {
+    payload.cdi_annual_rate = data.cdi_annual_rate
+  }
 
   let { data: result, error } = await supabase
     .from('profiles')
@@ -164,6 +186,7 @@ export async function updateUserProfile(
       'pix_key',
       'alias_py',
       'bank_details',
+      'cdi_annual_rate',
     ]
     let hasStripped = false
     for (const col of optionalCols) {
@@ -196,6 +219,7 @@ export async function updateUserProfile(
     pix_key: data.pix_key !== undefined ? data.pix_key : (finalProfile.pix_key ?? (localExtra.pix_key as string | null) ?? null),
     alias_py: data.alias_py !== undefined ? data.alias_py : (finalProfile.alias_py ?? (localExtra.alias_py as string | null) ?? null),
     bank_details: data.bank_details !== undefined ? data.bank_details : (finalProfile.bank_details ?? (localExtra.bank_details as string | null) ?? null),
+    cdi_annual_rate: data.cdi_annual_rate !== undefined ? data.cdi_annual_rate : (finalProfile.cdi_annual_rate ?? (localExtra.cdi_annual_rate as number | null) ?? 10.5),
   }
 }
 

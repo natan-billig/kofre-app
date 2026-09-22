@@ -35,6 +35,7 @@ import {
   QrCode,
   DollarSign,
   Share2,
+  TrendingUp,
 } from 'lucide-react'
 import { CURRENT_APP_VERSION } from '../data/changelog'
 
@@ -60,7 +61,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   onOpenWhatsNew,
   onSignOut,
 }) => {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { theme, setTheme } = useTheme()
 
   const extraFallback = (() => {
@@ -93,6 +94,19 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   })
   const [bankDetails, setBankDetails] = useState<string>(() => {
     return currentProfile?.bank_details || (extraFallback.bank_details as string) || ''
+  })
+  const [cdiAnnualRate, setCdiAnnualRate] = useState<string>(() => {
+    if (currentProfile?.cdi_annual_rate != null && currentProfile.cdi_annual_rate > 0) {
+      return String(currentProfile.cdi_annual_rate)
+    }
+    if (extraFallback.cdi_annual_rate != null && Number(extraFallback.cdi_annual_rate) > 0) {
+      return String(extraFallback.cdi_annual_rate)
+    }
+    const stored = localStorage.getItem('kofre_profile_cdi_rate')
+    if (stored && !isNaN(parseFloat(stored)) && parseFloat(stored) > 0) {
+      return stored
+    }
+    return '10.5'
   })
 
   const [isSaving, setIsSaving] = useState(false)
@@ -204,6 +218,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
         throw new Error('Sessão expirada ou usuário não autenticado.')
       }
 
+      const parsedCdi = cdiAnnualRate.trim() ? parseFloat(cdiAnnualRate.trim()) : 10.5
       const updated = await updateUserProfile(activeUserId, {
         full_name: trimmedName,
         avatar,
@@ -213,6 +228,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
         pix_key: pixKey.trim() || null,
         alias_py: aliasPy.trim() || null,
         bank_details: bankDetails.trim() || null,
+        cdi_annual_rate: isNaN(parsedCdi) || parsedCdi <= 0 ? 10.5 : parsedCdi,
       })
 
       onProfileUpdated(updated)
@@ -479,6 +495,30 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {t('profile.baseMonthlyIncomeDesc')}
+            </p>
+          </div>
+
+          {/* Taxa CDI de Referência (% a.a.) */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+              <span>{language === 'es' ? 'Tasa CDI de Referencia (% a.a.)' : 'Taxa CDI de Referência (% a.a.)'}</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="any"
+                min="0.1"
+                value={cdiAnnualRate}
+                onChange={(e) => setCdiAnnualRate(e.target.value)}
+                placeholder="10.5"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:border-indigo-500 outline-none font-mono"
+              />
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {language === 'es'
+                ? 'Utilizada para calcular las proyecciones de rendimiento de cuentas y cajitas vinculadas al % del CDI.'
+                : 'Utilizada para calcular as projeções de rendimento de contas e caixinhas atreladas ao % do CDI.'}
             </p>
           </div>
 

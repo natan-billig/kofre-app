@@ -26,6 +26,7 @@ export interface Wallet {
   annual_yield_rate?: number | null
   yield_benchmark?: 'cdi' | 'fixed_annual' | 'fixed_monthly' | null
   yield_percentage?: number | null
+  yield_limit_amount?: number | null
 }
 
 export type WalletAccount = Wallet
@@ -72,7 +73,10 @@ export interface Profile {
   pix_key?: string | null
   alias_py?: string | null
   bank_details?: string | null
+  cdi_annual_rate?: number | null
 }
+
+export type UserProfile = Profile
 
 export interface CurrencyBalances {
   PYG: number
