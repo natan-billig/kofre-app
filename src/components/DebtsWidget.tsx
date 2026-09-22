@@ -3,6 +3,7 @@ import type { DebtItem, Wallet, ScopeFilterType } from '../lib/types'
 import { settleDebt, deleteDebt } from '../lib/debtService'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   HandCoins,
   TrendingDown,
@@ -74,6 +75,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
 
   const [activeTab, setActiveTab] = useState<'pending' | 'settled'>('pending')
   const [settlingDebt, setSettlingDebt] = useState<DebtItem | null>(null)
+  useModalScrollLock(!!settlingDebt)
   const [selectedWalletId, setSelectedWalletId] = useState<string>('')
   const [settlementDate, setSettlementDate] = useState<string>('')
   const [recordMovement, setRecordMovement] = useState(false)
@@ -391,7 +393,7 @@ export const DebtsWidget: React.FC<DebtsWidgetProps> = ({
 
       {/* Settle Debt Dialog / Modal */}
       {settlingDebt && (
-        <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all">
           <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

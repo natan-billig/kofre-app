@@ -3,6 +3,7 @@ import type { CurrencyCode, DebtType, FamilyMemberItem, Wallet, WalletScope } fr
 import { createDebt } from '../lib/debtService'
 import { formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { supabase } from '../lib/supabase'
 import {
   X,
@@ -41,6 +42,7 @@ export function CreateDebtModal({
   onDebtCreated,
 }: CreateDebtModalProps) {
   const { t } = useTranslation()
+  useModalScrollLock(isOpen)
 
   const [type, setType] = useState<DebtType>('i_owe')
   const [amount, setAmount] = useState('')
@@ -240,8 +242,10 @@ export function CreateDebtModal({
     }
   }
 
+  if (!isOpen) return null
+
   return (
-    <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all">
       <div className="relative w-full max-w-lg bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">

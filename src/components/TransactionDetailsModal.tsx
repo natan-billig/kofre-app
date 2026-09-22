@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { Transaction, Wallet, Category } from '../lib/types'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   X,
   Pencil,
@@ -70,6 +71,8 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
   const { t, language } = useTranslation()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
 
+  useModalScrollLock(isOpen && !!transaction)
+
   if (!isOpen || !transaction) return null
 
   const walletMap = new Map<string, Wallet>()
@@ -128,7 +131,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">

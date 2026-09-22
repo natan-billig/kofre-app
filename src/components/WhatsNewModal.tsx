@@ -7,6 +7,7 @@ import {
   getLatestFeatureRelease,
 } from '../data/changelog'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { formatDate } from '../lib/formatters'
 import {
   X,
@@ -84,6 +85,8 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
   const { t, language } = useTranslation()
   const [showHistory, setShowHistory] = useState(false)
   const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({})
+
+  useModalScrollLock(isOpen)
 
   if (!isOpen) return null
 
@@ -207,7 +210,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
       <div className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4 max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-150">
         {/* Top Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">

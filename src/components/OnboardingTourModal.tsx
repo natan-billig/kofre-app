@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   Users2,
   Wallet2,
@@ -33,6 +34,8 @@ export const OnboardingTourModal: React.FC<OnboardingTourModalProps> = ({
 }) => {
   const { t, language } = useTranslation()
   const [step, setStep] = useState(0)
+
+  useModalScrollLock(isOpen)
 
   if (!isOpen) return null
 
@@ -201,7 +204,7 @@ export const OnboardingTourModal: React.FC<OnboardingTourModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
       <div className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
         {/* Top Progress Bar & Header */}
         <div className="space-y-2">

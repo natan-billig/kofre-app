@@ -3,6 +3,7 @@ import type { ParsedNotification, Wallet } from '../lib/types'
 import { parseBankNotification } from '../lib/notificationParser'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   X,
   Sparkles,
@@ -36,6 +37,8 @@ export const SmartNotificationParserModal: React.FC<SmartNotificationParserModal
   const parsed = useMemo(() => {
     return parseBankNotification(inputText)
   }, [inputText])
+
+  useModalScrollLock(isOpen)
 
   if (!isOpen) return null
 
@@ -88,7 +91,7 @@ export const SmartNotificationParserModal: React.FC<SmartNotificationParserModal
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/40">

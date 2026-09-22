@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.10'
+export const CURRENT_APP_VERSION = '1.8.11'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.11',
+    releaseDate: '2026-09-22',
+    title: {
+      pt: 'Isolamento Contábil da Família, Trava de Rolagem em Modais e Empty State de Moeda v1.8.11',
+      es: 'Aislamiento Contable Familiar, Bloqueo de Desplazamiento en Modales y Empty State por Moneda v1.8.11',
+    },
+    highlights: [
+      {
+        icon: 'Users',
+        title: {
+          pt: 'Isolamento Estrito do Escopo Família',
+          es: 'Aislamiento Estricto del Ámbito Familiar',
+        },
+        description: {
+          pt: 'Supressão total do Termômetro DTI individual no modo família e expurgo da injeção do salário base pessoal no fluxo familiar, garantindo que o caixa conjunto apenas reflita receitas e despesas compartilhadas.',
+          es: 'Supresión total del Termómetro DTI individual en el modo familiar y exclusión del ingreso base personal en el flujo familiar, garantizando que la caja conjunta solo refleje ingresos y gastos compartidos.',
+        },
+      },
+      {
+        icon: 'ShieldCheck',
+        title: {
+          pt: 'Trava de Rolagem de Fundo e Backdrop Blur Profundo',
+          es: 'Bloqueo de Desplazamiento de Fondo y Desenfoque Profundo',
+        },
+        description: {
+          pt: 'Congelamento seguro da rolagem da página ao abrir qualquer modal ou gaveta do sistema e padronização visual com desfoque profundo (backdrop-blur-md) em todos os diálogos.',
+          es: 'Bloqueo seguro del desplazamiento de página al abrir cualquier modal o menú lateral y estandarización visual con desenfoque profundo (backdrop-blur-md) en todos los diálogos.',
+        },
+      },
+      {
+        icon: 'Coins',
+        title: {
+          pt: 'Seletor Contextual de Moedas e Empty State Seguro',
+          es: 'Selector Contextual de Monedas y Estado Vacío Amigable',
+        },
+        description: {
+          pt: 'O seletor de moedas exibe o Real (BRL) apenas se houver movimentações ou contas ativas em BRL, e o Calendário de Caixa mantém sua estrutura intacta com mensagem informativa amigável quando não houver vencimentos na moeda.',
+          es: 'El selector de monedas muestra el Real (BRL) únicamente si existen movimientos o cuentas activas en BRL, y el Calendario de Vencimientos mantiene su estructura intacta con un mensaje informativo claro si no hay vencimientos en la moneda.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.10',
     releaseDate: '2026-09-22',

@@ -5,6 +5,7 @@ import { fetchProfilesMap } from '../lib/profileService'
 import { fetchCategories } from '../lib/categoryService'
 import { deleteTransaction, updateTransaction, fetchTransactionsByDateRange } from '../lib/accountingService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { TransactionDetailsModal } from './TransactionDetailsModal'
 import {
   ArrowDownCircle,
@@ -78,6 +79,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
   const [categories, setCategories] = useState<Category[]>([])
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null)
+  useModalScrollLock(!!txToDelete)
   const [selectedTxForDetails, setSelectedTxForDetails] = useState<Transaction | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -853,7 +855,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
       {/* Confirmation Modal for Transaction Deletion */}
       {txToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-2.5 text-rose-600 dark:text-rose-400">
               <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center">

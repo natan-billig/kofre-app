@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import {
   X,
   PlusCircle,
@@ -19,6 +19,7 @@ import {
   Tag,
 } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { useTheme } from '../lib/theme'
 import { AvatarRenderer, getAvatarColor } from '../lib/avatarHelper'
 import { CURRENT_APP_VERSION } from '../data/changelog'
@@ -67,17 +68,8 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   const { t, language, setLanguage } = useTranslation()
   const { theme, setTheme } = useTheme()
 
-  // Prevenir scroll do body enquanto a gaveta estiver aberta
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  // Trava de scroll usando hook centralizado
+  useModalScrollLock(isOpen)
 
   if (!isOpen) return null
 
@@ -89,7 +81,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-950/70 backdrop-blur-md transition-all transition-opacity"
         aria-hidden="true"
       />
 

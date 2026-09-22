@@ -14,6 +14,7 @@ import {
   setSavedGroupIcon,
 } from '../lib/categoryService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   X,
   Loader2,
@@ -51,6 +52,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   onCategoriesChanged,
 }) => {
   const { t } = useTranslation()
+  useModalScrollLock(isOpen)
 
   // Tab: Categories vs Groups
   const [modalTab, setModalTab] = useState<'categories' | 'groups'>('categories')
@@ -395,8 +397,10 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     return true
   })
 
+  if (!isOpen) return null
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between flex-shrink-0">

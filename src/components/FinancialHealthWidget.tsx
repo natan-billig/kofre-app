@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import type {
   Wallet,
   Transaction,
@@ -48,9 +48,36 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
 }) => {
   const { t } = useTranslation()
 
-  // Moedas disponíveis para visualização
-  const activeCurrencies = getActiveCurrencies(wallets, preferredCurrency)
+  // Moedas disponíveis para visualização:
+  // Só incluir BRL se houver dados ativos em BRL
+  const hasBrlData = useMemo(() => {
+    if (preferredCurrency === 'BRL') return true
+    if (userProfile?.preferred_currency === 'BRL' && (userProfile?.base_monthly_income ?? 0) > 0) return true
+    if (wallets.some((w) => !w.is_archived && w.currency === 'BRL')) return true
+    if (recurringBills.some((b) => b.is_active && b.currency === 'BRL')) return true
+    if (debts.some((d) => d.status === 'pending' && d.currency === 'BRL')) return true
+    return transactions.some((t) => {
+      const w = wallets.find((sw) => sw.id === t.wallet_id)
+      return (t.original_currency || w?.currency) === 'BRL'
+    })
+  }, [preferredCurrency, userProfile, wallets, recurringBills, debts, transactions])
+
+  const activeCurrencies = useMemo(() => {
+    const list = getActiveCurrencies(wallets, preferredCurrency)
+    if (hasBrlData && !list.includes('BRL')) {
+      list.push('BRL')
+    }
+    if (!hasBrlData) {
+      return list.filter((c) => c !== 'BRL')
+    }
+    return list
+  }, [wallets, preferredCurrency, hasBrlData])
+
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(preferredCurrency)
+
+  if (currentScope !== 'personal') {
+    return null
+  }
 
   const currencyToUse = activeCurrencies.includes(selectedCurrency)
     ? selectedCurrency

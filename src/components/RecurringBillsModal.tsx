@@ -9,6 +9,7 @@ import {
 import { fetchCategories } from '../lib/categoryService'
 import { formatCurrency, formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   X,
   Loader2,
@@ -44,6 +45,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
   onBillsChanged,
 }) => {
   const { t } = useTranslation()
+  useModalScrollLock(isOpen)
 
   const [bills, setBills] = useState<RecurringBill[]>([])
   const [allCategories, setAllCategories] = useState<Category[]>([])
@@ -347,8 +349,10 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     }
   }
 
+  if (!isOpen) return null
+
   return (
-    <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all">
       <div className="relative w-full max-w-xl bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">

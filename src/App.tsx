@@ -522,16 +522,18 @@ export default function App() {
               />
             }
             financialHealth={
-              <FinancialHealthWidget
-                wallets={wallets}
-                transactions={monthlyTransactions}
-                recurringBills={recurringBills}
-                debts={debts}
-                currentScope={currentScope}
-                preferredCurrency={preferredCurrency}
-                userProfile={userProfile}
-                onOpenProfile={() => setIsProfileModalOpen(true)}
-              />
+              currentScope === 'personal' ? (
+                <FinancialHealthWidget
+                  wallets={wallets}
+                  transactions={monthlyTransactions}
+                  recurringBills={recurringBills}
+                  debts={debts}
+                  currentScope={currentScope}
+                  preferredCurrency={preferredCurrency}
+                  userProfile={userProfile}
+                  onOpenProfile={() => setIsProfileModalOpen(true)}
+                />
+              ) : undefined
             }
             monthlySummary={
               <MonthlySummary

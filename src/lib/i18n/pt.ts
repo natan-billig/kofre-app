@@ -688,6 +688,8 @@ export const pt = {
     expectedIncome: 'Receita Prevista',
     totalInflow: 'Entradas Previstas',
     totalOutflow: 'Saídas Previstas',
+    emptyStateTitle: 'Nenhum vencimento previsto nesta moeda para o mês.',
+    emptyStateDesc: 'Contas fixas, faturas e entradas nesta moeda serão projetadas aqui.',
   },
   types: {
     expense: 'Despesa',

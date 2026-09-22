@@ -14,6 +14,7 @@ import { fetchCategories, DEFAULT_MACRO_MAP } from '../lib/categoryService'
 import { formatCurrency, formatDate } from '../lib/formatters'
 import { fetchProfilesMap } from '../lib/profileService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   PieChart,
   Utensils,
@@ -86,6 +87,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
     name: string
     isMacro: boolean
   } | null>(null)
+  useModalScrollLock(!!drilldownCategory)
   const [profilesMap, setProfilesMap] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -690,7 +692,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
       {/* Modal Interativo de Drilldown de Categoria */}
       {drilldownCategory && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all"
           onClick={() => setDrilldownCategory(null)}
         >
           <div

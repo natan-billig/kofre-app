@@ -10,6 +10,7 @@ import {
 } from '../lib/authService'
 import { AVATAR_OPTIONS, AvatarRenderer } from '../lib/avatarHelper'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { useTheme } from '../lib/theme'
 import {
   X,
@@ -250,7 +251,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all">
       <div className="relative w-full max-w-lg bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
@@ -820,6 +821,7 @@ const ProfileModalForm: React.FC<ProfileModalProps> = ({
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = (props) => {
+  useModalScrollLock(props.isOpen)
   if (!props.isOpen) return null
 
   const formKey = `${props.userId}-${props.currentProfile?.full_name || ''}-${props.currentProfile?.avatar || ''}-${props.currentProfile?.preferred_currency || ''}-${props.currentProfile?.budget_start_day || 1}-${props.currentProfile?.base_monthly_income ?? ''}-${props.currentProfile?.pix_key || ''}-${props.currentProfile?.alias_py || ''}-${props.currentProfile?.bank_details || ''}`

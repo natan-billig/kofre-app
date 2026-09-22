@@ -4,6 +4,7 @@ import { createWallet } from '../lib/walletService'
 import { getOrCreateMyFamilyId } from '../lib/familyService'
 import { formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import { X, Loader2, Building2, Banknote, CreditCard, PiggyBank, Users2, User, TrendingUp } from 'lucide-react'
 
 interface CreateAccountModalProps {
@@ -36,6 +37,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [dueDay, setDueDay] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  useModalScrollLock(isOpen)
 
   if (!isOpen) return null
 
@@ -140,7 +143,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between">

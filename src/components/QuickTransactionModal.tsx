@@ -19,6 +19,7 @@ import { fetchCategories, DEFAULT_MACRO_MAP } from '../lib/categoryService'
 import { CategoryManagerModal } from './CategoryManagerModal'
 import { formatCurrency, formatExchangeRate, formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   X,
   Loader2,
@@ -557,7 +558,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
         {/* Modal Top Header */}
         <div className="flex items-center justify-between">
@@ -1330,6 +1331,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 }
 
 export const QuickTransactionModal: React.FC<QuickTransactionModalProps> = (props) => {
+  useModalScrollLock(props.isOpen)
   if (!props.isOpen) return null
 
   // Mounting key resets form cleanly on open or transaction switch without needing useEffect

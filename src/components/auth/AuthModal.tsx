@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { upsertProfile } from '../../lib/profileService'
 import { signInWithGoogle } from '../../lib/authService'
 import { useTranslation } from '../../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../../hooks/useModalScrollLock'
 import {
   Lock,
   Mail,
@@ -41,6 +42,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
+  useModalScrollLock(true)
   const { t, language, setLanguage } = useTranslation()
   const [isRegister, setIsRegister] = useState(false)
   const [fullName, setFullName] = useState('')
@@ -199,7 +201,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative">
         {/* Language selector toggle in header */}
         <div className="flex justify-end">

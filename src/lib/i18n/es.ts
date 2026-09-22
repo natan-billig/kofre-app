@@ -690,6 +690,8 @@ export const es: TranslationDictionary = {
     expectedIncome: 'Ingreso Previsto',
     totalInflow: 'Ingresos Previstos',
     totalOutflow: 'Gastos Previstos',
+    emptyStateTitle: 'Ningún vencimiento previsto en esta moneda para el mes.',
+    emptyStateDesc: 'Cuentas fijas, facturas e ingresos en esta moneda se proyectarán aquí.',
   },
   types: {
     expense: 'Gasto',

@@ -4,6 +4,7 @@ import { deleteWallet, archiveWallet, updateWalletName, updateWallet, calculateY
 import { calculateAccountBalance } from '../lib/accountingService'
 import { formatCurrency, formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
+import { useModalScrollLock } from '../hooks/useModalScrollLock'
 import {
   X,
   Loader2,
@@ -413,7 +414,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
       : Building2
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all animate-in fade-in duration-150">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1145,6 +1146,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
 }
 
 export const ManageAccountModal: React.FC<ManageAccountModalProps> = (props) => {
+  useModalScrollLock(props.isOpen && !!props.wallet)
   if (!props.isOpen || !props.wallet) return null
 
   const formKey = `${props.wallet.id}-${props.wallet.name}-${props.wallet.initial_balance ?? 0}-${props.wallet.closing_day ?? ''}-${props.wallet.due_day ?? ''}-${props.wallet.credit_limit ?? ''}`
