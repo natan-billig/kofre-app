@@ -7,8 +7,7 @@ import {
   deleteRecurringBill,
 } from '../lib/recurringService'
 import { fetchCategories } from '../lib/categoryService'
-import { formatCurrency } from '../lib/formatters'
-import { evaluateMathExpression } from '../lib/mathParser'
+import { formatCurrency, formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
@@ -74,13 +73,10 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
 
   const handleEvaluateInput = (val: string, setter: (v: string) => void): number | null => {
     if (!val || !val.trim()) return null
-    const result = evaluateMathExpression(val)
+    const result = sanitizeNumericInput(val, currency)
     if (result !== null && !isNaN(result) && result >= 0) {
-      const formatted = Number.isInteger(result)
-        ? String(result)
-        : String(Math.round(result * 100) / 100)
-      setter(formatted)
-      return Number(formatted)
+      setter(formatMaskedInput(result, currency))
+      return result
     }
     return null
   }
@@ -181,11 +177,15 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     setEditingBill(bill)
     setBillType(bill.type || 'expense')
     setName(bill.name)
-    setAmount(String(bill.amount))
+    setAmount(formatMaskedInput(bill.amount, bill.currency))
     setIsShared(Boolean(bill.is_shared))
-    setTotalAmount(bill.total_amount != null ? String(bill.total_amount) : String(bill.amount))
+    setTotalAmount(
+      bill.total_amount != null
+        ? formatMaskedInput(bill.total_amount, bill.currency)
+        : formatMaskedInput(bill.amount, bill.currency)
+    )
     setSplitParticipants(bill.split_participants != null ? String(bill.split_participants) : '2')
-    setMyShareAmount(bill.my_share_amount != null ? String(bill.my_share_amount) : '')
+    setMyShareAmount(bill.my_share_amount != null ? formatMaskedInput(bill.my_share_amount, bill.currency) : '')
     setCurrency(bill.currency)
     setCategory(bill.category)
     setWalletId(bill.wallet_id)
@@ -246,13 +246,7 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
     setFormError(null)
 
     const trimmedName = name.trim()
-    let numAmount = parseFloat(amount)
-    const evaluatedAmount = evaluateMathExpression(amount)
-    if (evaluatedAmount !== null && !isNaN(evaluatedAmount) && evaluatedAmount >= 0) {
-      numAmount = evaluatedAmount
-      setAmount(Number.isInteger(evaluatedAmount) ? String(evaluatedAmount) : String(Math.round(evaluatedAmount * 100) / 100))
-    }
-
+    let numAmount = sanitizeNumericInput(amount, currency)
     const numDay = parseInt(dueDay, 10)
 
     if (!trimmedName || !amount || !walletId || !category) {
@@ -278,23 +272,16 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
 
     if (billType === 'expense' && isShared) {
       finalIsShared = true
-      let numTot = parseFloat(totalAmount)
-      const evaluatedTot = evaluateMathExpression(totalAmount)
-      if (evaluatedTot !== null && !isNaN(evaluatedTot) && evaluatedTot >= 0) {
-        numTot = evaluatedTot
-      }
+      let numTot = sanitizeNumericInput(totalAmount, currency)
       if (isNaN(numTot) || numTot <= 0) {
         numTot = numAmount
       }
 
       const parts = parseInt(splitParticipants, 10) || 2
-      let numShare = parseFloat(myShareAmount)
-      const evaluatedShare = evaluateMathExpression(myShareAmount)
-      if (evaluatedShare !== null && !isNaN(evaluatedShare) && evaluatedShare >= 0) {
-        numShare = evaluatedShare
-      }
+      let numShare = sanitizeNumericInput(myShareAmount, currency)
       if (isNaN(numShare) || numShare <= 0) {
-        numShare = Math.round((numTot / parts) * 100) / 100
+        numShare =
+          currency === 'PYG' ? Math.round(numTot / parts) : Math.round((numTot / parts) * 100) / 100
       }
 
       finalTotalAmount = numTot
@@ -579,7 +566,11 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                               const evaluated = handleEvaluateInput(totalAmount, setTotalAmount)
                               if (evaluated && evaluated > 0) {
                                 const parts = parseInt(splitParticipants, 10) || 2
-                                setMyShareAmount(String(Math.round((evaluated / parts) * 100) / 100))
+                                const share =
+                                  currency === 'PYG'
+                                    ? Math.round(evaluated / parts)
+                                    : Math.round((evaluated / parts) * 100) / 100
+                                setMyShareAmount(formatMaskedInput(share, currency))
                               }
                             }}
                             onKeyDown={(e) => {
@@ -588,7 +579,11 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                                 const evaluated = handleEvaluateInput(totalAmount, setTotalAmount)
                                 if (evaluated && evaluated > 0) {
                                   const parts = parseInt(splitParticipants, 10) || 2
-                                  setMyShareAmount(String(Math.round((evaluated / parts) * 100) / 100))
+                                  const share =
+                                    currency === 'PYG'
+                                      ? Math.round(evaluated / parts)
+                                      : Math.round((evaluated / parts) * 100) / 100
+                                  setMyShareAmount(formatMaskedInput(share, currency))
                                 }
                               }
                             }}
@@ -610,9 +605,13 @@ export const RecurringBillsModal: React.FC<RecurringBillsModalProps> = ({
                               const val = e.target.value
                               setSplitParticipants(val)
                               const parts = parseInt(val, 10)
-                              const tot = parseFloat(totalAmount)
+                              const tot = sanitizeNumericInput(totalAmount, currency)
                               if (parts && parts > 1 && tot && tot > 0) {
-                                setMyShareAmount(String(Math.round((tot / parts) * 100) / 100))
+                                const share =
+                                  currency === 'PYG'
+                                    ? Math.round(tot / parts)
+                                    : Math.round((tot / parts) * 100) / 100
+                                setMyShareAmount(formatMaskedInput(share, currency))
                               }
                             }}
                             className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"

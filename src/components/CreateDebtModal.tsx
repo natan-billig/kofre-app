@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import type { CurrencyCode, DebtType, FamilyMemberItem, Wallet, WalletScope } from '../lib/types'
 import { createDebt } from '../lib/debtService'
-import { evaluateMathExpression } from '../lib/mathParser'
+import { formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { supabase } from '../lib/supabase'
 import {
@@ -163,13 +163,10 @@ export function CreateDebtModal({
 
   const handleEvaluateInput = (val: string, setter: (v: string) => void): number | null => {
     if (!val || !val.trim()) return null
-    const result = evaluateMathExpression(val)
+    const result = sanitizeNumericInput(val, currency)
     if (result !== null && !isNaN(result) && result >= 0) {
-      const formatted = Number.isInteger(result)
-        ? String(result)
-        : String(Math.round(result * 100) / 100)
-      setter(formatted)
-      return Number(formatted)
+      setter(formatMaskedInput(result, currency))
+      return result
     }
     return null
   }
@@ -178,8 +175,7 @@ export function CreateDebtModal({
     e.preventDefault()
     setErrorMessage(null)
 
-    const evaluated = evaluateMathExpression(amount)
-    const parsedAmount = evaluated !== null && evaluated > 0 ? evaluated : parseFloat(amount)
+    const parsedAmount = sanitizeNumericInput(amount, currency)
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setErrorMessage(t('recurringBills.fillRequired'))
       return

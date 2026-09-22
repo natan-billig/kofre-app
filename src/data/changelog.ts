@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.9'
+export const CURRENT_APP_VERSION = '1.8.10'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.8.10',
+    releaseDate: '2026-09-22',
+    title: {
+      pt: 'Segregação Bimonetária no DTI, Máscara de Milhares e Filtro Rápido de Carteira v1.8.10',
+      es: 'Segregación Bimonetaria en DTI, Máscara de Miles y Filtro Rápido de Cuenta v1.8.10',
+    },
+    highlights: [
+      {
+        icon: 'Globe2',
+        title: {
+          pt: 'Segregação Bimonetária Real no DTI e Calendário',
+          es: 'Segregación Bimonetaria Real en DTI y Calendario',
+        },
+        description: {
+          pt: 'Cálculo estrito de passivos, faturas e contas fixas por moeda ativa, eliminando conversões cambiais cegas entre PYG e BRL e refletindo a realidade financeira da vida binacional na fronteira.',
+          es: 'Cálculo estricto de pasivos, tarjetas y cuentas fijas por moneda activa, eliminando conversiones cambiarias ciegas entre PYG y BRL y reflejando la realidad financiera de la vida binacional en la frontera.',
+        },
+      },
+      {
+        icon: 'Calculator',
+        title: {
+          pt: 'Máscara de Milhares com Ponto e Calculadora Integrada',
+          es: 'Máscara de Miles con Punto y Calculadora Integrada',
+        },
+        description: {
+          pt: 'Permite digitar livremente operações matemáticas (+, -, *, /) enquanto digita e formata automaticamente com separador de milhar por ponto (1.480.000) e decimais corretos ao desfocar ou confirmar.',
+          es: 'Permite ingresar libremente operaciones matemáticas (+, -, *, /) mientras escribe y formatea automáticamente con separador de miles por punto (1.480.000) y decimales adecuados al desenfocar o confirmar.',
+        },
+      },
+      {
+        icon: 'Filter',
+        title: {
+          pt: 'Filtro Rápido por Conta, Remoção de Cota 1/1 e CDI Contextual',
+          es: 'Filtro Rápido por Cuenta, Remoción de Cuota 1/1 y CDI Contextual',
+        },
+        description: {
+          pt: 'Filtre extratos instantaneamente ao clicar na tag da conta, ocultação limpa de badges de parcela única (1/1) e exibição do benchmark CDI restrita a contas em Reais (BRL).',
+          es: 'Filtre movimientos al instante con un clic en la etiqueta de la cuenta, ocultación limpia de etiquetas de cuota única (1/1) y visualización del índice CDI restringida a cuentas en Reales (BRL).',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.9',
     releaseDate: '2026-09-22',

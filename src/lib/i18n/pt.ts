@@ -295,7 +295,7 @@ export const pt = {
     customRange: 'Intervalo',
     transactionsCount: 'lançamentos',
     singleTransactionCount: 'lançamento',
-    installmentBadge: 'Cota {current}/{total}',
+    installmentBadge: 'Parcela {current}/{total}',
     cashbackBadge: 'Reintegro: -{amount}',
     deleteInstallmentOnly: 'Excluir apenas esta parcela',
     deleteAllInstallments: 'Excluir todas as parcelas deste grupo',

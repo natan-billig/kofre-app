@@ -213,7 +213,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
 
             {/* Badges de Parcelamento e Reintegro */}
             <div className="flex items-center justify-center gap-2 flex-wrap mt-2">
-              {transaction.installment_number && transaction.total_installments && (
+              {transaction.installment_number && transaction.total_installments && transaction.total_installments > 1 && (
                 <span className="text-xs px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 flex items-center gap-1.5 font-bold">
                   <CreditCard className="w-3.5 h-3.5 text-purple-500" />
                   <span>
@@ -242,7 +242,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
         {/* Detailed Information Grid */}
         <div className="space-y-3 text-xs sm:text-sm">
           {/* Parcelamento / Cuotas */}
-          {transaction.installment_number && transaction.total_installments && (
+          {transaction.installment_number && transaction.total_installments && transaction.total_installments > 1 && (
             <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
               <span className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-purple-500" />

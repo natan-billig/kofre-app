@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import type { Wallet, Transaction, Profile } from '../lib/types'
 import { deleteWallet, archiveWallet, updateWalletName, updateWallet, calculateYieldProjection } from '../lib/walletService'
 import { calculateAccountBalance } from '../lib/accountingService'
-import { formatCurrency } from '../lib/formatters'
+import { formatCurrency, formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
@@ -51,13 +51,15 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Tab & base edit states
   const [currentName, setCurrentName] = useState(wallet.name || '')
   const [accountName, setAccountName] = useState(wallet.name || '')
   const [isUpdatingName, setIsUpdatingName] = useState(false)
   const [nameError, setNameError] = useState<string | null>(null)
   const [nameSuccess, setNameSuccess] = useState(false)
 
-  // Initial balance state
+  // Balance edit state
   const initBalStr = wallet.initial_balance != null ? wallet.initial_balance.toString() : '0'
   const [initialBalance, setInitialBalance] = useState(initBalStr)
   const [currentInitialBalance, setCurrentInitialBalance] = useState(initBalStr)
@@ -65,7 +67,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
   const [balanceError, setBalanceError] = useState<string | null>(null)
   const [balanceSuccess, setBalanceSuccess] = useState(false)
 
-  // Savings target amount state
+  // Target amount state (for savings)
   const initTargetStr = wallet.target_amount != null ? wallet.target_amount.toString() : ''
   const [targetAmount, setTargetAmount] = useState(initTargetStr)
   const [currentTargetAmount, setCurrentTargetAmount] = useState(initTargetStr)
@@ -80,8 +82,9 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
     (wallet.annual_yield_rate != null && wallet.annual_yield_rate > 0)
   )
   const [hasYield, setHasYield] = useState(initialHasYield)
+  const initialBenchmark = wallet.yield_benchmark || (wallet.currency === 'BRL' ? 'cdi' : 'fixed_annual')
   const [yieldBenchmark, setYieldBenchmark] = useState<'cdi' | 'fixed_annual' | 'fixed_monthly'>(
-    wallet.yield_benchmark || 'cdi'
+    wallet.currency !== 'BRL' && initialBenchmark === 'cdi' ? 'fixed_annual' : initialBenchmark
   )
   const [yieldPercentage, setYieldPercentage] = useState(
     wallet.yield_percentage != null ? wallet.yield_percentage.toString() : '100'
@@ -207,7 +210,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
     setBalanceSuccess(false)
 
     const trimmed = initialBalance.trim()
-    const parsed = trimmed ? Number(trimmed) : 0
+    const parsed = trimmed ? sanitizeNumericInput(trimmed, wallet.currency) : 0
     if (isNaN(parsed)) {
       setBalanceError(t('manageAccount.invalidNumber'))
       return
@@ -261,7 +264,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
     }
 
     if (creditLimit.trim()) {
-      parsedLimit = Number(creditLimit.trim())
+      parsedLimit = sanitizeNumericInput(creditLimit.trim(), wallet.currency)
       if (isNaN(parsedLimit) || parsedLimit < 0) {
         parsedLimit = null
       }
@@ -293,7 +296,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
 
     let parsed: number | null = null
     if (targetAmount.trim()) {
-      parsed = Number(targetAmount.trim())
+      parsed = sanitizeNumericInput(targetAmount.trim(), wallet.currency)
       if (isNaN(parsed) || parsed < 0) {
         setTargetError(t('manageAccount.invalidNumber'))
         return
@@ -335,7 +338,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
           return
         }
         if (yieldLimitAmount.trim()) {
-          parsedLimit = parseFloat(yieldLimitAmount.trim())
+          parsedLimit = sanitizeNumericInput(yieldLimitAmount.trim(), wallet.currency)
           if (isNaN(parsedLimit) || parsedLimit < 0) {
             parsedLimit = null
           }
@@ -377,7 +380,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
 
     let parsed: number | null = null
     if (overdraftLimit.trim()) {
-      parsed = Number(overdraftLimit.trim())
+      parsed = sanitizeNumericInput(overdraftLimit.trim(), wallet.currency)
       if (isNaN(parsed) || parsed < 0) {
         setOverdraftError(t('manageAccount.invalidNumber'))
         return
@@ -506,13 +509,23 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
           </label>
           <div className="flex gap-2">
             <input
-              type="number"
-              step="any"
+              type="text"
+              inputMode="decimal"
               value={initialBalance}
               onChange={(e) => {
                 setInitialBalance(e.target.value)
                 setBalanceSuccess(false)
                 setBalanceError(null)
+              }}
+              onBlur={() => {
+                if (initialBalance.trim()) {
+                  setInitialBalance(formatMaskedInput(initialBalance, wallet.currency))
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && initialBalance.trim()) {
+                  setInitialBalance(formatMaskedInput(initialBalance, wallet.currency))
+                }
               }}
               placeholder="0"
               className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors font-mono"
@@ -522,7 +535,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
               disabled={
                 isUpdatingBalance ||
                 initialBalance.trim() === currentInitialBalance ||
-                isNaN(Number(initialBalance))
+                isNaN(sanitizeNumericInput(initialBalance, wallet.currency))
               }
               className="cursor-pointer px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
             >
@@ -563,14 +576,23 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
             </label>
             <div className="flex gap-2">
               <input
-                type="number"
-                min="0"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 value={targetAmount}
                 onChange={(e) => {
                   setTargetAmount(e.target.value)
                   setTargetSuccess(false)
                   setTargetError(null)
+                }}
+                onBlur={() => {
+                  if (targetAmount.trim()) {
+                    setTargetAmount(formatMaskedInput(targetAmount, wallet.currency))
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && targetAmount.trim()) {
+                    setTargetAmount(formatMaskedInput(targetAmount, wallet.currency))
+                  }
                 }}
                 placeholder="Ex: 5000000"
                 className="flex-1 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/30 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors font-mono"
@@ -580,7 +602,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
                 disabled={
                   isUpdatingTarget ||
                   targetAmount.trim() === currentTargetAmount ||
-                  (targetAmount.trim() !== '' && isNaN(Number(targetAmount)))
+                  (targetAmount.trim() !== '' && isNaN(sanitizeNumericInput(targetAmount, wallet.currency)))
                 }
                 className="cursor-pointer px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
               >
@@ -641,21 +663,23 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
                   <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
                     {language === 'es' ? 'Tipo de Rentabilidad' : 'Tipo de Rentabilidade'}
                   </span>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setYieldBenchmark('cdi')
-                        setYieldSuccess(false)
-                      }}
-                      className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
-                        yieldBenchmark === 'cdi'
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                      }`}
-                    >
-                      % CDI
-                    </button>
+                  <div className={`grid ${wallet.currency === 'BRL' ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`}>
+                    {wallet.currency === 'BRL' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setYieldBenchmark('cdi')
+                          setYieldSuccess(false)
+                        }}
+                        className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                          yieldBenchmark === 'cdi'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                        }`}
+                      >
+                        % CDI
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -715,14 +739,23 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
                         {language === 'es' ? 'Límite / Techo para Tasa Especial (Opcional)' : 'Limite / Teto para Taxa Especial (Opcional)'}
                       </label>
                       <input
-                        type="number"
-                        min="0"
-                        step="any"
+                        type="text"
+                        inputMode="decimal"
                         value={yieldLimitAmount}
                         onChange={(e) => {
                           setYieldLimitAmount(e.target.value)
                           setYieldSuccess(false)
                           setYieldError(null)
+                        }}
+                        onBlur={() => {
+                          if (yieldLimitAmount.trim()) {
+                            setYieldLimitAmount(formatMaskedInput(yieldLimitAmount, wallet.currency))
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && yieldLimitAmount.trim()) {
+                            setYieldLimitAmount(formatMaskedInput(yieldLimitAmount, wallet.currency))
+                          }
                         }}
                         placeholder="Ex: 5000 (Caixinha Turbo)"
                         className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
@@ -849,14 +882,23 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
             </label>
             <div className="flex gap-2">
               <input
-                type="number"
-                min="0"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 value={overdraftLimit}
                 onChange={(e) => {
                   setOverdraftLimit(e.target.value)
                   setOverdraftSuccess(false)
                   setOverdraftError(null)
+                }}
+                onBlur={() => {
+                  if (overdraftLimit.trim()) {
+                    setOverdraftLimit(formatMaskedInput(overdraftLimit, wallet.currency))
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && overdraftLimit.trim()) {
+                    setOverdraftLimit(formatMaskedInput(overdraftLimit, wallet.currency))
+                  }
                 }}
                 placeholder="Ex: 1000000"
                 className="flex-1 bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-500/30 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors font-mono"
@@ -866,7 +908,7 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
                 disabled={
                   isUpdatingOverdraft ||
                   overdraftLimit.trim() === currentOverdraftLimit ||
-                  (overdraftLimit.trim() !== '' && isNaN(Number(overdraftLimit)))
+                  (overdraftLimit.trim() !== '' && isNaN(sanitizeNumericInput(overdraftLimit, wallet.currency)))
                 }
                 className="cursor-pointer px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
               >
@@ -951,14 +993,23 @@ const ManageAccountModalForm: React.FC<ManageAccountModalFormProps> = ({
                 {t('createAccount.creditLimit')} ({wallet.currency})
               </label>
               <input
-                type="number"
-                min="0"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 value={creditLimit}
                 onChange={(e) => {
                   setCreditLimit(e.target.value)
                   setCardSuccess(false)
                   setCardError(null)
+                }}
+                onBlur={() => {
+                  if (creditLimit.trim()) {
+                    setCreditLimit(formatMaskedInput(creditLimit, wallet.currency))
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && creditLimit.trim()) {
+                    setCreditLimit(formatMaskedInput(creditLimit, wallet.currency))
+                  }
                 }}
                 placeholder="Ex: 5000000"
                 className="w-full bg-white dark:bg-slate-900 border border-purple-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"

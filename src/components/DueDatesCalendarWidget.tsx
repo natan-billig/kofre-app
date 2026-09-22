@@ -71,12 +71,12 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   // 3. Montar lista de movimentações previstas com data de vencimento/recebimento
   const commitments: DueCommitmentItem[] = []
 
-  // Checagem de desduplicação de receitas:
-  // Se existirem receitas fixas recorrentes cadastradas para o escopo atual,
-  // ou receitas agendadas no mês selecionado, NÃO injetar o Salário Base do perfil
+  // Checagem de desduplicação de receitas na moeda ativa:
+  // Se existirem receitas fixas recorrentes cadastradas para o escopo atual na moeda ativa,
+  // ou receitas agendadas no mês selecionado na moeda ativa, NÃO injetar o Salário Base do perfil
   // de forma redundante no fluxo de caixa.
   const activeRecurringIncomes = recurringBills.filter(
-    (b) => b.is_active && b.type === 'income' && b.scope === currentScope
+    (b) => b.is_active && b.type === 'income' && b.scope === currentScope && b.currency === currencyToUse
   )
 
   const selectedYear = selectedMonthDate.getFullYear()
@@ -86,6 +86,9 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     if (t.is_paid !== false && t.status !== 'pending') return false
     if (t.type !== 'income') return false
     if (!t.transaction_date) return false
+    const w = scopedWallets.find((wallet) => wallet.id === t.wallet_id)
+    const txCurr = (t.original_currency || w?.currency || 'PYG') as CurrencyCode
+    if (txCurr !== currencyToUse) return false
     const parts = t.transaction_date.split('-')
     if (parts.length < 2) return false
     const tYear = parseInt(parts[0], 10)
@@ -95,15 +98,14 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
   const hasExplicitIncomes = activeRecurringIncomes.length > 0 || hasScheduledIncomes
 
-  // A. Salário Base do Perfil (injetado estritamente como fallback se NÃO houver receitas cadastradas)
+  // A. Salário Base do Perfil (Segregação Bimonetária: só injeta se a moeda do perfil for a mesma da visualização)
   const profileBaseIncome =
     userProfile?.base_monthly_income != null && userProfile.base_monthly_income > 0
       ? Number(userProfile.base_monthly_income)
       : 0
   const profileCurrency = userProfile?.preferred_currency || preferredCurrency
 
-  if (!hasExplicitIncomes && profileBaseIncome > 0) {
-    const convertedSalary = convertAmount(profileBaseIncome, profileCurrency, currencyToUse)
+  if (!hasExplicitIncomes && profileBaseIncome > 0 && profileCurrency === currencyToUse) {
     const salaryDay =
       userProfile?.budget_start_day &&
       userProfile.budget_start_day > 0 &&
@@ -114,7 +116,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     commitments.push({
       id: 'profile-base-salary',
       title: t('calendar.baseSalary') || (language === 'es' ? 'Sueldo Base' : 'Salário Base'),
-      amount: convertedSalary,
+      amount: profileBaseIncome,
       currency: currencyToUse,
       type: 'base_salary',
       flowType: 'in',
@@ -124,19 +126,19 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     })
   }
 
-  // B. Faturas de Cartão de Crédito
-  const creditCards = scopedWallets.filter((w) => w.account_type === 'credit_card')
+  // B. Faturas de Cartão de Crédito (estritamente na moeda ativa)
+  const creditCards = scopedWallets.filter(
+    (w) => w.account_type === 'credit_card' && w.currency === currencyToUse
+  )
 
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, selectedMonthDate)
     const invoiceAmount = Math.max(0, details.currentInvoiceAmount)
     if (invoiceAmount > 0 && card.due_day) {
-      const convertedInvoice = convertAmount(invoiceAmount, card.currency, currencyToUse)
-      const titleSuffix = card.currency !== currencyToUse ? ` (${formatCurrency(invoiceAmount, card.currency)})` : ''
       commitments.push({
         id: `card-${card.id}`,
-        title: `${t('calendar.cardInvoice') || 'Fatura'}: ${card.name}${titleSuffix}`,
-        amount: convertedInvoice,
+        title: `${t('calendar.cardInvoice') || 'Fatura'}: ${card.name}`,
+        amount: invoiceAmount,
         currency: currencyToUse,
         type: 'card_invoice',
         flowType: 'out',
@@ -147,26 +149,50 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     }
   }
 
-  // C. Contas Fixas Vigentes (Despesas e Receitas com conversão cambial)
+  // C. Contas Fixas Vigentes (Segregação Bimonetária Real)
   for (const bill of recurringBills) {
     if (!bill.is_active) continue
     if (bill.scope !== currentScope) continue
 
     const isIncome = bill.type === 'income'
-    // Na saída da fatura do cartão ou débito em conta, considerar o valor total bruto para refletir o débito integral real
     const grossAmount = (!isIncome && bill.total_amount != null && Number(bill.total_amount) > 0)
       ? Number(bill.total_amount)
       : Number(bill.amount)
 
     if (grossAmount <= 0) continue
 
-    const convertedAmount = convertAmount(grossAmount, bill.currency, currencyToUse)
+    const linkedWallet = bill.wallet_id ? scopedWallets.find((w) => w.id === bill.wallet_id) : null
+
+    let finalAmount: number | null = null
+
+    if (currencyToUse === 'BRL') {
+      if (bill.currency === 'BRL') {
+        finalAmount = grossAmount
+      } else if (linkedWallet && linkedWallet.currency === 'BRL') {
+        finalAmount = convertAmount(grossAmount, bill.currency, 'BRL')
+      }
+    } else if (currencyToUse === 'PYG') {
+      if (bill.currency === 'PYG') {
+        finalAmount = grossAmount
+      } else if (bill.currency === 'USD' && linkedWallet && linkedWallet.currency === 'PYG') {
+        finalAmount = convertAmount(grossAmount, 'USD', 'PYG')
+      }
+    } else {
+      if (bill.currency === currencyToUse) {
+        finalAmount = grossAmount
+      } else if (linkedWallet && linkedWallet.currency === currencyToUse) {
+        finalAmount = convertAmount(grossAmount, bill.currency, currencyToUse)
+      }
+    }
+
+    if (finalAmount === null || finalAmount <= 0) continue
+
     const titleSuffix = bill.currency !== currencyToUse ? ` (${formatCurrency(grossAmount, bill.currency)})` : ''
 
     commitments.push({
       id: `bill-${bill.id}`,
       title: `${bill.name}${titleSuffix}`,
-      amount: convertedAmount,
+      amount: finalAmount,
       currency: currencyToUse,
       type: isIncome ? 'recurring_income' : 'recurring_bill',
       flowType: isIncome ? 'in' : 'out',
@@ -176,17 +202,15 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     })
   }
 
-  // D. Dívidas / Empréstimos a Pagar (i_owe com conversão cambial)
+  // D. Dívidas / Empréstimos a Pagar (estritamente na moeda ativa)
   for (const debt of debts) {
     if (debt.status !== 'pending') continue
     if (debt.scope !== currentScope) continue
     if (debt.type !== 'i_owe') continue
+    if (debt.currency !== currencyToUse) continue
 
     const debtAmt = Number(debt.amount) || 0
     if (debtAmt <= 0) continue
-
-    const convertedDebt = convertAmount(debtAmt, debt.currency, currencyToUse)
-    const titleSuffix = debt.currency !== currencyToUse ? ` (${formatCurrency(debtAmt, debt.currency)})` : ''
 
     let dueDay = 28 // fallback
     if (debt.due_date) {
@@ -198,8 +222,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
     commitments.push({
       id: `debt-${debt.id}`,
-      title: `${t('calendar.debtPayment') || 'Pagamento'}: ${debt.contact_name}${titleSuffix}`,
-      amount: convertedDebt,
+      title: `${t('calendar.debtPayment') || 'Pagamento'}: ${debt.contact_name}`,
+      amount: debtAmt,
       currency: currencyToUse,
       type: 'debt',
       flowType: 'out',
@@ -225,6 +249,17 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     const txCurrency = (t.original_currency || wallet.currency || 'PYG') as CurrencyCode
     const rawTxAmount = Number(t.amount) || 0
     if (rawTxAmount <= 0) continue
+
+    // Segregação bimonetária estrita em agendadas:
+    let includeTx = false
+    if (currencyToUse === 'BRL') {
+      includeTx = txCurrency === 'BRL' || wallet.currency === 'BRL'
+    } else if (currencyToUse === 'PYG') {
+      includeTx = txCurrency === 'PYG' || (txCurrency === 'USD' && wallet.currency === 'PYG')
+    } else {
+      includeTx = txCurrency === currencyToUse || wallet.currency === currencyToUse
+    }
+    if (!includeTx) continue
 
     const convertedTxAmount = convertAmount(rawTxAmount, txCurrency, currencyToUse)
     const titleSuffix = txCurrency !== currencyToUse ? ` (${formatCurrency(rawTxAmount, txCurrency)})` : ''

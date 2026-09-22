@@ -637,14 +637,42 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       {/* Transferred From/To route */}
                       {tItem.type === 'transfer' && (
                         <span className="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1 font-medium">
-                          <span>{sourceWallet?.name || (language === 'es' ? 'Origen' : 'Origem')}</span>
+                          {sourceWallet ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedWalletId(effectiveWalletId === sourceWallet.id ? '' : sourceWallet.id)
+                              }}
+                              className="hover:underline cursor-pointer font-semibold"
+                              title={effectiveWalletId === sourceWallet.id ? 'Remover filtro' : `Filtrar por ${sourceWallet.name}`}
+                            >
+                              {sourceWallet.name}
+                            </button>
+                          ) : (
+                            <span>{language === 'es' ? 'Origen' : 'Origem'}</span>
+                          )}
                           <span>➔</span>
-                          <span>{destWallet?.name || (language === 'es' ? 'Destino' : 'Destino')}</span>
+                          {destWallet ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedWalletId(effectiveWalletId === destWallet.id ? '' : destWallet.id)
+                              }}
+                              className="hover:underline cursor-pointer font-semibold"
+                              title={effectiveWalletId === destWallet.id ? 'Remover filtro' : `Filtrar por ${destWallet.name}`}
+                            >
+                              {destWallet.name}
+                            </button>
+                          ) : (
+                            <span>{language === 'es' ? 'Destino' : 'Destino'}</span>
+                          )}
                         </span>
                       )}
 
-                      {/* Parcelamento / Cuota Badge */}
-                      {tItem.installment_number && tItem.total_installments && (
+                      {/* Parcelamento / Cuota Badge (Apenas se total_installments > 1) */}
+                      {tItem.installment_number && tItem.total_installments && tItem.total_installments > 1 && (
                         <span className="text-[11px] px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 flex items-center gap-1 font-semibold">
                           <CreditCard className="w-3 h-3 text-purple-500" />
                           <span>
@@ -683,13 +711,25 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       <span>&bull;</span>
                       <span>{formatDate(tItem.transaction_date, language)}</span>
 
-                      {/* Account indicator if not transfer */}
+                      {/* Account indicator if not transfer (Filtro rápido ao clicar) */}
                       {tItem.type !== 'transfer' && sourceWallet && (
                         <>
                           <span>&bull;</span>
-                          <span className="text-slate-700 dark:text-slate-300 font-medium">
-                            {sourceWallet.name}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedWalletId(effectiveWalletId === sourceWallet.id ? '' : sourceWallet.id)
+                            }}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all cursor-pointer ${
+                              effectiveWalletId === sourceWallet.id
+                                ? 'bg-indigo-600 text-white shadow-xs'
+                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400'
+                            }`}
+                            title={effectiveWalletId === sourceWallet.id ? 'Remover filtro de conta' : `Filtrar por ${sourceWallet.name}`}
+                          >
+                            <span>{sourceWallet.name}</span>
+                          </button>
                         </>
                       )}
 

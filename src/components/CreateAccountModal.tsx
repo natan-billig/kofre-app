@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { AccountType, CurrencyCode, WalletScope } from '../lib/types'
 import { createWallet } from '../lib/walletService'
 import { getOrCreateMyFamilyId } from '../lib/familyService'
+import { formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import { X, Loader2, Building2, Banknote, CreditCard, PiggyBank, Users2, User, TrendingUp } from 'lucide-react'
 
@@ -27,7 +28,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [creditLimit, setCreditLimit] = useState<string>('')
   const [targetAmount, setTargetAmount] = useState<string>('')
   const [hasYield, setHasYield] = useState(false)
-  const [yieldBenchmark, setYieldBenchmark] = useState<'cdi' | 'fixed_annual' | 'fixed_monthly'>('cdi')
+  const [yieldBenchmark, setYieldBenchmark] = useState<'cdi' | 'fixed_annual' | 'fixed_monthly'>('fixed_annual')
   const [yieldPercentage, setYieldPercentage] = useState<string>('100')
   const [yieldLimitAmount, setYieldLimitAmount] = useState<string>('')
   const [annualYieldRate, setAnnualYieldRate] = useState<string>('12')
@@ -72,12 +73,12 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         familyId = await getOrCreateMyFamilyId()
       }
 
-      const parsedInitialBalance = initialBalance.trim() ? Number(initialBalance.trim()) : 0
-      const parsedCreditLimit = creditLimit.trim() ? Number(creditLimit.trim()) : null
-      const parsedTargetAmount = targetAmount.trim() ? Number(targetAmount.trim()) : null
+      const parsedInitialBalance = initialBalance.trim() ? sanitizeNumericInput(initialBalance, currency) : 0
+      const parsedCreditLimit = creditLimit.trim() ? sanitizeNumericInput(creditLimit, currency) : null
+      const parsedTargetAmount = targetAmount.trim() ? sanitizeNumericInput(targetAmount, currency) : null
       const parsedYieldLimit =
         accountType === 'savings' && hasYield && yieldBenchmark === 'cdi' && yieldLimitAmount.trim()
-          ? parseFloat(yieldLimitAmount.trim())
+          ? sanitizeNumericInput(yieldLimitAmount, currency)
           : null
 
       await createWallet({
@@ -257,7 +258,12 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 <button
                   key={curr}
                   type="button"
-                  onClick={() => setCurrency(curr)}
+                  onClick={() => {
+                    setCurrency(curr)
+                    if (curr !== 'BRL' && yieldBenchmark === 'cdi') {
+                      setYieldBenchmark('fixed_annual')
+                    }
+                  }}
                   className={`py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                     currency === curr
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 shadow-sm'
@@ -312,10 +318,20 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               ({currency})
             </label>
             <input
-              type="number"
-              step="any"
+              type="text"
+              inputMode="decimal"
               value={initialBalance}
               onChange={(e) => setInitialBalance(e.target.value)}
+              onBlur={() => {
+                if (initialBalance.trim()) {
+                  setInitialBalance(formatMaskedInput(initialBalance, currency))
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && initialBalance.trim()) {
+                  setInitialBalance(formatMaskedInput(initialBalance, currency))
+                }
+              }}
               placeholder="0"
               className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 text-sm outline-none transition-all font-mono"
             />
@@ -334,11 +350,20 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 <span>{t('createAccount.targetAmount')} ({currency})</span>
               </label>
               <input
-                type="number"
-                min="0"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 value={targetAmount}
                 onChange={(e) => setTargetAmount(e.target.value)}
+                onBlur={() => {
+                  if (targetAmount.trim()) {
+                    setTargetAmount(formatMaskedInput(targetAmount, currency))
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && targetAmount.trim()) {
+                    setTargetAmount(formatMaskedInput(targetAmount, currency))
+                  }
+                }}
                 placeholder={t('createAccount.targetAmountPlaceholder')}
                 className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-amber-200 dark:border-amber-500/30 focus:border-amber-500 text-slate-900 dark:text-slate-100 text-sm outline-none font-mono"
               />
@@ -370,18 +395,20 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                     <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
                       {language === 'es' ? 'Tipo de Rentabilidad' : 'Tipo de Rentabilidade'}
                     </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setYieldBenchmark('cdi')}
-                        className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
-                          yieldBenchmark === 'cdi'
-                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                        }`}
-                      >
-                        % CDI
-                      </button>
+                    <div className={`grid ${currency === 'BRL' ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`}>
+                      {currency === 'BRL' && (
+                        <button
+                          type="button"
+                          onClick={() => setYieldBenchmark('cdi')}
+                          className={`py-1 px-2 rounded-lg text-xs font-medium border transition-all ${
+                            yieldBenchmark === 'cdi'
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                          }`}
+                        >
+                          % CDI
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setYieldBenchmark('fixed_annual')}
@@ -431,12 +458,21 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                           {language === 'es' ? 'Límite / Techo para Tasa Especial (Opcional)' : 'Limite / Teto para Taxa Especial (Opcional)'}
                         </label>
                         <input
-                          type="number"
-                          min="0"
-                          step="any"
+                          type="text"
+                          inputMode="decimal"
                           value={yieldLimitAmount}
                           onChange={(e) => setYieldLimitAmount(e.target.value)}
-                          placeholder="Ex: 5000 (Caixinha Turbo)"
+                          onBlur={() => {
+                            if (yieldLimitAmount.trim()) {
+                              setYieldLimitAmount(formatMaskedInput(yieldLimitAmount, currency))
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && yieldLimitAmount.trim()) {
+                              setYieldLimitAmount(formatMaskedInput(yieldLimitAmount, currency))
+                            }
+                          }}
+                          placeholder="Ex: 5.000 (Caixinha Turbo)"
                           className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/30 focus:border-emerald-500 text-slate-900 dark:text-slate-100 text-xs outline-none font-mono"
                         />
                         <p className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -481,11 +517,20 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 <span>{t('createAccount.checkingOverdraftLimit')} ({currency})</span>
               </label>
               <input
-                type="number"
-                min="0"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(e.target.value)}
+                onBlur={() => {
+                  if (creditLimit.trim()) {
+                    setCreditLimit(formatMaskedInput(creditLimit, currency))
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && creditLimit.trim()) {
+                    setCreditLimit(formatMaskedInput(creditLimit, currency))
+                  }
+                }}
                 placeholder="Ex: 1000000"
                 className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-sky-200 dark:border-sky-500/30 focus:border-sky-500 text-slate-900 dark:text-slate-100 text-sm outline-none font-mono"
               />
@@ -503,13 +548,22 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   {t('createAccount.creditLimit')} ({currency})
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
                   value={creditLimit}
                   onChange={(e) => setCreditLimit(e.target.value)}
+                  onBlur={() => {
+                    if (creditLimit.trim()) {
+                      setCreditLimit(formatMaskedInput(creditLimit, currency))
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && creditLimit.trim()) {
+                      setCreditLimit(formatMaskedInput(creditLimit, currency))
+                    }
+                  }}
                   placeholder="Ex: 5000000"
-                  className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-purple-200 dark:border-slate-800 focus:border-purple-500 text-slate-900 dark:text-slate-100 text-sm outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-purple-200 dark:border-slate-800 focus:border-purple-500 text-slate-900 dark:text-slate-100 text-sm outline-none font-mono"
                 />
               </div>
 

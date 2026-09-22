@@ -17,7 +17,7 @@ import {
 } from '../lib/accountingService'
 import { fetchCategories, DEFAULT_MACRO_MAP } from '../lib/categoryService'
 import { CategoryManagerModal } from './CategoryManagerModal'
-import { formatCurrency, formatExchangeRate } from '../lib/formatters'
+import { formatCurrency, formatExchangeRate, formatMaskedInput, sanitizeNumericInput } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   X,
@@ -178,9 +178,15 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
     return null
   }, [amount])
 
+  const sourceWallet = selectableWallets.find((w) => w.id === sourceWalletId)
+  const destWallet = selectableWallets.find((w) => w.id === destWalletId)
+
   const resolveAmountMath = () => {
+    const curr = sourceWallet?.currency || 'PYG'
     if (mathPreview !== null) {
-      setAmount(String(mathPreview))
+      setAmount(formatMaskedInput(mathPreview, curr))
+    } else if (amount.trim()) {
+      setAmount(formatMaskedInput(amount, curr))
     }
   }
 
@@ -192,8 +198,11 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
   }, [destAmount])
 
   const resolveDestAmountMath = () => {
+    const curr = destWallet?.currency || 'PYG'
     if (destMathPreview !== null) {
-      setDestAmount(String(destMathPreview))
+      setDestAmount(formatMaskedInput(destMathPreview, curr))
+    } else if (destAmount.trim()) {
+      setDestAmount(formatMaskedInput(destAmount, curr))
     }
   }
 
@@ -210,9 +219,6 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-
-  const sourceWallet = selectableWallets.find((w) => w.id === sourceWalletId)
-  const destWallet = selectableWallets.find((w) => w.id === destWalletId)
 
   const isCreditCardExpense = type === 'expense' && sourceWallet?.account_type === 'credit_card'
 
@@ -241,7 +247,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       : transactionDate
   )
 
-  const numAmount = mathPreview !== null ? mathPreview : (parseFloat(amount) || 0)
+  const numAmount = mathPreview !== null ? mathPreview : sanitizeNumericInput(amount, sourceWallet?.currency || 'PYG')
   const sourceCurrency = sourceWallet?.currency || 'PYG'
 
   let perInstallmentAmount = numAmount
@@ -375,7 +381,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
       }
 
       if (isCrossCurrencyTransfer) {
-        const parsedDest = destMathPreview !== null ? destMathPreview : parseFloat(destAmount)
+        const parsedDest = destMathPreview !== null ? destMathPreview : sanitizeNumericInput(destAmount, destWallet?.currency || 'PYG')
         if (!parsedDest || parsedDest <= 0) {
           setErrorMsg(t('quickModal.fillRequired'))
           return
@@ -389,7 +395,7 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
     let numOrigAmount: number | null = null
     let origCurr: CurrencyCode | null = null
     if (type === 'expense' && isBimonetary) {
-      const parsedOrig = parseFloat(originalAmount)
+      const parsedOrig = sanitizeNumericInput(originalAmount, originalCurrency)
       if (parsedOrig && parsedOrig > 0) {
         numOrigAmount = parsedOrig
         origCurr = originalCurrency
@@ -895,11 +901,20 @@ const QuickTransactionForm: React.FC<QuickTransactionModalProps> = ({
                       </span>
                       <div className="grid grid-cols-2 gap-2">
                         <input
-                          type="number"
-                          step="any"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           value={originalAmount}
                           onChange={(e) => setOriginalAmount(e.target.value)}
+                          onBlur={() => {
+                            if (originalAmount.trim()) {
+                              setOriginalAmount(formatMaskedInput(originalAmount, originalCurrency))
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && originalAmount.trim()) {
+                              setOriginalAmount(formatMaskedInput(originalAmount, originalCurrency))
+                            }
+                          }}
                           placeholder="Ex: 10.00"
                           className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm outline-none"
                         />

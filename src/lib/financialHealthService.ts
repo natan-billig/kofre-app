@@ -45,32 +45,45 @@ export function calculateFinancialHealth({
     (w) => !w.is_archived && w.type === currentScope
   )
 
-  // 2. Receita Base do Perfil:
-  // O denominador "RECEITA BASE" consulta ESTRITAMENTE o userProfile.base_monthly_income
-  // correspondente à moeda ativa (ex.: ₲ 3.700.000 em PYG).
-  // NUNCA utiliza receitas fixas recorrentes ou ingressos fracionados de transações.
+  // 2. Receita Base do Perfil (Segregação Bimonetária Real):
+  // O denominador "RECEITA BASE" consulta a renda correspondente à moeda ativa:
+  // - Se a moeda do perfil for a mesma da visualização, utiliza base_monthly_income.
+  // - NUNCA converte renda de PYG para BRL (nem BRL para PYG), pois são economias desvinculadas.
+  //   Em moedas secundárias, busca receitas recorrentes ativas cadastradas naquela moeda (ex.: salário em BRL).
   const profileCurrency: CurrencyCode = userProfile?.preferred_currency || preferredCurrency || 'PYG'
   const rawProfileIncome =
     userProfile?.base_monthly_income != null && userProfile.base_monthly_income > 0
       ? Number(userProfile.base_monthly_income)
       : 0
 
-  const baseIncome =
-    rawProfileIncome > 0 ? convertAmount(rawProfileIncome, profileCurrency, currency) : 0
+  let baseIncome = 0
+  if (profileCurrency === currency && rawProfileIncome > 0) {
+    baseIncome = rawProfileIncome
+  } else {
+    // Buscar receitas recorrentes ativas cadastradas diretamente na moeda ativa
+    const activeCurrencyIncomes = recurringBills.filter(
+      (b) => b.is_active && b.type === 'income' && b.scope === currentScope && b.currency === currency
+    )
+    if (activeCurrencyIncomes.length > 0) {
+      baseIncome = activeCurrencyIncomes.reduce((acc, b) => acc + (Number(b.amount) || 0), 0)
+    }
+  }
   const isIncomeConfigured = baseIncome > 0
 
-  // 3. Faturas de cartões de crédito no escopo (convertidas para a moeda ativa)
-  const creditCards = scopedWallets.filter((w) => w.account_type === 'credit_card')
+  // 3. Faturas de cartões de crédito no escopo:
+  // Estritamente cartões denominados na moeda ativa (ex: cartões em BRL para DTI em BRL, cartões em PYG para DTI em PYG)
+  const creditCards = scopedWallets.filter(
+    (w) => w.account_type === 'credit_card' && w.currency === currency
+  )
 
   let cardInvoicesAmount = 0
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, referenceDate)
     const invoiceInCardCurrency = Math.max(0, details.currentInvoiceAmount)
-    const convertedInvoice = convertAmount(invoiceInCardCurrency, card.currency, currency)
-    cardInvoicesAmount += convertedInvoice
+    cardInvoicesAmount += invoiceInCardCurrency
   }
 
-  // 4. Contas Fixas Vigentes no escopo com deduplicação de débito em cartão
+  // 4. Contas Fixas Vigentes no escopo com segregação bimonetária e deduplicação de débito em cartão
   let recurringBillsAmount = 0
   for (const bill of recurringBills) {
     if (!bill.is_active) continue
@@ -80,7 +93,6 @@ export function calculateFinancialHealth({
     // Deduplicação de Contas Fixas Debitadas em Cartão:
     // Se a conta vinculada for um Cartão de Crédito ('credit_card'), o valor já
     // compõe a fatura do cartão no bloco "FATURAS DE CARTÃO".
-    // Ignoramos este valor para não duplicar despesas como mensalidades pagas via cartão.
     const linkedWalletId =
       (bill as unknown as { destination_wallet_id?: string; account_id?: string }).destination_wallet_id ||
       (bill as unknown as { destination_wallet_id?: string; account_id?: string }).account_id ||
@@ -99,12 +111,33 @@ export function calculateFinancialHealth({
 
     if (effectiveAmount <= 0) continue
 
-    // Conversão Cambial Automática se a moeda do fixo for diferente da moeda de visualização
-    const convertedBillAmount = convertAmount(effectiveAmount, bill.currency, currency)
-    recurringBillsAmount += convertedBillAmount
+    // Segregação Bimonetária Estrita:
+    if (currency === 'BRL') {
+      // Em BRL: apenas contas em BRL ou com carteira vinculada em BRL. NUNCA converter PYG para BRL.
+      if (bill.currency === 'BRL') {
+        recurringBillsAmount += effectiveAmount
+      } else if (linkedWallet && linkedWallet.currency === 'BRL') {
+        recurringBillsAmount += convertAmount(effectiveAmount, bill.currency, 'BRL')
+      }
+    } else if (currency === 'PYG') {
+      // Em PYG: apenas contas em PYG, ou contas em USD se a carteira debitada for em PYG (ex: streaming em USD cobrado no PYG).
+      // Contas em BRL NUNCA entram no DTI em PYG.
+      if (bill.currency === 'PYG') {
+        recurringBillsAmount += effectiveAmount
+      } else if (bill.currency === 'USD' && linkedWallet && linkedWallet.currency === 'PYG') {
+        recurringBillsAmount += convertAmount(effectiveAmount, 'USD', 'PYG')
+      }
+    } else {
+      // USD ou outras:
+      if (bill.currency === currency) {
+        recurringBillsAmount += effectiveAmount
+      } else if (linkedWallet && linkedWallet.currency === currency) {
+        recurringBillsAmount += convertAmount(effectiveAmount, bill.currency, currency)
+      }
+    }
   }
 
-  // 5. Dívidas a pagar no período (i_owe e status pending)
+  // 5. Dívidas a pagar no período: estritamente na moeda ativa
   let debtsToPayAmount = 0
   for (const debt of debts) {
     if (debt.status !== 'pending') continue
@@ -114,14 +147,15 @@ export function calculateFinancialHealth({
     const rawDebt = Number(debt.amount) || 0
     if (rawDebt <= 0) continue
 
-    const convertedDebt = convertAmount(rawDebt, debt.currency, currency)
-    debtsToPayAmount += convertedDebt
+    if (debt.currency === currency) {
+      debtsToPayAmount += rawDebt
+    }
   }
 
   // 6. Total Comprometido e DTI (%)
   const totalCommitment = cardInvoicesAmount + recurringBillsAmount + debtsToPayAmount
 
-  // Fallback defensivo para evitar divisão por zero se baseIncome <= 0
+  // Se não houver compromissos nem renda na moeda, DTI = 0% e status saudável
   let dtiPercentage = 0
   if (baseIncome > 0) {
     dtiPercentage = Math.round((totalCommitment / baseIncome) * 1000) / 10
