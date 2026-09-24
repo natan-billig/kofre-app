@@ -265,6 +265,7 @@ export interface FinancialHealthMetrics {
   dtiPercentage: number
   safeMargin: number
   status: 'healthy' | 'moderate' | 'critical'
+  isCashOverdrawn?: boolean
 }
 
 export interface DueCommitmentItem {

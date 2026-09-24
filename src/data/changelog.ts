@@ -11,9 +11,41 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.6'
+export const CURRENT_APP_VERSION = '1.9.7'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.7',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Soma Integral de Assinaturas e Trava de Margem Livre no DTI v1.9.7',
+      es: 'Suma Integral de Suscripciones y Bloqueo de Margen Libre en DTI v1.9.7',
+    },
+    highlights: [
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Soma Estrita das 8 Assinaturas do Cartão (₲ 422.548)',
+          es: 'Suma Estricta de las 8 Suscripciones de la Tarjeta (₲ 422.548)',
+        },
+        description: {
+          pt: 'Eliminados bloqueios indevidos de ciclo em getProjectedRecurringBillsAmount para meses futuros. Todas as 8 assinaturas ativas vinculadas ao cartão Atlas TC (F1 TV, TruckSim GPS, Disney+, HBO Max, Crunchyroll, Xbox, Google One e Snapchat+) são computadas sem perdas, projetando com exatidão ₲ 422.548 em Novembro, Dezembro e Janeiro.',
+          es: 'Eliminados bloqueos indebidos de ciclo en getProjectedRecurringBillsAmount para meses futuros. Las 8 suscripciones activas vinculadas a Atlas TC (F1 TV, TruckSim GPS, Disney+, HBO Max, Crunchyroll, Xbox, Google One y Snapchat+) se computan íntegramente, proyectando con exactitud ₲ 422.548 en Noviembre, Diciembre y Enero.',
+        },
+      },
+      {
+        icon: 'ShieldAlert',
+        title: {
+          pt: 'Trava de Liquidez na Margem Livre Segura do DTI',
+          es: 'Bloqueo de Liquidez en el Margen Libre Seguro del DTI',
+        },
+        description: {
+          pt: 'Integrada a projeção contínua de caixa herdado (initialLiquidCash) ao Termômetro DTI. Quando o mês selecionado inicia com liquidez negativa herdada de períodos anteriores, a Margem Livre Segura é travada visualmente em ₲ 0 exibindo "(Comprometida c/ caixa anterior)", impedindo falsas impressões de folga orçamentária sob risco de sobregiro.',
+          es: 'Integrada la proyección continua de caja heredada (initialLiquidCash) al Termómetro DTI. Cuando el mes seleccionado inicia con liquidez negativa heredada de períodos anteriores, el Margen Libre Seguro se bloquea visualmente en ₲ 0 mostrando "(Comprometida c/ saldo anterior)", evitando falsas impresiones de holgura presupuestaria bajo riesgo de sobregiro.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.6',
     releaseDate: '2026-09-24',

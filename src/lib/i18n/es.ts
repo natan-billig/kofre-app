@@ -668,6 +668,8 @@ export const es: TranslationDictionary = {
     descModerate: 'Atención. Más del 30% del ingreso comprometido',
     descCritical: 'Riesgo de sobreendeudamiento. Frenar nuevos gastos fijos',
     safeMargin: 'Margen Libre Seguro',
+    compromisedByPreviousCash: '(Comprometida c/ saldo anterior)',
+    descOverdrawn: 'Déficit heredado del saldo anterior. Frene nuevos gastos para recomponer liquidez',
     baseIncome: 'Ingreso Base',
     confirmedIncome: 'Ingresos del mes',
     profileIncome: 'Ingreso del perfil',

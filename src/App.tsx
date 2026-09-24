@@ -16,6 +16,7 @@ import {
   calculateBalances,
   calculateCardInvoices,
   getActiveCurrencies,
+  calculateProjectedLiquidityCarryOver,
 } from './lib/accountingService'
 import { fetchRecurringBills } from './lib/recurringService'
 import { fetchUserProfile, upsertProfile } from './lib/profileService'
@@ -529,6 +530,16 @@ export default function App() {
                   preferredCurrency={preferredCurrency}
                   currentDate={selectedDate}
                   userProfile={userProfile}
+                  initialLiquidCash={calculateProjectedLiquidityCarryOver(
+                    selectedDate || new Date(),
+                    wallets,
+                    transactions,
+                    recurringBills,
+                    debts,
+                    preferredCurrency,
+                    currentScope,
+                    userProfile
+                  )}
                   onOpenProfile={() => setIsProfileModalOpen(true)}
                 />
               ) : undefined

@@ -10,7 +10,7 @@ import type {
 } from '../lib/types'
 import { calculateFinancialHealth } from '../lib/financialHealthService'
 import { formatCurrency } from '../lib/formatters'
-import { getActiveCurrencies } from '../lib/accountingService'
+import { getActiveCurrencies, calculateProjectedLiquidityCarryOver } from '../lib/accountingService'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 import {
   Activity,
@@ -34,6 +34,7 @@ interface FinancialHealthWidgetProps {
   preferredCurrency?: CurrencyCode
   currentDate?: Date
   userProfile?: Profile | null
+  initialLiquidCash?: number
   onOpenProfile?: () => void
 }
 
@@ -46,6 +47,7 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
   preferredCurrency = 'PYG',
   currentDate,
   userProfile,
+  initialLiquidCash,
   onOpenProfile,
 }) => {
   const { t } = useTranslation()
@@ -77,13 +79,41 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
 
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(preferredCurrency)
 
-  if (currentScope !== 'personal') {
-    return null
-  }
-
   const currencyToUse = activeCurrencies.includes(selectedCurrency)
     ? selectedCurrency
     : preferredCurrency
+
+  const projectedLiquidCash = useMemo(() => {
+    if (currentScope !== 'personal') return 0
+    if (initialLiquidCash !== undefined && currencyToUse === preferredCurrency) {
+      return initialLiquidCash
+    }
+    return calculateProjectedLiquidityCarryOver(
+      currentDate || new Date(),
+      wallets,
+      transactions,
+      recurringBills,
+      debts,
+      currencyToUse,
+      currentScope,
+      userProfile
+    )
+  }, [
+    currentScope,
+    initialLiquidCash,
+    currentDate,
+    wallets,
+    transactions,
+    recurringBills,
+    debts,
+    currencyToUse,
+    userProfile,
+    preferredCurrency,
+  ])
+
+  if (currentScope !== 'personal') {
+    return null
+  }
 
   const metrics = calculateFinancialHealth({
     wallets,
@@ -95,7 +125,10 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
     userProfile,
     targetCurrency: currencyToUse,
     referenceDate: currentDate,
+    initialLiquidCash: projectedLiquidCash,
   })
+
+  const isCashOverdrawn = metrics.isCashOverdrawn ?? (projectedLiquidCash !== undefined && projectedLiquidCash < 0)
 
   // Cores semafóricas
   const statusConfig = {
@@ -107,7 +140,9 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
       progressBg: 'bg-emerald-500',
       icon: ShieldCheck,
       label: t('dti.statusHealthy') || 'Saudável',
-      desc: t('dti.descHealthy') || 'Margem livre para poupar ou novos projetos',
+      desc: isCashOverdrawn
+        ? t('dti.descOverdrawn') || 'Déficit herdado do caixa anterior. Trave novos gastos para recompor liquidez'
+        : t('dti.descHealthy') || 'Margem livre para poupar ou novos projetos',
     },
     moderate: {
       color: 'text-amber-600 dark:text-amber-400',
@@ -117,7 +152,9 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
       progressBg: 'bg-amber-500',
       icon: AlertTriangle,
       label: t('dti.statusModerate') || 'Atenção / Moderado',
-      desc: t('dti.descModerate') || 'Atenção ao limite de novas compras parceladas',
+      desc: isCashOverdrawn
+        ? t('dti.descOverdrawn') || 'Déficit herdado do caixa anterior. Trave novos gastos para recompor liquidez'
+        : t('dti.descModerate') || 'Atenção ao limite de novas compras parceladas',
     },
     critical: {
       color: 'text-rose-600 dark:text-rose-400',
@@ -127,7 +164,9 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
       progressBg: 'bg-rose-500',
       icon: ShieldAlert,
       label: t('dti.statusCritical') || 'Crítico',
-      desc: t('dti.descCritical') || 'Risco de sobreendividamento. Travar novos gastos fixos',
+      desc: isCashOverdrawn
+        ? t('dti.descOverdrawn') || 'Déficit herdado do caixa anterior. Trave novos gastos para recompor liquidez'
+        : t('dti.descCritical') || 'Risco de sobreendividamento. Travar novos gastos fixos',
     },
   }[metrics.status]
 
@@ -199,9 +238,18 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
             <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
               {t('dti.safeMargin') || 'Margem Livre Segura'}
             </span>
-            <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+            <span
+              className={`text-sm sm:text-base font-black ${
+                isCashOverdrawn ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'
+              }`}
+            >
               {formatCurrency(metrics.safeMargin, metrics.currency)}
             </span>
+            {isCashOverdrawn && (
+              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block leading-tight mt-0.5">
+                {t('dti.compromisedByPreviousCash') || '(Comprometida c/ caixa anterior)'}
+              </span>
+            )}
           </div>
         </div>
 

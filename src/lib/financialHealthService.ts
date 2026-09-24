@@ -21,6 +21,7 @@ export interface CalculateDTIParams {
   userProfile?: Profile | null
   targetCurrency?: CurrencyCode
   referenceDate?: Date
+  initialLiquidCash?: number
 }
 
 /**
@@ -37,6 +38,7 @@ export function calculateFinancialHealth({
   userProfile,
   targetCurrency,
   referenceDate = new Date(),
+  initialLiquidCash,
 }: CalculateDTIParams): FinancialHealthMetrics {
   const currency: CurrencyCode = targetCurrency || preferredCurrency || 'PYG'
 
@@ -119,9 +121,16 @@ export function calculateFinancialHealth({
       bill.wallet_id
 
     const linkedWallet = linkedWalletId ? scopedWallets.find((w) => w.id === linkedWalletId) : null
-    if (linkedWallet && linkedWallet.account_type === 'credit_card') {
+    const isCreditCardBill =
+      (bill as unknown as { payment_method?: string }).payment_method === 'credit_card' ||
+      (linkedWallet && linkedWallet.account_type === 'credit_card')
+    if (isCreditCardBill) {
       continue
     }
+
+    const refMonthStr = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`
+    if (bill.start_date && bill.start_date.substring(0, 7) > refMonthStr) continue
+    if (bill.end_date && bill.end_date.substring(0, 7) < refMonthStr) continue
 
     // Cota Pessoal: se is_shared === true, considerar estritamente my_share_amount
     const effectiveAmount =
@@ -198,12 +207,13 @@ export function calculateFinancialHealth({
     dtiPercentage = 100
   }
 
-  const safeMargin = Math.max(0, baseIncome - totalCommitment)
+  const isCashOverdrawn = initialLiquidCash !== undefined && initialLiquidCash < 0
+  const safeMargin = isCashOverdrawn ? 0 : Math.max(0, baseIncome - totalCommitment)
 
   let status: 'healthy' | 'moderate' | 'critical' = 'healthy'
   if (dtiPercentage > 50) {
     status = 'critical'
-  } else if (dtiPercentage > 30) {
+  } else if (dtiPercentage > 30 || isCashOverdrawn) {
     status = 'moderate'
   } else {
     status = 'healthy'
@@ -220,5 +230,6 @@ export function calculateFinancialHealth({
     dtiPercentage,
     safeMargin,
     status,
+    isCashOverdrawn,
   }
 }

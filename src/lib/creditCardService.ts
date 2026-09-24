@@ -81,10 +81,6 @@ export function getProjectedRecurringBillsAmount(
     currentClosingDate.getMonth() + 1
   ).padStart(2, '0')}-${String(currentClosingDate.getDate()).padStart(2, '0')}`
 
-  const closingMonthStr = `${currentClosingDate.getFullYear()}-${String(
-    currentClosingDate.getMonth() + 1
-  ).padStart(2, '0')}`
-
   let totalProjected = 0
 
   for (const bill of recurringBills) {
@@ -101,17 +97,9 @@ export function getProjectedRecurringBillsAmount(
     if (!isLinked) continue
 
     // Se for mês futuro / ciclo projetado:
-    // Todas as assinaturas ativas vinculadas ao cartão incidem no ciclo mensal integralmente
+    // Todas as assinaturas ativas vinculadas ao cartão incidem no ciclo mensal integralmente,
+    // sem bloqueios indevidos de datas em meses futuros (isFuture = true).
     if (isFuture) {
-      if (bill.start_date) {
-        const startMonthStr = bill.start_date.substring(0, 7)
-        if (startMonthStr > closingMonthStr) continue
-      }
-      if (bill.end_date) {
-        const endMonthStr = bill.end_date.substring(0, 7)
-        if (endMonthStr < closingMonthStr) continue
-      }
-
       const effectiveAmount =
         bill.is_shared && bill.my_share_amount != null && Number(bill.my_share_amount) > 0
           ? Number(bill.my_share_amount)

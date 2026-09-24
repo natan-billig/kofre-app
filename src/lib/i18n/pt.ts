@@ -666,6 +666,8 @@ export const pt = {
     descModerate: 'Atenção. Mais de 30% da renda comprometida',
     descCritical: 'Risco de sobreendividamento. Travar novos gastos fixos',
     safeMargin: 'Margem Livre Segura',
+    compromisedByPreviousCash: '(Comprometida c/ caixa anterior)',
+    descOverdrawn: 'Déficit herdado do caixa anterior. Trave novos gastos para recompor liquidez',
     baseIncome: 'Receita Base',
     confirmedIncome: 'Receitas do mês',
     profileIncome: 'Renda do perfil',
