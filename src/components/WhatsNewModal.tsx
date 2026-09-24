@@ -40,6 +40,7 @@ import {
   Share2,
   CalendarClock,
   Settings,
+  RotateCw,
 } from 'lucide-react'
 
 interface WhatsNewModalProps {
@@ -75,6 +76,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Share2,
   CalendarClock,
   Settings,
+  RotateCw,
 }
 
 export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({

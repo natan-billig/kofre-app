@@ -193,6 +193,11 @@ export interface CreditCardInvoiceDetails {
   currentClosingDate: Date | null
   dueDate: Date | null
   isClosed: boolean
+  isPaid?: boolean
+  isPartiallyPaid?: boolean
+  paidAmount?: number
+  revolvingAmount?: number
+  grossInvoiceAmount?: number
 }
 
 export interface RecurringBill {
@@ -274,6 +279,8 @@ export interface DueCommitmentItem {
   status?: 'pending' | 'overdue' | 'paid'
   transactionId?: string
   is_paid?: boolean | null
+  cardWallet?: Wallet
+  revolvingAmount?: number
 }
 
 export interface ParsedNotification {

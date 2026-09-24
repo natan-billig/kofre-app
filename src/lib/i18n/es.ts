@@ -459,6 +459,12 @@ export const es: TranslationDictionary = {
     cardUpdated: '¡Configuración de la tarjeta actualizada con éxito!',
     initialDebtLabel: 'Factura Actual / Deuda Inicial',
     initialDebtTip: 'Ingrese el monto que ya debe en esta tarjeta para comenzar a controlar hoy sin registrar compras pasadas.',
+    payInvoice: 'Pagar Extracto',
+    invoicePaid: 'Extracto Pagado',
+    payInvoiceModalTitle: 'Pagar Extracto de Tarjeta',
+    fullPayment: 'Pago Total',
+    partialPayment: 'Pago Parcial (Rotativo)',
+    revolvingBalance: 'Saldo Rotativo',
   },
   familyModal: {
     title: 'Gestión de la Familia',

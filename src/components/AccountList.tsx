@@ -16,6 +16,7 @@ import {
   Settings,
   Archive,
   TrendingUp,
+  CheckCircle2,
 } from 'lucide-react'
 
 interface AccountListProps {
@@ -25,6 +26,7 @@ interface AccountListProps {
   userProfile?: Profile | null
   onOpenCreateAccount: () => void
   onManageAccount?: (wallet: Wallet) => void
+  onPayCardInvoice?: (card: Wallet, invoiceAmount: number) => void
 }
 
 export const AccountList: React.FC<AccountListProps> = ({
@@ -34,6 +36,7 @@ export const AccountList: React.FC<AccountListProps> = ({
   userProfile,
   onOpenCreateAccount,
   onManageAccount,
+  onPayCardInvoice,
 }) => {
   const { t, language } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
@@ -364,6 +367,26 @@ export const AccountList: React.FC<AccountListProps> = ({
                             </div>
                           )}
                         </div>
+
+                        {/* Ação Pagar Fatura ou Badge de Fatura Liquidada */}
+                        {details.currentInvoiceAmount > 0 && onPayCardInvoice && (
+                          <button
+                            type="button"
+                            onClick={() => onPayCardInvoice(w, details.currentInvoiceAmount)}
+                            className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 border border-purple-200 dark:border-purple-500/30 text-xs font-semibold text-purple-700 dark:text-purple-200 transition-all active:scale-95"
+                            title={language === 'es' ? 'Pagar extracto de tarjeta' : 'Pagar fatura do cartão'}
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>{language === 'es' ? 'Pagar Fatura' : 'Pagar Fatura'}</span>
+                          </button>
+                        )}
+
+                        {details.isPaid && details.currentInvoiceAmount <= 0 && (
+                          <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            <span>{language === 'es' ? 'Fatura Paga' : 'Fatura Paga'}</span>
+                          </span>
+                        )}
 
                         {onManageAccount && (
                           <button

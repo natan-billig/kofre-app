@@ -11,9 +11,63 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.8.11'
+export const CURRENT_APP_VERSION = '1.9.0'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.0',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Ciclo Completo de Cartão: Liquidação de Faturas em 1 Clique, Pagamento Parcial e Rolagem de Saldo v1.9.0',
+      es: 'Ciclo Completo de Tarjetas: Liquidación en 1 Clic, Pago Parcial y Saldo Rotativo v1.9.0',
+    },
+    highlights: [
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Liquidação de Faturas em 1 Clique',
+          es: 'Liquidación de Extractos en 1 Clic',
+        },
+        description: {
+          pt: 'Botão de pagamento direto nos cards de conta, painel e calendário de vencimentos. Escolha a conta bancária de origem e liquide a fatura com restauração imediata do limite disponível.',
+          es: 'Botón de pago directo en las tarjetas de cuenta, panel y calendario de vencimientos. Elija la cuenta bancaria de origen y liquide el extracto con restauración inmediata del límite disponible.',
+        },
+      },
+      {
+        icon: 'ArrowRightLeft',
+        title: {
+          pt: 'Mecânica Contábil Estrita via Transferência',
+          es: 'Mecánica Contable Estricta vía Transferencia',
+        },
+        description: {
+          pt: 'Fim da dupla contagem: o pagamento de fatura é registrado como uma transferência interna entre a conta e o cartão, abatendo a dívida sem gerar despesas duplicadas nas categorias de gastos.',
+          es: 'Fin de la doble contabilización: el pago del extracto se registra como una transferencia interna entre la cuenta y la tarjeta, cancelando la deuda sin duplicar gastos por categoría.',
+        },
+      },
+      {
+        icon: 'RotateCw',
+        title: {
+          pt: 'Pagamento Parcial e Rolagem de Saldo Rotativo',
+          es: 'Pago Parcial y Saldo Rotativo',
+        },
+        description: {
+          pt: 'Suporte a pagamentos parciais com calculadora e máscara de milhares integradas. O saldo devedor remanescente é transferido para a fatura seguinte como crédito rotativo.',
+          es: 'Soporte a pagos parciales con calculadora y máscara de miles integradas. El saldo deudor restante se transfiere al siguiente extracto como crédito rotativo.',
+        },
+      },
+      {
+        icon: 'CheckCircle2',
+        title: {
+          pt: 'Conciliação Visual no Calendário e Termômetro DTI',
+          es: 'Conciliación Visual en Calendario y Termómetro DTI',
+        },
+        description: {
+          pt: 'Faturas quitadas exibem o badge verde [ ✓ Paga ] no Calendário de Caixa e são expurgadas do total a vencer e da margem de endividamento do DTI, eliminando falsos alertas de sobregiro.',
+          es: 'Los extractos pagados muestran la etiqueta verde [ ✓ Pagada ] en el Calendario y se excluyen del total por vencer y del DTI, eliminando falsas alarmas de sobregiro.',
+        },
+      },
+    ],
+  },
   {
     version: '1.8.11',
     releaseDate: '2026-09-22',

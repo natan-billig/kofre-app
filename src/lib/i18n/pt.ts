@@ -457,6 +457,12 @@ export const pt = {
     cardUpdated: 'Configurações do cartão atualizadas com sucesso!',
     initialDebtLabel: 'Fatura Atual / Dívida Acumulada Inicial',
     initialDebtTip: 'Insira o valor que você já deve neste cartão para começar a controlar hoje sem precisar cadastrar compras passadas.',
+    payInvoice: 'Pagar Fatura',
+    invoicePaid: 'Fatura Paga',
+    payInvoiceModalTitle: 'Pagar Fatura do Cartão',
+    fullPayment: 'Pagamento Total',
+    partialPayment: 'Pagamento Parcial (Rotativo)',
+    revolvingBalance: 'Saldo Rotativo',
   },
   familyModal: {
     title: 'Gestão da Família',

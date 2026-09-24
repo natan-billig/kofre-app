@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import type { CurrencyBalances, CardInvoiceSummary, Wallet, CurrencyCode } from '../lib/types'
 import { formatCurrency } from '../lib/formatters'
-import { CreditCard, Eye, EyeOff, Calendar, ArrowUpRight, Sparkles } from 'lucide-react'
+import { CreditCard, Eye, EyeOff, Calendar, ArrowUpRight, Sparkles, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from '../lib/i18n/LanguageContext'
 
 interface CurrencyDashboardProps {
@@ -156,15 +156,23 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('dashboard.currentInvoice')}</p>
                     </div>
 
-                    {/* Pay Invoice Action */}
-                    <button
-                      type="button"
-                      onClick={() => onPayCardInvoice(wallet, invoiceAmount)}
-                      className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 border border-purple-200 dark:border-purple-500/30 text-xs font-medium text-purple-700 dark:text-purple-200 transition-all"
-                    >
-                      <span>{t('dashboard.payInvoice')}</span>
-                      <ArrowUpRight className="w-3 h-3" />
-                    </button>
+                    {/* Pay Invoice Action or Paid Badge */}
+                    {invoiceAmount > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => onPayCardInvoice(wallet, invoiceAmount)}
+                        className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 border border-purple-200 dark:border-purple-500/30 text-xs font-semibold text-purple-700 dark:text-purple-200 transition-all active:scale-95"
+                      >
+                        <CreditCard className="w-3 h-3" />
+                        <span>{t('dashboard.payInvoice')}</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-600/20 border border-emerald-200 dark:border-emerald-500/30 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{t('creditCard.invoicePaid') || 'Fatura Paga'}</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Invoice Amount */}

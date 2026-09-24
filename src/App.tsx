@@ -34,6 +34,7 @@ import { MonthlyBillsWidget } from './components/MonthlyBillsWidget'
 import { DebtsWidget } from './components/DebtsWidget'
 import { FinancialHealthWidget } from './components/FinancialHealthWidget'
 import { DueDatesCalendarWidget } from './components/DueDatesCalendarWidget'
+import { PayInvoiceModal } from './components/PayInvoiceModal'
 import { QuickTransactionModal } from './components/QuickTransactionModal'
 import { RecurringBillsModal } from './components/RecurringBillsModal'
 import { CreateDebtModal } from './components/CreateDebtModal'
@@ -88,6 +89,11 @@ export default function App() {
 
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false)
   const [managingWallet, setManagingWallet] = useState<Wallet | null>(null)
+  const [isPayInvoiceOpen, setIsPayInvoiceOpen] = useState(false)
+  const [selectedCardForPayment, setSelectedCardForPayment] = useState<{
+    wallet: Wallet
+    invoiceAmount: number
+  } | null>(null)
   const [isFamilySettingsOpen, setIsFamilySettingsOpen] = useState(false)
   const [isRecurringBillsModalOpen, setIsRecurringBillsModalOpen] = useState(false)
   const [isCreateDebtOpen, setIsCreateDebtOpen] = useState(false)
@@ -318,20 +324,10 @@ export default function App() {
   const personalCount = wallets.filter((w) => w.type === 'personal').length
   const sharedCount = wallets.filter((w) => w.type === 'shared').length
 
-  // Quick Action: Pagar Fatura
+  // Action: Pagar Fatura de Cartão de Crédito
   const handlePayCardInvoice = (cardWallet: Wallet, invoiceAmount: number) => {
-    const bankAccount = wallets.find(
-      (w) => w.id !== cardWallet.id && w.account_type === 'checking' && !w.is_archived
-    ) || wallets.find((w) => w.id !== cardWallet.id && !w.is_archived)
-
-    setEditingTransaction(null)
-    setQuickTxType('transfer')
-    setQuickTxSourceId(bankAccount?.id)
-    setQuickTxDestId(cardWallet.id)
-    setQuickTxAmount(invoiceAmount > 0 ? invoiceAmount : undefined)
-    setQuickTxCategory(undefined)
-    setQuickTxDescription(undefined)
-    setIsQuickTxOpen(true)
+    setSelectedCardForPayment({ wallet: cardWallet, invoiceAmount })
+    setIsPayInvoiceOpen(true)
   }
 
   // Quick Action: Pagar Conta Fixa ou Confirmar Recebimento de Renda/Salário
@@ -562,13 +558,14 @@ export default function App() {
             dueDatesCalendar={
               <DueDatesCalendarWidget
                 wallets={wallets}
-                transactions={monthlyTransactions}
+                transactions={transactions}
                 recurringBills={recurringBills}
                 debts={debts}
                 currentScope={currentScope}
                 preferredCurrency={preferredCurrency}
                 selectedMonthDate={selectedDate}
                 userProfile={userProfile}
+                onPayCardInvoice={handlePayCardInvoice}
                 onTransactionPaid={async () => {
                   await refreshData()
                 }}
@@ -593,6 +590,7 @@ export default function App() {
                 userProfile={userProfile}
                 onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
                 onManageAccount={(wallet) => setManagingWallet(wallet)}
+                onPayCardInvoice={handlePayCardInvoice}
               />
             }
             savingsGoals={
@@ -863,6 +861,24 @@ export default function App() {
         familyId={wallets.find((w) => w.type === 'shared' && w.family_id)?.family_id}
         onCategoriesChanged={() => refreshData()}
       />
+
+      {/* Pay Credit Card Invoice Modal */}
+      {isPayInvoiceOpen && selectedCardForPayment && (
+        <PayInvoiceModal
+          isOpen={isPayInvoiceOpen}
+          onClose={() => {
+            setIsPayInvoiceOpen(false)
+            setSelectedCardForPayment(null)
+          }}
+          cardWallet={selectedCardForPayment.wallet}
+          invoiceAmount={selectedCardForPayment.invoiceAmount}
+          wallets={wallets}
+          transactions={transactions}
+          onSuccess={async () => {
+            await refreshData()
+          }}
+        />
+      )}
     </div>
   )
 }

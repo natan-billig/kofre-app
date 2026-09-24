@@ -36,6 +36,7 @@ interface DueDatesCalendarWidgetProps {
   selectedMonthDate?: Date
   userProfile?: Profile | null
   onTransactionPaid?: (transactionId: string) => Promise<void> | void
+  onPayCardInvoice?: (card: Wallet, invoiceAmount: number) => void
 }
 
 export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
@@ -48,6 +49,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   selectedMonthDate = new Date(),
   userProfile,
   onTransactionPaid,
+  onPayCardInvoice,
 }) => {
   const { t, language } = useTranslation()
 
@@ -157,19 +159,31 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, selectedMonthDate)
-    const invoiceAmount = Math.max(0, details.currentInvoiceAmount)
-    if (invoiceAmount > 0 && card.due_day) {
-      commitments.push({
-        id: `card-${card.id}`,
-        title: `${t('calendar.cardInvoice') || 'Fatura'}: ${card.name}`,
-        amount: invoiceAmount,
-        currency: currencyToUse,
-        type: 'card_invoice',
-        flowType: 'out',
-        dueDay: card.due_day,
-        entityName: card.name,
-        scope: currentScope,
-      })
+    const hasInvoice = details.currentInvoiceAmount > 0 || details.isPaid || (details.paidAmount != null && details.paidAmount > 0)
+
+    if (hasInvoice && card.due_day) {
+      const isPaid = Boolean(details.isPaid)
+      const amount = isPaid
+        ? details.paidAmount || details.grossInvoiceAmount || 0
+        : details.currentInvoiceAmount
+
+      if (amount > 0) {
+        commitments.push({
+          id: `card-${card.id}`,
+          title: `${t('calendar.cardInvoice') || 'Fatura'}: ${card.name}`,
+          amount,
+          currency: currencyToUse,
+          type: 'card_invoice',
+          flowType: 'out',
+          dueDay: card.due_day,
+          entityName: card.name,
+          scope: currentScope,
+          is_paid: isPaid,
+          status: isPaid ? 'paid' : 'pending',
+          cardWallet: card,
+          revolvingAmount: details.revolvingAmount,
+        })
+      }
     }
   }
 
@@ -377,7 +391,9 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     if (item.flowType === 'in') {
       group.dayInflow += item.amount
     } else {
-      group.dayOutflow += item.amount
+      if (item.is_paid !== true && item.status !== 'paid') {
+        group.dayOutflow += item.amount
+      }
     }
   }
 
@@ -622,17 +638,48 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                               {language === 'es' ? 'Por Vencer' : 'A Vencer'}
                             </span>
                           )}
+                          {item.type === 'card_invoice' && item.is_paid && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              <span>
+                                {language === 'es'
+                                  ? item.revolvingAmount && item.revolvingAmount > 0
+                                    ? 'Pagada (Parcial)'
+                                    : 'Pagada'
+                                  : item.revolvingAmount && item.revolvingAmount > 0
+                                  ? 'Paga (Parcial)'
+                                  : 'Paga'}
+                              </span>
+                            </span>
+                          )}
+                          {item.type === 'card_invoice' && !item.is_paid && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/20 shrink-0">
+                              {language === 'es' ? 'Por Vencer' : 'A Vencer'}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span
                             className={`font-semibold font-mono ${
-                              isInflow
+                              isInflow || item.is_paid
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-slate-900 dark:text-white'
                             }`}
                           >
-                            {isInflow ? '+' : '-'} {formatCurrency(item.amount, item.currency)}
+                            {isInflow ? '+' : item.is_paid ? '✓ ' : '- '}
+                            {formatCurrency(item.amount, item.currency)}
                           </span>
+                          {item.type === 'card_invoice' && !item.is_paid && item.cardWallet && onPayCardInvoice && (
+                            <button
+                              type="button"
+                              onClick={() => onPayCardInvoice(item.cardWallet!, item.amount)}
+                              className="cursor-pointer px-2 py-0.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-[11px] font-semibold flex items-center gap-1 transition-all active:scale-95"
+                              title={language === 'es' ? 'Pagar extracto de tarjeta' : 'Pagar fatura do cartão'}
+                            >
+                              <CreditCard className="w-3 h-3" />
+                              <span>{language === 'es' ? 'Pagar Fatura' : 'Pagar Fatura'}</span>
+                            </button>
+                          )}
                           {(item.type === 'scheduled_expense' || item.type === 'scheduled_income') &&
                             item.transactionId && (
                               <button

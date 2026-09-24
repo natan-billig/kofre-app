@@ -79,6 +79,10 @@ export function calculateFinancialHealth({
   let cardInvoicesAmount = 0
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, referenceDate)
+    // Faturas quitadas deixam de comprometer a margem de endividamento do mês corrente no Termômetro DTI
+    if (details.isPaid) {
+      continue
+    }
     const invoiceInCardCurrency = Math.max(0, details.currentInvoiceAmount)
     cardInvoicesAmount += invoiceInCardCurrency
   }
