@@ -171,22 +171,29 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     (w) => w.account_type === 'credit_card' && w.currency === currencyToUse
   )
 
-  for (const card of creditCards) {
-    const details = getCreditCardInvoiceDetails(card, transactions, activeDate)
+  const now = new Date()
+  const isFutureMonthCalendar =
+    selectedYear > now.getFullYear() ||
+    (selectedYear === now.getFullYear() && selectedMonth > (now.getMonth() + 1))
 
-    // Regra v1.9.4: Apenas injetar a fatura de um cartão no calendário se houver movimentação
+  for (const card of creditCards) {
+    const details = getCreditCardInvoiceDetails(card, transactions, activeDate, recurringBills)
+
+    // Regra v1.9.4 & v1.9.5: Apenas injetar a fatura de um cartão no calendário se houver movimentação
     const hasCardActivity =
       (details.grossInvoiceAmount ?? 0) > 0 ||
       details.currentInvoiceAmount > 0 ||
-      details.totalDebt > 0
+      (!isFutureMonthCalendar && details.totalDebt > 0)
     if (!hasCardActivity) {
       continue
     }
 
-    const openDebt = details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt
+    const openDebt = isFutureMonthCalendar
+      ? details.currentInvoiceAmount
+      : (details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt)
     const hasPendingInvoice = details.currentInvoiceAmount > 0 || (!details.isPaid && openDebt > 0)
     const paidAmt = (details.paidAmount ?? 0) > 0 ? details.paidAmount! : (details.grossInvoiceAmount ?? 0)
-    const hasPaidInvoice = details.isPaid && paidAmt > 0
+    const hasPaidInvoice = details.isPaid && paidAmt > 0 && !isFutureMonthCalendar
 
     if ((hasPendingInvoice || hasPaidInvoice) && card.due_day) {
       const isPaid = !hasPendingInvoice && hasPaidInvoice

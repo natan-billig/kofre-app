@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.4'
+export const CURRENT_APP_VERSION = '1.9.5'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.5',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Projeção de Contas Fixas em Faturas Futuras e Isolamento Temporal de Ciclos v1.9.5',
+      es: 'Proyección de Cuentas Fijas en Extractos Futuros y Aislamiento Temporal de Ciclos v1.9.5',
+    },
+    highlights: [
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Projeção de Assinaturas Recorrentes em Faturas Futuras',
+          es: 'Proyección de Suscripciones Recurrentes en Extractos Futuros',
+        },
+        description: {
+          pt: 'Contas fixas e assinaturas agendadas no cartão têm seus débitos mapeados dinamicamente para o ciclo de fechamento correspondente com base no dia de vencimento. Em meses futuros como Novembro/2026, a fatura do cartão projeta com precisão os lançamentos previstos (₲ 422.548 no Atlas TC) mesmo antes da criação manual de transações.',
+          es: 'Las cuentas fijas y suscripciones programadas en tarjeta mapean dinámicamente sus cargos al ciclo de corte correspondiente según el día de vencimiento. En meses futuros como Noviembre/2026, el extracto proyecta con precisión los cargos previstos (₲ 422.548 en Atlas TC) incluso antes de la creación manual de transacciones.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Premissa de Adimplência na Navegação Temporal',
+          es: 'Premisa de Cumplimiento en la Navegación Temporal',
+        },
+        description: {
+          pt: 'Ao navegar para ciclos futuros no Calendário de Caixa e no Termômetro DTI, as faturas anteriores são consideradas quitadas pontualmente em seus vencimentos, impedindo a duplicação indevida de saldos passados em meses subsequentes e mantendo o fluxo de caixa rigorosamente isolado por ciclo.',
+          es: 'Al navegar hacia ciclos futuros en el Calendario de Caja y en el Termómetro DTI, los extractos anteriores se consideran pagados puntualmente en sus vencimientos, impidiendo la duplicación indebida de saldos pasados en meses posteriores y manteniendo el flujo de caja rigurosamente aislado por ciclo.',
+        },
+      },
+      {
+        icon: 'ShieldCheck',
+        title: {
+          pt: 'Supressão Definitiva de Faturas Fantasmas em Meses Posteriores',
+          es: 'Supresión Definitiva de Extractos Fantasma en Meses Posteriores',
+        },
+        description: {
+          pt: 'Cartões sem movimentações reais e sem assinaturas projetadas para o ciclo (como o Sudameris TC) são totalmente omitidos no Calendário e no DTI de meses futuros, erradicando linhas fantasmas decorrentes de pagamentos efetuados em meses remotos.',
+          es: 'Las tarjetas sin movimientos reales y sin suscripciones proyectadas para el ciclo (como Sudameris TC) se omiten completamente en el Calendario y en el DTI de meses futuros, erradicando líneas fantasma derivadas de pagos realizados en meses remotos.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.4',
     releaseDate: '2026-09-24',

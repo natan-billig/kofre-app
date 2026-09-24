@@ -1,4 +1,4 @@
-import type { Wallet, Transaction, CreditCardInvoiceDetails } from './types'
+import type { Wallet, Transaction, RecurringBill, CreditCardInvoiceDetails } from './types'
 import { calculateAccountBalance, createTransaction } from './accountingService'
 import { convertAmount } from './exchangeRateService'
 
@@ -53,6 +53,114 @@ export async function payCreditCardInvoice(params: PayInvoiceParams): Promise<Tr
 }
 
 /**
+ * Projeta os valores de contas fixas recorrentes vinculadas ao cartão que vencem/cobram
+ * dentro da janela de compras do ciclo da fatura (entre prevClosingDate e currentClosingDate).
+ */
+export function getProjectedRecurringBillsAmount(
+  wallet: Wallet,
+  recurringBills: RecurringBill[] = [],
+  transactions: Transaction[] = [],
+  prevClosingDate: Date,
+  currentClosingDate: Date
+): number {
+  if (!recurringBills || recurringBills.length === 0) return 0
+
+  const prevClosingDateStr = `${prevClosingDate.getFullYear()}-${String(
+    prevClosingDate.getMonth() + 1
+  ).padStart(2, '0')}-${String(prevClosingDate.getDate()).padStart(2, '0')}`
+
+  const closingDateStr = `${currentClosingDate.getFullYear()}-${String(
+    currentClosingDate.getMonth() + 1
+  ).padStart(2, '0')}-${String(currentClosingDate.getDate()).padStart(2, '0')}`
+
+  const closingYear = currentClosingDate.getFullYear()
+  const closingMonth = currentClosingDate.getMonth()
+  const maxDayClosingMonth = new Date(closingYear, closingMonth + 1, 0).getDate()
+  const effClosingDay = currentClosingDate.getDate()
+
+  const prevClosingYear = prevClosingDate.getFullYear()
+  const prevClosingMonth = prevClosingDate.getMonth()
+  const maxDayPrevClosing = new Date(prevClosingYear, prevClosingMonth + 1, 0).getDate()
+
+  let totalProjected = 0
+
+  for (const bill of recurringBills) {
+    if (!bill.is_active) continue
+    if (bill.type === 'income') continue
+
+    // Identifica vínculo com o cartão de crédito
+    const isLinked =
+      bill.wallet_id === wallet.id ||
+      (bill as unknown as { destination_wallet_id?: string; account_id?: string }).destination_wallet_id === wallet.id ||
+      (bill as unknown as { destination_wallet_id?: string; account_id?: string }).account_id === wallet.id ||
+      (bill as unknown as { payment_method?: string }).payment_method === 'credit_card'
+
+    if (!isLinked) continue
+
+    // Determina a data exata da cobrança da assinatura na janela deste ciclo
+    const billDueDay = bill.due_day || 1
+    let chargeYear = closingYear
+    let chargeMonth = closingMonth
+    let chargeDay = Math.min(billDueDay, maxDayClosingMonth)
+
+    if (billDueDay > effClosingDay) {
+      // Despesas com dia > closing_day cobram no mês anterior ao fechamento
+      chargeYear = prevClosingYear
+      chargeMonth = prevClosingMonth
+      chargeDay = Math.min(billDueDay, maxDayPrevClosing)
+    }
+
+    const chargeDateStr = `${chargeYear}-${String(chargeMonth + 1).padStart(2, '0')}-${String(chargeDay).padStart(2, '0')}`
+
+    // Checa se a data da cobrança cai estritamente dentro da janela de compras do ciclo
+    if (chargeDateStr <= prevClosingDateStr || chargeDateStr > closingDateStr) {
+      continue
+    }
+
+    // Validação temporal de vigência da assinatura
+    if (bill.start_date) {
+      const startStr = bill.start_date.substring(0, 10)
+      if (startStr > chargeDateStr) continue
+    }
+    if (bill.end_date) {
+      const endStr = bill.end_date.substring(0, 10)
+      if (endStr < chargeDateStr) continue
+    }
+
+    // Checagem se a assinatura já foi efetivada como transação real neste ciclo
+    const alreadyRecorded = transactions.some((t) => {
+      if (t.wallet_id !== wallet.id) return false
+      if (t.type !== 'expense') return false
+      const txDate = t.transaction_date || ''
+      if (txDate <= prevClosingDateStr || txDate > closingDateStr) return false
+      if ((t as unknown as { recurring_bill_id?: string }).recurring_bill_id === bill.id) return true
+      if (t.description && bill.name && t.description.trim().toLowerCase() === bill.name.trim().toLowerCase()) return true
+      return false
+    })
+
+    if (alreadyRecorded) {
+      continue
+    }
+
+    const effectiveAmount =
+      bill.is_shared && bill.my_share_amount != null && Number(bill.my_share_amount) > 0
+        ? Number(bill.my_share_amount)
+        : Number(bill.total_amount) || Number(bill.amount) || 0
+
+    if (effectiveAmount <= 0) continue
+
+    const convertedAmount =
+      bill.currency === wallet.currency
+        ? effectiveAmount
+        : convertAmount(effectiveAmount, bill.currency, wallet.currency)
+
+    totalProjected += convertedAmount
+  }
+
+  return totalProjected
+}
+
+/**
  * Calcula os detalhes e segmentação do ciclo de fatura de um cartão de crédito.
  * Segrega o saldo devedor entre "Fatura Atual" e "Próxima Fatura" com base no dia de fechamento,
  * com suporte a liquidação em 1 clique, detecção de fatura paga e rolagem de saldo rotativo.
@@ -60,7 +168,8 @@ export async function payCreditCardInvoice(params: PayInvoiceParams): Promise<Tr
 export function getCreditCardInvoiceDetails(
   wallet: Wallet,
   transactions: Transaction[],
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  recurringBills: RecurringBill[] = []
 ): CreditCardInvoiceDetails {
   const closingDay = wallet.closing_day != null && wallet.closing_day >= 1 && wallet.closing_day <= 31
     ? wallet.closing_day
@@ -111,8 +220,16 @@ export function getCreditCardInvoiceDetails(
     }
   }
 
+  const now = new Date()
+  const currentRealYear = now.getFullYear()
+  const currentRealMonth = now.getMonth()
+
   const refYear = referenceDate.getFullYear()
   const refMonth = referenceDate.getMonth()
+
+  const isFutureMonth =
+    refYear > currentRealYear ||
+    (refYear === currentRealYear && refMonth > currentRealMonth)
 
   // Determina o ciclo da fatura com vencimento no mês de referência (ou ciclo corrente do mês de referência)
   let closingYear = refYear
@@ -220,12 +337,38 @@ export function getCreditCardInvoiceDetails(
     }
   }
 
-  // Rolagem de dívida passada não liquidada para a fatura corrente
-  const pastUnpaid = Math.max(0, pastDebt - pastPayments)
+  // Projeta contas fixas recorrentes vinculadas ao cartão dentro deste ciclo
+  const projectedBillsAmount = getProjectedRecurringBillsAmount(
+    wallet,
+    recurringBills,
+    transactions,
+    prevClosingDate,
+    currentClosingDate
+  )
+  grossCurrentDebt += projectedBillsAmount
+
+  // Premissa de Adimplência para Projeções Futuras:
+  // Em meses futuros, assume-se que as faturas dos meses anteriores foram pagas
+  // pontualmente em seus vencimentos e NÃO rolam como dívida rotativa acumulada,
+  // a menos que já estivessem formalmente vencidas e não pagas no mundo real antes de hoje.
+  let pastUnpaid = 0
+  if (!isFutureMonth) {
+    pastUnpaid = Math.max(0, pastDebt - pastPayments)
+  } else {
+    // Checa se a fatura anterior já estaria formalmente vencida no mundo real
+    const prevDueDate = dueDay
+      ? new Date(closingYear, closingMonth, Math.min(dueDay, maxDayClosingMonth))
+      : null
+    if (prevDueDate && prevDueDate.getTime() < now.getTime()) {
+      pastUnpaid = Math.max(0, pastDebt - pastPayments)
+    } else {
+      pastUnpaid = 0
+    }
+  }
   grossCurrentDebt += pastUnpaid
 
-  // Excedente de pagamentos passados abate pagamentos do ciclo atual
-  const pastExcess = Math.max(0, pastPayments - pastDebt)
+  // Excedente de pagamentos passados abate pagamentos do ciclo atual apenas se não for projeção futura
+  const pastExcess = isFutureMonth ? 0 : Math.max(0, pastPayments - pastDebt)
   cyclePayments += pastExcess
 
   const grossInvoiceAmount = Math.max(0, grossCurrentDebt)
@@ -236,8 +379,8 @@ export function getCreditCardInvoiceDetails(
   let isPartiallyPaid = false
   let paidAmount = 0
 
-  if (totalDebt <= 0) {
-    // Cartão sem saldo devedor geral: liquidado
+  if (totalDebt <= 0 && !isFutureMonth && grossInvoiceAmount <= 0) {
+    // Cartão sem saldo devedor geral e sem despesas: liquidado
     isPaid = true
     isPartiallyPaid = false
     paidAmount = grossInvoiceAmount
@@ -278,10 +421,12 @@ export function getCreditCardInvoiceDetails(
     if (cyclePayments > 0) {
       nextInvoiceDebt = Math.max(0, nextInvoiceDebt - cyclePayments)
     }
-    isPaid = totalDebt <= 0
+    isPaid = totalDebt <= 0 || isFutureMonth
+    currentInvoiceDebt = 0
+    paidAmount = 0
   }
 
-  if (totalDebt > 0 && currentInvoiceDebt === 0 && nextInvoiceDebt === 0) {
+  if (totalDebt > 0 && currentInvoiceDebt === 0 && nextInvoiceDebt === 0 && !isFutureMonth) {
     nextInvoiceDebt = totalDebt
   }
 

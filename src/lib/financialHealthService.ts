@@ -76,15 +76,26 @@ export function calculateFinancialHealth({
     (w) => w.account_type === 'credit_card' && w.currency === currency
   )
 
+  const now = new Date()
+  const isFutureMonthDti =
+    referenceDate.getFullYear() > now.getFullYear() ||
+    (referenceDate.getFullYear() === now.getFullYear() && referenceDate.getMonth() > now.getMonth())
+
   let cardInvoicesAmount = 0
   for (const card of creditCards) {
-    const details = getCreditCardInvoiceDetails(card, transactions, referenceDate)
+    const details = getCreditCardInvoiceDetails(card, transactions, referenceDate, recurringBills)
     // Faturas quitadas deixam de comprometer a margem de endividamento do mês de referência no Termômetro DTI
     if (details.isPaid && details.currentInvoiceAmount <= 0) {
       continue
     }
 
-    const openDebt = details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt
+    if (isFutureMonthDti && (details.grossInvoiceAmount ?? 0) <= 0 && details.currentInvoiceAmount <= 0) {
+      continue
+    }
+
+    const openDebt = isFutureMonthDti
+      ? details.currentInvoiceAmount
+      : (details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt)
     const invoiceInCardCurrency = details.currentInvoiceAmount > 0
       ? details.currentInvoiceAmount
       : (!details.isPaid && openDebt > 0 ? openDebt : 0)
