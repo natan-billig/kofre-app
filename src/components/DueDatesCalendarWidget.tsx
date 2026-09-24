@@ -747,7 +747,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                               title={language === 'es' ? 'Pagar extracto de tarjeta' : 'Pagar fatura do cartão'}
                             >
                               <CreditCard className="w-3 h-3" />
-                              <span>{language === 'es' ? 'Pagar Fatura' : 'Pagar Fatura'}</span>
+                              <span>{language === 'es' ? 'Pagar Extracto' : 'Pagar Fatura'}</span>
                             </button>
                           )}
                           {(item.type === 'scheduled_expense' || item.type === 'scheduled_income') &&

@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.2'
+export const CURRENT_APP_VERSION = '1.9.3'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.3',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Janela Estrita de Liquidação de Faturas e Apuração Temporal Correta de Ciclos v1.9.3',
+      es: 'Ventana Estricta de Liquidación de Extractos y Determinación Temporal Correcta de Ciclos v1.9.3',
+    },
+    highlights: [
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Delimitação Temporal Estrita de Pagamentos por Ciclo',
+          es: 'Delimitación Temporal Estricta de Pagos por Ciclo',
+        },
+        description: {
+          pt: 'Correção da janela de liquidação contábil de faturas de cartão. Pagamentos realizados antes da data de corte (fechamento) abatem estritamente faturas de ciclos passados e jamais concedem quitação indevida à fatura em aberto do ciclo seguinte.',
+          es: 'Corrección de la ventana de liquidación contable de extractos de tarjetas. Los pagos realizados antes de la fecha de corte liquidan estrictamente facturas de ciclos anteriores y nunca otorgan cancelación indebida al extracto en curso del siguiente ciclo.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Apuração e Exibição Correta da Fatura no Calendário de Caixa',
+          es: 'Determinación y Visualización Correcta del Extracto en el Calendario de Caja',
+        },
+        description: {
+          pt: 'No mês de vencimento (ex.: Outubro/2026 para cartões com corte em Setembro), a fatura fechada é listada fielmente como pendente com valor integral e ação rápida de pagamento, compondo o somatório de Total a Vencer do mês.',
+          es: 'En el mes de vencimiento (ej.: Octubre/2026 para tarjetas con corte en Septiembre), el extracto cerrado se lista fielmente como pendiente con monto íntegro y acción rápida de pago, componiendo el sumatorio de Total a Vencer del mes.',
+        },
+      },
+      {
+        icon: 'Activity',
+        title: {
+          pt: 'Fidelidade Contábil do Termômetro DTI sem Mascaramento',
+          es: 'Fidelidad Contable del Termómetro DTI sin Enmascaramiento',
+        },
+        description: {
+          pt: 'O bloco de faturas de cartão de crédito no Termômetro DTI reflete com precisão os passivos exigíveis no mês selecionado, recalculando a taxa de comprometimento de renda (DTI) para retratar a real saúde financeira.',
+          es: 'El bloque de extractos de tarjetas de crédito en el Termómetro DTI refleja con precisión los pasivos exigibles en el mes seleccionado, recalculando la tasa de compromiso de ingresos (DTI) para reflejar la salud financiera real.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.2',
     releaseDate: '2026-09-24',

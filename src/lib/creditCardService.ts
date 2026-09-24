@@ -152,6 +152,20 @@ export function getCreditCardInvoiceDetails(
     prevClosingDate.getMonth() + 1
   ).padStart(2, '0')}-${String(prevClosingDate.getDate()).padStart(2, '0')}`
 
+  // Determina a data de fechamento do próximo ciclo para delimitar a janela de liquidação deste ciclo
+  let nextClosingYear = closingYear
+  let nextClosingMonth = closingMonth + 1
+  if (nextClosingMonth > 11) {
+    nextClosingYear++
+    nextClosingMonth = 0
+  }
+  const maxDayNextClosing = new Date(nextClosingYear, nextClosingMonth + 1, 0).getDate()
+  const effNextClosingDay = Math.min(closingDay, maxDayNextClosing)
+  const nextClosingDate = new Date(nextClosingYear, nextClosingMonth, effNextClosingDay, 23, 59, 59, 999)
+  const nextClosingDateStr = `${nextClosingDate.getFullYear()}-${String(
+    nextClosingDate.getMonth() + 1
+  ).padStart(2, '0')}-${String(nextClosingDate.getDate()).padStart(2, '0')}`
+
   // Determina a data exata de vencimento correspondente à fatura deste ciclo
   let dueDate: Date | null = null
   if (dueDay) {
@@ -194,9 +208,13 @@ export function getCreditCardInvoiceDetails(
         nextInvoiceDebt -= amount
       }
     } else if (isTransferPayment) {
-      if (txDate <= prevClosingDateStr) {
+      // Regra de Vinculação de Pagamentos por Ciclo:
+      // A fatura que fecha em closingDateStr (com vencimento em dueDate) é liquidada
+      // ESTRITAMENTE após o seu fechamento e até o fechamento seguinte (closingDateStr <= txDate <= nextClosingDateStr).
+      // Pagamentos efetuados antes de closingDateStr pertencem aos ciclos anteriores (vencimentos passados).
+      if (txDate < closingDateStr) {
         pastPayments += creditedAmount
-      } else {
+      } else if (txDate <= nextClosingDateStr) {
         cyclePayments += creditedAmount
       }
     }
