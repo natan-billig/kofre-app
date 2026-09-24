@@ -9,6 +9,7 @@ import type {
   FinancialHealthMetrics,
 } from './types'
 import { getCreditCardInvoiceDetails } from './creditCardService'
+import { checkBillPaidInMonth } from './recurringService'
 import { convertAmount } from './exchangeRateService'
 
 export interface CalculateDTIParams {
@@ -79,15 +80,40 @@ export function calculateFinancialHealth({
   )
 
   const now = new Date()
+  const refYear = referenceDate.getFullYear()
+  const refMonth = referenceDate.getMonth()
+  const nowYear = now.getFullYear()
+  const nowMonth = now.getMonth()
+
   const isFutureMonthDti =
-    referenceDate.getFullYear() > now.getFullYear() ||
-    (referenceDate.getFullYear() === now.getFullYear() && referenceDate.getMonth() > now.getMonth())
+    refYear > nowYear || (refYear === nowYear && refMonth > nowMonth)
+  const isPastMonthDti =
+    refYear < nowYear || (refYear === nowYear && refMonth < nowMonth)
+  const isCurrentMonthDti = !isFutureMonthDti && !isPastMonthDti
 
   let cardInvoicesAmount = 0
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, referenceDate, recurringBills)
-    // Faturas quitadas deixam de comprometer a margem de endividamento do mês de referência no Termômetro DTI
-    if (details.isPaid && details.currentInvoiceAmount <= 0) {
+
+    // Validação de quitação explícita do cartão através de transferências registradas
+    const hasTransferPayment = transactions.some((t) => {
+      if (t.type !== 'transfer' || t.destination_wallet_id !== card.id) return false
+      if (t.is_paid === false || t.status === 'pending') return false
+      const txDate = t.transaction_date || ''
+      if (!txDate) return false
+      const parts = txDate.split('-')
+      if (parts.length < 2) return false
+      const tYear = parseInt(parts[0], 10)
+      const tMonth = parseInt(parts[1], 10)
+      return tYear === refYear && tMonth === (refMonth + 1)
+    })
+
+    const isExplicitlyPaid =
+      hasTransferPayment ||
+      ((details.paidAmount ?? 0) > 0 && details.isPaid && details.currentInvoiceAmount <= 0)
+
+    // Faturas quitadas deixam de comprometer a margem de endividamento no Termômetro DTI
+    if (isExplicitlyPaid) {
       continue
     }
 
@@ -98,15 +124,36 @@ export function calculateFinancialHealth({
     const openDebt = isFutureMonthDti
       ? details.currentInvoiceAmount
       : (details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt)
-    const invoiceInCardCurrency = details.currentInvoiceAmount > 0
-      ? details.currentInvoiceAmount
-      : (!details.isPaid && openDebt > 0 ? openDebt : 0)
+
+    let invoiceInCardCurrency = 0
+    if (isCurrentMonthDti) {
+      // No mês corrente: se a fatura não foi explicitamente paga, permanece como dívida mesmo após vencimento
+      invoiceInCardCurrency = details.currentInvoiceAmount > 0
+        ? details.currentInvoiceAmount
+        : (details.grossInvoiceAmount && details.grossInvoiceAmount > 0
+            ? details.grossInvoiceAmount
+            : (details.totalDebt > 0 ? details.totalDebt : openDebt))
+    } else if (isFutureMonthDti) {
+      invoiceInCardCurrency = details.currentInvoiceAmount > 0 ? details.currentInvoiceAmount : 0
+    } else {
+      // Mês passado
+      invoiceInCardCurrency = details.currentInvoiceAmount > 0
+        ? details.currentInvoiceAmount
+        : (openDebt > 0 ? openDebt : 0)
+    }
 
     cardInvoicesAmount += Math.max(0, invoiceInCardCurrency)
   }
 
   // 4. Contas Fixas Vigentes no escopo com segregação bimonetária e deduplicação de débito em cartão
   let recurringBillsAmount = 0
+  const monthlyTransactions = transactions.filter((t) => {
+    if (!t.transaction_date) return false
+    const parts = t.transaction_date.split('-')
+    if (parts.length < 2) return false
+    return parseInt(parts[0], 10) === refYear && parseInt(parts[1], 10) === (refMonth + 1)
+  })
+
   for (const bill of recurringBills) {
     if (!bill.is_active) continue
     if (bill.scope !== currentScope) continue
@@ -128,9 +175,17 @@ export function calculateFinancialHealth({
       continue
     }
 
-    const refMonthStr = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`
+    const refMonthStr = `${refYear}-${String(refMonth + 1).padStart(2, '0')}`
     if (bill.start_date && bill.start_date.substring(0, 7) > refMonthStr) continue
     if (bill.end_date && bill.end_date.substring(0, 7) < refMonthStr) continue
+
+    // No mês corrente: contas já pagas saem da dívida pendente; contas pendentes permanecem mesmo que vencidas
+    if (isCurrentMonthDti) {
+      const isPaid = checkBillPaidInMonth(bill, monthlyTransactions)
+      if (isPaid) {
+        continue
+      }
+    }
 
     // Cota Pessoal: se is_shared === true, considerar estritamente my_share_amount
     const effectiveAmount =
@@ -168,8 +223,7 @@ export function calculateFinancialHealth({
 
   // 5. Dívidas a pagar no período: estritamente na moeda ativa e no mês de referência
   let debtsToPayAmount = 0
-  const refYear = referenceDate.getFullYear()
-  const refMonth = referenceDate.getMonth() + 1
+  const debtRefMonth = refMonth + 1
 
   for (const debt of debts) {
     if (debt.status !== 'pending') continue
@@ -182,7 +236,7 @@ export function calculateFinancialHealth({
       if (parts.length >= 2) {
         const dYear = parseInt(parts[0], 10)
         const dMonth = parseInt(parts[1], 10)
-        if (dYear !== refYear || dMonth !== refMonth) {
+        if (dYear !== refYear || dMonth !== debtRefMonth) {
           continue
         }
       }

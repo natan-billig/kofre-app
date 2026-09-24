@@ -331,6 +331,7 @@ export function getCreditCardInvoiceDetails(
     const isTransferPayment = t.type === 'transfer' && t.destination_wallet_id === wallet.id
 
     if (!isExpense && !isIncome && !isTransferPayment) continue
+    if (t.is_paid === false || t.status === 'pending') continue
 
     const txDate = t.transaction_date || ''
     const amount = Number(t.amount) || 0

@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.7'
+export const CURRENT_APP_VERSION = '1.9.8'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.8',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Retenção de Passivos Pendentes no DTI e Calendário do Mês Presente v1.9.8',
+      es: 'Retención de Pasivos Pendientes en el DTI y Calendario del Mes Presente v1.9.8',
+    },
+    highlights: [
+      {
+        icon: 'Activity',
+        title: {
+          pt: 'Retenção de Passivos no Termômetro DTI do Mês Corrente',
+          es: 'Retención de Pasivos en el Termómetro DTI del Mes Corriente',
+        },
+        description: {
+          pt: 'Faturas de cartão e contas fixas não quitadas permanecem como compromissos ativos no Termômetro DTI durante todo o mês de referência, mesmo após a data formal de vencimento ter passado. Exige-se comprovação explícita de pagamento para baixa contábil da dívida.',
+          es: 'Las facturas de tarjeta y cuentas fijas no liquidadas se mantienen como compromisos activos en el Termómetro DTI durante todo el mes de referencia, incluso después de transcurrida la fecha de vencimiento. Se requiere comprobación explícita de pago para dar baja contable a la deuda.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Total a Vencer Realista no Calendário de Caixa',
+          es: 'Total por Vencer Realista en el Calendario de Caja',
+        },
+        description: {
+          pt: 'Eliminada a baixa indevida de obrigações por mero decurso de prazo no Calendário de Vencimentos. Todos os compromissos pendentes do mês continuam somados no Total a Vencer e acessíveis para pagamento imediato.',
+          es: 'Eliminada la baja indebida de obligaciones por mero transcurso del plazo en el Calendario de Vencimientos. Todos los compromisos pendientes del mes continúan sumándose en el Total por Vencer y disponibles para pago inmediato.',
+        },
+      },
+      {
+        icon: 'TrendingUp',
+        title: {
+          pt: 'Rolagem de Liquidez com Passivos Vencidos em Aberto',
+          es: 'Traspaso de Liquidez con Pasivos Vencidos Pendientes',
+        },
+        description: {
+          pt: 'A apuração do saldo projetado (calculateProjectedLiquidityCarryOver) passa a considerar obrigações vencidas não pagas do mês presente como saídas pendentes de caixa, garantindo que os meses futuros herdem a posição financeira real.',
+          es: 'El cálculo del saldo proyectado (calculateProjectedLiquidityCarryOver) ahora considera las obligaciones vencidas no pagadas del mes presente como salidas pendientes de caja, asegurando que los meses futuros hereden la posición financiera real.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.7',
     releaseDate: '2026-09-24',

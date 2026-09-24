@@ -214,17 +214,39 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       continue
     }
 
+    // Checagem de quitação explícita via transferência bancária registrada para o cartão
+    const hasTransferPayment = transactions.some((t) => {
+      if (t.type !== 'transfer' || t.destination_wallet_id !== card.id) return false
+      if (t.is_paid === false || t.status === 'pending') return false
+      const txDate = t.transaction_date || ''
+      if (!txDate) return false
+      const parts = txDate.split('-')
+      if (parts.length < 2) return false
+      const tYear = parseInt(parts[0], 10)
+      const tMonth = parseInt(parts[1], 10)
+      return tYear === selectedYear && tMonth === selectedMonth
+    })
+
+    const isExplicitlyPaid =
+      hasTransferPayment ||
+      ((details.paidAmount ?? 0) > 0 && details.isPaid && details.currentInvoiceAmount <= 0)
+
     const openDebt = isFutureMonthCalendar
       ? details.currentInvoiceAmount
       : (details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt)
-    const hasPendingInvoice = details.currentInvoiceAmount > 0 || (!details.isPaid && openDebt > 0)
+
+    const hasPendingInvoice = !isExplicitlyPaid && (details.currentInvoiceAmount > 0 || openDebt > 0)
     const paidAmt = (details.paidAmount ?? 0) > 0 ? details.paidAmount! : (details.grossInvoiceAmount ?? 0)
-    const hasPaidInvoice = details.isPaid && paidAmt > 0 && !isFutureMonthCalendar
+    const hasPaidInvoice = isExplicitlyPaid && paidAmt > 0 && !isFutureMonthCalendar
 
     if ((hasPendingInvoice || hasPaidInvoice) && card.due_day) {
-      const isPaid = !hasPendingInvoice && hasPaidInvoice
+      const isPaid = isExplicitlyPaid && !hasPendingInvoice
       const amount = hasPendingInvoice
-        ? (details.currentInvoiceAmount > 0 ? details.currentInvoiceAmount : openDebt)
+        ? (details.currentInvoiceAmount > 0
+            ? details.currentInvoiceAmount
+            : (details.grossInvoiceAmount && details.grossInvoiceAmount > 0
+                ? details.grossInvoiceAmount
+                : openDebt))
         : paidAmt
 
       if (amount > 0) {

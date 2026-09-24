@@ -306,6 +306,8 @@ export function checkBillPaidInMonth(
 
   return monthlyTransactions.some((t) => {
     if (t.type !== expectedType) return false
+    // Ignora transações agendadas/pendentes que ainda não foram efetivamente quitadas
+    if (t.is_paid === false || t.status === 'pending') return false
 
     const descLower = (t.description || '').trim().toLowerCase()
     const catLower = (t.category || '').trim().toLowerCase()

@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getCreditCardInvoiceDetails } from './creditCardService'
+import { checkBillPaidInMonth } from './recurringService'
 import { convertAmount } from './exchangeRateService'
 import type {
   Wallet,
@@ -449,10 +450,10 @@ export function calculateProjectedLiquidityCarryOver(
     let monthOutflow = 0
 
     if (isCurrentIterMonth) {
-      // Para o mês atual: apurar compromissos pendentes entre hoje e o final do mês
+      // Para o mês atual: apurar compromissos pendentes do mês atual
       const todayDay = now.getDate()
 
-      // Receitas agendadas ainda não pagas no mês atual
+      // Receitas agendadas ainda não recebidas no mês atual
       const pendingIncomes = recurringBills.filter(
         (b) =>
           b.is_active &&
@@ -465,10 +466,17 @@ export function calculateProjectedLiquidityCarryOver(
         monthInflow += Number(inc.amount) || 0
       }
 
-      // Contas fixas não-cartão pendentes no restante do mês
+      // Transações do mês corrente para validação de quitação
+      const currentMonthTransactions = transactions.filter((t) => {
+        if (!t.transaction_date) return false
+        const parts = t.transaction_date.split('-')
+        if (parts.length < 2) return false
+        return parseInt(parts[0], 10) === currentYear && parseInt(parts[1], 10) === (currentMonth + 1)
+      })
+
+      // Contas fixas não-cartão pendentes no mês atual (inclui vencidas se ainda não foram pagas)
       for (const bill of recurringBills) {
         if (!bill.is_active || bill.type === 'income' || bill.scope !== scope) continue
-        if ((bill.due_day || 1) < todayDay) continue
 
         const linkedWallet = bill.wallet_id ? wallets.find((w) => w.id === bill.wallet_id) : null
         const isCreditCard =
@@ -477,6 +485,10 @@ export function calculateProjectedLiquidityCarryOver(
 
         if (bill.start_date && bill.start_date.substring(0, 7) > iterMonthStr) continue
         if (bill.end_date && bill.end_date.substring(0, 7) < iterMonthStr) continue
+
+        // Se a conta já foi liquidada nas transações do mês, o dinheiro já saiu da liquidez atual
+        const isBillPaid = checkBillPaidInMonth(bill, currentMonthTransactions)
+        if (isBillPaid) continue
 
         const amt =
           bill.is_shared && bill.my_share_amount != null && Number(bill.my_share_amount) > 0
@@ -488,15 +500,37 @@ export function calculateProjectedLiquidityCarryOver(
         monthOutflow += converted
       }
 
-      // Faturas de cartão com vencimento ainda pendente no mês atual
+      // Faturas de cartão com liquidação pendente no mês atual (inclui faturas vencidas no início do mês ainda não pagas)
       const creditCards = wallets.filter(
         (w) => w.type === scope && w.account_type === 'credit_card' && w.currency === currency
       )
       for (const card of creditCards) {
-        if (card.due_day && card.due_day >= todayDay) {
-          const details = getCreditCardInvoiceDetails(card, transactions, iterDate, recurringBills)
-          if (!details.isPaid && details.currentInvoiceAmount > 0) {
-            monthOutflow += details.currentInvoiceAmount
+        const details = getCreditCardInvoiceDetails(card, transactions, iterDate, recurringBills)
+
+        const hasTransferPayment = transactions.some((t) => {
+          if (t.type !== 'transfer' || t.destination_wallet_id !== card.id) return false
+          if (t.is_paid === false || t.status === 'pending') return false
+          const txDate = t.transaction_date || ''
+          if (!txDate) return false
+          const parts = txDate.split('-')
+          if (parts.length < 2) return false
+          const tYear = parseInt(parts[0], 10)
+          const tMonth = parseInt(parts[1], 10)
+          return tYear === currentYear && tMonth === (currentMonth + 1)
+        })
+
+        const isExplicitlyPaid =
+          hasTransferPayment ||
+          ((details.paidAmount ?? 0) > 0 && details.isPaid && details.currentInvoiceAmount <= 0)
+
+        if (!isExplicitlyPaid) {
+          const pendingInvoice = details.currentInvoiceAmount > 0
+            ? details.currentInvoiceAmount
+            : (details.grossInvoiceAmount && details.grossInvoiceAmount > 0
+                ? details.grossInvoiceAmount
+                : details.totalDebt)
+          if (pendingInvoice > 0) {
+            monthOutflow += pendingInvoice
           }
         }
       }
