@@ -304,7 +304,7 @@ export default function App() {
 
   // Compute calculated balances and credit card summaries
   const balances = calculateBalances(wallets, transactions, currentScope)
-  const cardInvoices = calculateCardInvoices(wallets, transactions, currentScope, selectedDate)
+  const cardInvoices = calculateCardInvoices(wallets, transactions, currentScope, selectedDate, recurringBills)
 
   // Active currencies based on user preference and active wallets
   const preferredCurrency: CurrencyCode = userProfile?.preferred_currency || 'PYG'
@@ -494,6 +494,7 @@ export default function App() {
                 balances={balances}
                 cardInvoices={cardInvoices}
                 activeCurrencies={activeCurrencies}
+                selectedDate={selectedDate}
                 onPayCardInvoice={handlePayCardInvoice}
               />
             }
@@ -590,6 +591,8 @@ export default function App() {
                 transactions={transactions}
                 currentScope={currentScope}
                 userProfile={userProfile}
+                selectedDate={selectedDate}
+                recurringBills={recurringBills}
                 onOpenCreateAccount={() => setIsCreateAccountOpen(true)}
                 onManageAccount={(wallet) => setManagingWallet(wallet)}
                 onPayCardInvoice={handlePayCardInvoice}

@@ -61,9 +61,17 @@ export function getProjectedRecurringBillsAmount(
   recurringBills: RecurringBill[] = [],
   transactions: Transaction[] = [],
   prevClosingDate: Date,
-  currentClosingDate: Date
+  currentClosingDate: Date,
+  isFutureMonth: boolean = false
 ): number {
   if (!recurringBills || recurringBills.length === 0) return 0
+
+  const now = new Date()
+  const isFuture =
+    isFutureMonth ||
+    currentClosingDate.getTime() > now.getTime() ||
+    currentClosingDate.getFullYear() > now.getFullYear() ||
+    (currentClosingDate.getFullYear() === now.getFullYear() && currentClosingDate.getMonth() > now.getMonth())
 
   const prevClosingDateStr = `${prevClosingDate.getFullYear()}-${String(
     prevClosingDate.getMonth() + 1
@@ -73,14 +81,9 @@ export function getProjectedRecurringBillsAmount(
     currentClosingDate.getMonth() + 1
   ).padStart(2, '0')}-${String(currentClosingDate.getDate()).padStart(2, '0')}`
 
-  const closingYear = currentClosingDate.getFullYear()
-  const closingMonth = currentClosingDate.getMonth()
-  const maxDayClosingMonth = new Date(closingYear, closingMonth + 1, 0).getDate()
-  const effClosingDay = currentClosingDate.getDate()
-
-  const prevClosingYear = prevClosingDate.getFullYear()
-  const prevClosingMonth = prevClosingDate.getMonth()
-  const maxDayPrevClosing = new Date(prevClosingYear, prevClosingMonth + 1, 0).getDate()
+  const closingMonthStr = `${currentClosingDate.getFullYear()}-${String(
+    currentClosingDate.getMonth() + 1
+  ).padStart(2, '0')}`
 
   let totalProjected = 0
 
@@ -97,7 +100,44 @@ export function getProjectedRecurringBillsAmount(
 
     if (!isLinked) continue
 
-    // Determina a data exata da cobrança da assinatura na janela deste ciclo
+    // Se for mês futuro / ciclo projetado:
+    // Todas as assinaturas ativas vinculadas ao cartão incidem no ciclo mensal integralmente
+    if (isFuture) {
+      if (bill.start_date) {
+        const startMonthStr = bill.start_date.substring(0, 7)
+        if (startMonthStr > closingMonthStr) continue
+      }
+      if (bill.end_date) {
+        const endMonthStr = bill.end_date.substring(0, 7)
+        if (endMonthStr < closingMonthStr) continue
+      }
+
+      const effectiveAmount =
+        bill.is_shared && bill.my_share_amount != null && Number(bill.my_share_amount) > 0
+          ? Number(bill.my_share_amount)
+          : Number(bill.total_amount) || Number(bill.amount) || 0
+
+      if (effectiveAmount <= 0) continue
+
+      const convertedAmount =
+        bill.currency === wallet.currency
+          ? effectiveAmount
+          : convertAmount(effectiveAmount, bill.currency, wallet.currency)
+
+      totalProjected += convertedAmount
+      continue
+    }
+
+    // Ciclo Corrente ou Passado (validação estrita de janela de compras)
+    const closingYear = currentClosingDate.getFullYear()
+    const closingMonth = currentClosingDate.getMonth()
+    const maxDayClosingMonth = new Date(closingYear, closingMonth + 1, 0).getDate()
+    const effClosingDay = currentClosingDate.getDate()
+
+    const prevClosingYear = prevClosingDate.getFullYear()
+    const prevClosingMonth = prevClosingDate.getMonth()
+    const maxDayPrevClosing = new Date(prevClosingYear, prevClosingMonth + 1, 0).getDate()
+
     const billDueDay = bill.due_day || 1
     let chargeYear = closingYear
     let chargeMonth = closingMonth
@@ -343,7 +383,8 @@ export function getCreditCardInvoiceDetails(
     recurringBills,
     transactions,
     prevClosingDate,
-    currentClosingDate
+    currentClosingDate,
+    isFutureMonth
   )
   grossCurrentDebt += projectedBillsAmount
 

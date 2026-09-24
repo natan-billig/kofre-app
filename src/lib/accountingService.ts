@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getCreditCardInvoiceDetails } from './creditCardService'
+import { convertAmount } from './exchangeRateService'
 import type {
   Wallet,
   Transaction,
@@ -11,6 +12,9 @@ import type {
   CurrencyCode,
   CategoryExpenseItem,
   CurrencyCategoryBreakdown,
+  RecurringBill,
+  DebtItem,
+  Profile,
 } from './types'
 
 export async function fetchTransactions(walletIds: string[]): Promise<Transaction[]> {
@@ -359,18 +363,27 @@ export function calculateCardInvoices(
   wallets: Wallet[],
   transactions: Transaction[],
   scopeFilter: ScopeFilterType | 'all' = 'personal',
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  recurringBills: RecurringBill[] = []
 ): CardInvoiceSummary[] {
   const cards = wallets.filter((w) => {
     const matchesScope = scopeFilter === 'all' ? true : w.type === scopeFilter
     return matchesScope && w.account_type === 'credit_card'
   })
 
+  const now = new Date()
+  const isFutureMonth =
+    referenceDate.getFullYear() > now.getFullYear() ||
+    (referenceDate.getFullYear() === now.getFullYear() && referenceDate.getMonth() > now.getMonth())
+
   return cards.map((card) => {
-    const details = getCreditCardInvoiceDetails(card, transactions, referenceDate)
-    const invoiceAmount = details.currentInvoiceAmount
+    const details = getCreditCardInvoiceDetails(card, transactions, referenceDate, recurringBills)
     const limit = card.credit_limit != null ? Number(card.credit_limit) : null
-    const availableLimit = limit != null ? limit - details.totalDebt : null
+
+    const invoiceAmount = details.currentInvoiceAmount
+    const availableLimit = isFutureMonth
+      ? (limit != null ? Math.max(0, limit - details.currentInvoiceAmount) : null)
+      : (limit != null ? limit - details.totalDebt : null)
 
     return {
       wallet: card,
@@ -380,8 +393,195 @@ export function calculateCardInvoices(
       nextInvoiceAmount: details.nextInvoiceAmount,
       isPaid: details.isPaid,
       isClosed: details.isClosed,
+      isFutureMonth,
+      projectedInvoiceAmount: details.currentInvoiceAmount,
+      projectedAvailableLimit: limit != null ? Math.max(0, limit - details.currentInvoiceAmount) : null,
     }
   })
+}
+
+/**
+ * Calcula a projeção contínua e encadeada de liquidez disponível para meses futuros.
+ * 
+ * Partindo da liquidez real em caixa na data atual (new Date()), percorre cada mês intermediário
+ * até o mês selecionado (targetDate), apurando o fluxo de caixa líquido projetado daquele mês:
+ *   Balanço Líquido = (Receitas previstas) - (Contas fixas não-cartão) - (Faturas de cartão projetadas) - (Dívidas)
+ * O saldo final projetado de cada mês M torna-se a Liquidez Inicial / Disponível do mês M+1.
+ */
+export function calculateProjectedLiquidityCarryOver(
+  targetDate: Date,
+  wallets: Wallet[],
+  transactions: Transaction[],
+  recurringBills: RecurringBill[] = [],
+  debts: DebtItem[] = [],
+  currency: CurrencyCode = 'PYG',
+  scope: ScopeFilterType = 'personal',
+  userProfile?: Profile | null
+): number {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+
+  const targetYear = targetDate.getFullYear()
+  const targetMonth = targetDate.getMonth()
+
+  const monthDiff = (targetYear - currentYear) * 12 + (targetMonth - currentMonth)
+
+  // Liquidez imediata no mundo real (contas correntes e dinheiro em espécie na moeda e escopo)
+  const balances = calculateBalances(wallets, transactions, scope)
+  const baseLiquidity = balances[currency] || 0
+
+  if (monthDiff <= 0) {
+    return baseLiquidity
+  }
+
+  let runningLiquidity = baseLiquidity
+
+  // Itera pelos meses intermediários: do mês atual até o mês anterior a targetDate
+  for (let m = 0; m < monthDiff; m++) {
+    const iterYear = currentYear + Math.floor((currentMonth + m) / 12)
+    const iterMonth = (currentMonth + m) % 12
+    const iterDate = new Date(iterYear, iterMonth, 1)
+    const iterMonthStr = `${iterYear}-${String(iterMonth + 1).padStart(2, '0')}`
+    const isCurrentIterMonth = m === 0
+
+    let monthInflow = 0
+    let monthOutflow = 0
+
+    if (isCurrentIterMonth) {
+      // Para o mês atual: apurar compromissos pendentes entre hoje e o final do mês
+      const todayDay = now.getDate()
+
+      // Receitas agendadas ainda não pagas no mês atual
+      const pendingIncomes = recurringBills.filter(
+        (b) =>
+          b.is_active &&
+          b.type === 'income' &&
+          b.scope === scope &&
+          b.currency === currency &&
+          (b.due_day || 1) >= todayDay
+      )
+      for (const inc of pendingIncomes) {
+        monthInflow += Number(inc.amount) || 0
+      }
+
+      // Contas fixas não-cartão pendentes no restante do mês
+      for (const bill of recurringBills) {
+        if (!bill.is_active || bill.type === 'income' || bill.scope !== scope) continue
+        if ((bill.due_day || 1) < todayDay) continue
+
+        const linkedWallet = bill.wallet_id ? wallets.find((w) => w.id === bill.wallet_id) : null
+        const isCreditCard =
+          bill.payment_method === 'credit_card' || linkedWallet?.account_type === 'credit_card'
+        if (isCreditCard) continue
+
+        if (bill.start_date && bill.start_date.substring(0, 7) > iterMonthStr) continue
+        if (bill.end_date && bill.end_date.substring(0, 7) < iterMonthStr) continue
+
+        const amt =
+          bill.is_shared && bill.my_share_amount != null && Number(bill.my_share_amount) > 0
+            ? Number(bill.my_share_amount)
+            : Number(bill.total_amount) || Number(bill.amount) || 0
+        if (amt <= 0) continue
+
+        const converted = bill.currency === currency ? amt : convertAmount(amt, bill.currency, currency)
+        monthOutflow += converted
+      }
+
+      // Faturas de cartão com vencimento ainda pendente no mês atual
+      const creditCards = wallets.filter(
+        (w) => w.type === scope && w.account_type === 'credit_card' && w.currency === currency
+      )
+      for (const card of creditCards) {
+        if (card.due_day && card.due_day >= todayDay) {
+          const details = getCreditCardInvoiceDetails(card, transactions, iterDate, recurringBills)
+          if (!details.isPaid && details.currentInvoiceAmount > 0) {
+            monthOutflow += details.currentInvoiceAmount
+          }
+        }
+      }
+    } else {
+      // Mês futuro completo (ex: Outubro quando olhando Novembro):
+      // 1. Receitas previstas:
+      const activeRecurringIncomes = recurringBills.filter(
+        (b) => b.is_active && b.type === 'income' && b.scope === scope && b.currency === currency
+      )
+      if (activeRecurringIncomes.length > 0) {
+        for (const inc of activeRecurringIncomes) {
+          monthInflow += Number(inc.amount) || 0
+        }
+      } else if (scope === 'personal') {
+        const profileIncome = Number(userProfile?.base_monthly_income) || 0
+        const profileCurr = userProfile?.preferred_currency || currency
+        if (profileIncome > 0 && profileCurr === currency) {
+          monthInflow += profileIncome
+        }
+      }
+
+      // 2. Contas fixas não-cartão previstas:
+      for (const bill of recurringBills) {
+        if (!bill.is_active || bill.type === 'income' || bill.scope !== scope) continue
+
+        const linkedWallet = bill.wallet_id ? wallets.find((w) => w.id === bill.wallet_id) : null
+        const isCreditCard =
+          bill.payment_method === 'credit_card' || linkedWallet?.account_type === 'credit_card'
+        if (isCreditCard) continue
+
+        if (bill.start_date && bill.start_date.substring(0, 7) > iterMonthStr) continue
+        if (bill.end_date && bill.end_date.substring(0, 7) < iterMonthStr) continue
+
+        const amt =
+          bill.is_shared && bill.my_share_amount != null && Number(bill.my_share_amount) > 0
+            ? Number(bill.my_share_amount)
+            : Number(bill.total_amount) || Number(bill.amount) || 0
+        if (amt <= 0) continue
+
+        const converted = bill.currency === currency ? amt : convertAmount(amt, bill.currency, currency)
+        monthOutflow += converted
+      }
+
+      // 3. Faturas de cartão projetadas daquele ciclo:
+      const creditCards = wallets.filter(
+        (w) => w.type === scope && w.account_type === 'credit_card' && w.currency === currency
+      )
+      for (const card of creditCards) {
+        const details = getCreditCardInvoiceDetails(card, transactions, iterDate, recurringBills)
+        const invoiceAmt =
+          details.currentInvoiceAmount > 0
+            ? details.currentInvoiceAmount
+            : (!details.isPaid && details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : 0)
+        if (invoiceAmt > 0) {
+          monthOutflow += invoiceAmt
+        }
+      }
+
+      // 4. Dívidas / Empréstimos a pagar:
+      for (const debt of debts) {
+        if (
+          debt.status !== 'pending' ||
+          debt.scope !== scope ||
+          debt.type !== 'i_owe' ||
+          debt.currency !== currency
+        ) {
+          continue
+        }
+        if (debt.due_date) {
+          const parts = debt.due_date.split('-')
+          if (
+            parts.length >= 2 &&
+            parseInt(parts[0], 10) === iterYear &&
+            parseInt(parts[1], 10) === iterMonth + 1
+          ) {
+            monthOutflow += Number(debt.amount) || 0
+          }
+        }
+      }
+    }
+
+    runningLiquidity = runningLiquidity + monthInflow - monthOutflow
+  }
+
+  return runningLiquidity
 }
 
 export function calculateCategoryExpenses(

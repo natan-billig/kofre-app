@@ -92,6 +92,9 @@ export interface CardInvoiceSummary {
   nextInvoiceAmount?: number
   isPaid?: boolean
   isClosed?: boolean
+  isFutureMonth?: boolean
+  projectedInvoiceAmount?: number
+  projectedAvailableLimit?: number | null
 }
 
 export interface CreateTransactionDTO {
@@ -224,6 +227,7 @@ export interface RecurringBill {
   total_amount?: number
   my_share_amount?: number
   split_participants?: number
+  payment_method?: string
 }
 
 export type DebtType = 'i_owe' | 'they_owe'

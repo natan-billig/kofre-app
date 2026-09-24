@@ -10,7 +10,11 @@ import type {
   Profile,
 } from '../lib/types'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
-import { calculateBalances, getActiveCurrencies, updateTransaction } from '../lib/accountingService'
+import {
+  getActiveCurrencies,
+  updateTransaction,
+  calculateProjectedLiquidityCarryOver,
+} from '../lib/accountingService'
 import { checkBillPaidInMonth } from '../lib/recurringService'
 import { convertAmount } from '../lib/exchangeRateService'
 import { formatCurrency } from '../lib/formatters'
@@ -55,7 +59,10 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   onPayCardInvoice,
 }) => {
   const { t, language } = useTranslation()
-  const activeDate = currentDate || selectedMonthDate || new Date()
+  const activeDate = useMemo(
+    () => currentDate || selectedMonthDate || new Date(),
+    [currentDate, selectedMonthDate]
+  )
 
   // 1. Filtrar carteiras pelo escopo
   const scopedWallets = wallets.filter(
@@ -94,9 +101,28 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     ? selectedCurrency
     : preferredCurrency
 
-  // 2. Calcular liquidez disponível no escopo para a moeda selecionada (dinheiro em espécie e contas correntes)
-  const balances = calculateBalances(scopedWallets, transactions)
-  const liquidCash = balances[currencyToUse] || 0
+  // 2. Calcular liquidez disponível no escopo para a moeda selecionada com rolagem contínua encadeada
+  const liquidCash = useMemo(() => {
+    return calculateProjectedLiquidityCarryOver(
+      activeDate,
+      scopedWallets,
+      transactions,
+      recurringBills,
+      debts,
+      currencyToUse,
+      currentScope,
+      userProfile
+    )
+  }, [
+    activeDate,
+    scopedWallets,
+    transactions,
+    recurringBills,
+    debts,
+    currencyToUse,
+    currentScope,
+    userProfile,
+  ])
 
   // 3. Montar lista de movimentações previstas com data de vencimento/recebimento
   const commitments: DueCommitmentItem[] = []

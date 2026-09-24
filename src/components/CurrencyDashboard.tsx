@@ -8,6 +8,7 @@ interface CurrencyDashboardProps {
   balances: CurrencyBalances
   cardInvoices: CardInvoiceSummary[]
   activeCurrencies?: CurrencyCode[]
+  selectedDate?: Date
   onPayCardInvoice: (cardWallet: Wallet, invoiceAmount: number) => void
 }
 
@@ -48,10 +49,17 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
   balances,
   cardInvoices,
   activeCurrencies,
+  selectedDate,
   onPayCardInvoice,
 }) => {
   const { t, language } = useTranslation()
   const [showValues, setShowValues] = useState(true)
+
+  const now = new Date()
+  const isFutureMonthSelected =
+    Boolean(selectedDate) &&
+    (selectedDate!.getFullYear() > now.getFullYear() ||
+      (selectedDate!.getFullYear() === now.getFullYear() && selectedDate!.getMonth() > now.getMonth()))
 
   const displayedCurrencies =
     activeCurrencies && activeCurrencies.length > 0
@@ -130,17 +138,26 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
-            {cardInvoices.map(({ wallet, invoiceAmount, availableLimit, totalDebt = 0, nextInvoiceAmount = 0 }) => {
+            {cardInvoices.map((item) => {
+              const { wallet, invoiceAmount, availableLimit, totalDebt = 0, nextInvoiceAmount = 0 } = item
+              const isFuture = item.isFutureMonth ?? isFutureMonthSelected
               const hasLimit = wallet.credit_limit != null && Number(wallet.credit_limit) > 0
               const limit = hasLimit ? Number(wallet.credit_limit) : 0
-              const totalCommitted = availableLimit !== null ? Math.max(0, limit - availableLimit) : (totalDebt > 0 ? totalDebt : invoiceAmount)
-              const pctUsed = limit > 0 ? Math.min(100, Math.max(0, (totalCommitted / limit) * 100)) : 0
 
-              const hasClosedPendingInvoice = invoiceAmount > 0
-              const hasOpenNextDebt = !hasClosedPendingInvoice && (totalDebt > 0 || nextInvoiceAmount > 0)
+              const projectedInvoice = item.projectedInvoiceAmount ?? invoiceAmount
+              const availableLimitProj = item.projectedAvailableLimit ?? (limit > 0 ? Math.max(0, limit - projectedInvoice) : 0)
+              const pctUsedProj = limit > 0 ? Math.min(100, Math.max(0, (projectedInvoice / limit) * 100)) : 0
+
+              const totalCommitted = isFuture
+                ? projectedInvoice
+                : (availableLimit !== null ? Math.max(0, limit - availableLimit) : (totalDebt > 0 ? totalDebt : invoiceAmount))
+              const pctUsed = isFuture ? pctUsedProj : (limit > 0 ? Math.min(100, Math.max(0, (totalCommitted / limit) * 100)) : 0)
+
+              const hasClosedPendingInvoice = !isFuture && invoiceAmount > 0
+              const hasOpenNextDebt = !isFuture && !hasClosedPendingInvoice && (totalDebt > 0 || nextInvoiceAmount > 0)
               const openDebtAmount = nextInvoiceAmount > 0 ? nextInvoiceAmount : totalDebt
-              const displayAmount = hasClosedPendingInvoice ? invoiceAmount : hasOpenNextDebt ? openDebtAmount : 0
-              const payableAmount = hasClosedPendingInvoice ? invoiceAmount : hasOpenNextDebt ? openDebtAmount : 0
+              const displayAmount = isFuture ? projectedInvoice : (hasClosedPendingInvoice ? invoiceAmount : hasOpenNextDebt ? openDebtAmount : 0)
+              const payableAmount = isFuture ? projectedInvoice : (hasClosedPendingInvoice ? invoiceAmount : hasOpenNextDebt ? openDebtAmount : 0)
 
               return (
                 <div
@@ -161,16 +178,39 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                         )}
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {hasClosedPendingInvoice
-                          ? t('dashboard.currentInvoice')
-                          : hasOpenNextDebt
-                            ? (t('creditCard.openDebtNextInvoice') || (language === 'es' ? 'En Curso / Próximo Extracto' : 'Em Aberto / Próxima Fatura'))
-                            : t('dashboard.currentInvoice')}
+                        {isFuture ? (
+                          <span className="text-purple-600 dark:text-purple-400 font-semibold">
+                            {language === 'es' ? 'Extracto Proyectado (Proyección de este Mes)' : 'Fatura Projetada (Projeção deste Mês)'}
+                          </span>
+                        ) : hasClosedPendingInvoice ? (
+                          t('dashboard.currentInvoice')
+                        ) : hasOpenNextDebt ? (
+                          t('creditCard.openDebtNextInvoice') || (language === 'es' ? 'En Curso / Próximo Extracto' : 'Em Aberto / Próxima Fatura')
+                        ) : (
+                          t('dashboard.currentInvoice')
+                        )}
                       </p>
                     </div>
 
                     {/* Pay Invoice Action or Paid Badge */}
-                    {hasClosedPendingInvoice ? (
+                    {isFuture ? (
+                      projectedInvoice > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => onPayCardInvoice(wallet, payableAmount)}
+                          className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 border border-purple-200 dark:border-purple-500/30 text-xs font-semibold text-purple-700 dark:text-purple-200 transition-all active:scale-95"
+                        >
+                          <CreditCard className="w-3 h-3" />
+                          <span>{t('dashboard.payInvoice')}</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-600/20 border border-emerald-200 dark:border-emerald-500/30 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>{language === 'es' ? 'Sin Gastos' : 'Sem Gastos'}</span>
+                        </span>
+                      )
+                    ) : hasClosedPendingInvoice ? (
                       <button
                         type="button"
                         onClick={() => onPayCardInvoice(wallet, payableAmount)}
@@ -212,9 +252,9 @@ export const CurrencyDashboard: React.FC<CurrencyDashboardProps> = ({
                     <div className="text-lg sm:text-xl font-bold text-purple-700 dark:text-purple-200">
                       {showValues ? formatCurrency(displayAmount, wallet.currency) : '••••••'}
                     </div>
-                    {hasLimit && availableLimit !== null && (
+                    {hasLimit && (
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        {t('dashboard.availableLimit')}: {showValues ? formatCurrency(availableLimit, wallet.currency) : '••••'}
+                        {t('dashboard.availableLimit')}: {showValues ? formatCurrency(isFuture ? availableLimitProj : (availableLimit ?? 0), wallet.currency) : '••••'}
                       </span>
                     )}
                   </div>

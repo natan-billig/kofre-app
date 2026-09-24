@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { Wallet, Transaction, ScopeFilterType, Profile } from '../lib/types'
+import type { Wallet, Transaction, ScopeFilterType, Profile, RecurringBill } from '../lib/types'
 import { calculateAccountBalance } from '../lib/accountingService'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
 import { calculateYieldProjection } from '../lib/walletService'
@@ -24,6 +24,8 @@ interface AccountListProps {
   transactions: Transaction[]
   currentScope: ScopeFilterType
   userProfile?: Profile | null
+  selectedDate?: Date
+  recurringBills?: RecurringBill[]
   onOpenCreateAccount: () => void
   onManageAccount?: (wallet: Wallet) => void
   onPayCardInvoice?: (card: Wallet, invoiceAmount: number) => void
@@ -34,6 +36,8 @@ export const AccountList: React.FC<AccountListProps> = ({
   transactions,
   currentScope,
   userProfile,
+  selectedDate,
+  recurringBills,
   onOpenCreateAccount,
   onManageAccount,
   onPayCardInvoice,
@@ -51,6 +55,12 @@ export const AccountList: React.FC<AccountListProps> = ({
   const checkingWallets = activeWallets.filter((w) => w.account_type === 'checking')
   const creditWallets = activeWallets.filter((w) => w.account_type === 'credit_card')
   const savingsWallets = activeWallets.filter((w) => w.account_type === 'savings')
+
+  const now = new Date()
+  const isFutureMonthSelected =
+    Boolean(selectedDate) &&
+    (selectedDate!.getFullYear() > now.getFullYear() ||
+      (selectedDate!.getFullYear() === now.getFullYear() && selectedDate!.getMonth() > now.getMonth()))
 
   return (
     <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm transition-colors">
@@ -307,8 +317,94 @@ export const AccountList: React.FC<AccountListProps> = ({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                 {creditWallets.map((w) => {
-                  const details = getCreditCardInvoiceDetails(w, transactions)
+                  const details = getCreditCardInvoiceDetails(w, transactions, selectedDate || now, recurringBills)
                   const hasCycleDates = details.closingDay != null || details.dueDay != null
+
+                  if (isFutureMonthSelected) {
+                    const displayAmount = details.currentInvoiceAmount
+                    const payableAmount = details.currentInvoiceAmount
+
+                    return (
+                      <div
+                        key={w.id}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-purple-200 dark:border-purple-500/20 flex items-center justify-between hover:border-purple-300 dark:hover:border-purple-500/40 transition-all group"
+                      >
+                        <div className="space-y-1 min-w-0 pr-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                              {w.name}
+                            </span>
+                            {w.type === 'shared' && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-medium">
+                                {t('nav.family')}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Badge discreto com as datas: "Fecha dia X • Vence dia Y" */}
+                          {hasCycleDates && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 font-medium">
+                                {details.closingDay != null && `${t('creditCard.closesDay')} ${details.closingDay}`}
+                                {details.closingDay != null && details.dueDay != null && ' • '}
+                                {details.dueDay != null && `${t('creditCard.dueOnDay')} ${details.dueDay}`}
+                              </span>
+                            </div>
+                          )}
+
+                          <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase font-mono block">
+                            {language === 'es' ? 'Extracto Proyectado (Proyección de este Mes)' : 'Fatura Projetada (Projeção deste Mês)'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right space-y-0.5">
+                            {/* Fatura Projetada destacada */}
+                            <div className="text-sm font-bold text-purple-700 dark:text-purple-300 font-mono">
+                              {formatCurrency(displayAmount, w.currency)}
+                            </div>
+
+                            {w.credit_limit && (
+                              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                {t('dashboard.availableLimit')}:{' '}
+                                {formatCurrency(Math.max(0, Number(w.credit_limit) - details.currentInvoiceAmount), w.currency)}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Ação Pagar Fatura ou Badge */}
+                          {displayAmount > 0 && onPayCardInvoice ? (
+                            <button
+                              type="button"
+                              onClick={() => onPayCardInvoice(w, payableAmount)}
+                              className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 border border-purple-200 dark:border-purple-500/30 text-xs font-semibold text-purple-700 dark:text-purple-200 transition-all active:scale-95"
+                              title={language === 'es' ? 'Pagar extracto de tarjeta' : 'Pagar fatura do cartão'}
+                            >
+                              <CreditCard className="w-3.5 h-3.5" />
+                              <span>{language === 'es' ? 'Pagar Extracto' : 'Pagar Fatura'}</span>
+                            </button>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              <span>{language === 'es' ? 'Sin Gastos' : 'Sem Gastos'}</span>
+                            </span>
+                          )}
+
+                          {onManageAccount && (
+                            <button
+                              type="button"
+                              onClick={() => onManageAccount(w)}
+                              className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+                              title={t('accounts.settings')}
+                            >
+                              <Settings className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  }
+
                   const hasClosedPendingInvoice = details.currentInvoiceAmount > 0
                   const hasOpenNextDebt = !hasClosedPendingInvoice && (details.totalDebt > 0 || details.nextInvoiceAmount > 0)
                   const openDebtAmount = details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt

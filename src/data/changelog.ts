@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.5'
+export const CURRENT_APP_VERSION = '1.9.6'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.6',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Projeção Encadeada Multi-Mês, Soma Total de Assinaturas e Sincronização Lateral v1.9.6',
+      es: 'Proyección Encadenada Multi-Mes, Suma Total de Suscripciones y Sincronización Lateral v1.9.6',
+    },
+    highlights: [
+      {
+        icon: 'TrendingUp',
+        title: {
+          pt: 'Rolagem Contínua de Liquidez Multi-Mês',
+          es: 'Proyección Continua de Liquidez Multi-Mes',
+        },
+        description: {
+          pt: 'Implementada a rotina calculateProjectedLiquidityCarryOver: a Liquidez Disponível em meses futuros (Novembro, Dezembro, Janeiro) deixa de ficar estática no saldo bancário de hoje e passa a herdar cumulativamente o saldo final projetado dos meses anteriores, refletindo com fidelidade a evolução da saúde financeira.',
+          es: 'Implementada la rutina calculateProjectedLiquidityCarryOver: la Liquidez Disponible en meses futuros (Noviembre, Diciembre, Enero) deja de estar fija en el saldo bancario actual y hereda acumulativamente el saldo final proyectado de los meses anteriores, reflejando fielmente la evolución de la salud financiera.',
+        },
+      },
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Somatório Integral das 8 Assinaturas do Cartão (₲ 422.548)',
+          es: 'Sumatoria Integral de las 8 Suscripciones de la Tarjeta (₲ 422.548)',
+        },
+        description: {
+          pt: 'Ajustado o filtro de ciclo em getProjectedRecurringBillsAmount para garantir que todas as 8 assinaturas ativas (F1 TV, Disney+, HBO Max, Crunchyroll, Xbox, Google One, Snapchat+ e TruckSim GPS) sejam somadas integralmente nas faturas futuras do Atlas TC, totalizando com exatidão ₲ 422.548.',
+          es: 'Ajustado el filtro de ciclo en getProjectedRecurringBillsAmount para garantizar que las 8 suscripciones activas (F1 TV, Disney+, HBO Max, Crunchyroll, Xbox, Google One, Snapchat+ y TruckSim GPS) se sumen íntegramente en los extractos futuros de Atlas TC, totalizando con exactitud ₲ 422.548.',
+        },
+      },
+      {
+        icon: 'LayoutDashboard',
+        title: {
+          pt: 'Contextualização Temporal de Cartões na Barra Lateral',
+          es: 'Contextualización Temporal de Tarjetas en el Panel Lateral',
+        },
+        description: {
+          pt: 'Ao selecionar meses futuros no MonthSelector, os cards de cartão na barra lateral e na lista de contas passam a exibir o status projetado daquele ciclo específico (ex.: ₲ 422.548 sob "(Projeção deste Mês)" com limite disponível projetado), preservando a dívida viva em tempo real (₲ 4.341.751) ao visualizar o mês corrente.',
+          es: 'Al seleccionar meses futuros en MonthSelector, las tarjetas de crédito en el panel lateral y la lista de cuentas muestran el estado proyectado de ese ciclo específico (ej.: ₲ 422.548 bajo "(Proyección de este Mes)" con límite disponible proyectado), preservando la deuda viva en tiempo real (₲ 4.341.751) al visualizar el mes actual.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.5',
     releaseDate: '2026-09-24',
