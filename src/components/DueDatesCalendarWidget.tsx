@@ -173,6 +173,16 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, activeDate)
+
+    // Regra v1.9.4: Apenas injetar a fatura de um cartão no calendário se houver movimentação
+    const hasCardActivity =
+      (details.grossInvoiceAmount ?? 0) > 0 ||
+      details.currentInvoiceAmount > 0 ||
+      details.totalDebt > 0
+    if (!hasCardActivity) {
+      continue
+    }
+
     const openDebt = details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt
     const hasPendingInvoice = details.currentInvoiceAmount > 0 || (!details.isPaid && openDebt > 0)
     const paidAmt = (details.paidAmount ?? 0) > 0 ? details.paidAmount! : (details.grossInvoiceAmount ?? 0)
@@ -204,16 +214,20 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     }
   }
 
-  // C. Contas Fixas Vigentes (Segregação Bimonetária Real e Validação Temporal)
+  // C. Contas Fixas Vigentes (Visibilidade Total com Segregação de Caixa)
   for (const bill of recurringBills) {
     if (!bill.is_active) continue
     if (bill.scope !== currentScope) continue
 
-    // 1. Deduplicação de contas debitadas em cartão (já inclusas na fatura do cartão)
-    const linkedWallet = bill.wallet_id ? scopedWallets.find((w) => w.id === bill.wallet_id) : null
-    if (linkedWallet && linkedWallet.account_type === 'credit_card') {
-      continue
-    }
+    // 1. Identificação de contas debitadas em cartão de crédito
+    const linkedWallet = bill.wallet_id
+      ? scopedWallets.find((w) => w.id === bill.wallet_id) || wallets.find((w) => w.id === bill.wallet_id)
+      : null
+    const isCreditCardBill =
+      bill.type !== 'income' &&
+      ((bill as unknown as { payment_method?: string }).payment_method === 'credit_card' ||
+        linkedWallet?.account_type === 'credit_card')
+    const creditCardName = isCreditCardBill ? (linkedWallet?.name || 'Cartão') : undefined
 
     // 2. Filtro temporal de vigência (start_date e end_date)
     if (bill.start_date) {
@@ -243,7 +257,9 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     } else if (currencyToUse === 'PYG') {
       if (bill.currency === 'PYG') {
         finalAmount = grossAmount
-      } else if (bill.currency === 'USD' && linkedWallet && linkedWallet.currency === 'PYG') {
+      } else if (linkedWallet && linkedWallet.currency === 'PYG') {
+        finalAmount = convertAmount(grossAmount, bill.currency, 'PYG')
+      } else if (bill.currency === 'USD' && (!linkedWallet || linkedWallet.currency === 'PYG')) {
         finalAmount = convertAmount(grossAmount, 'USD', 'PYG')
       }
     } else {
@@ -273,6 +289,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       scope: currentScope,
       is_paid: isBillPaid,
       status: isBillPaid ? 'paid' : 'pending',
+      impactsCash: !isCreditCardBill,
+      creditCardName,
     })
   }
 
@@ -370,6 +388,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     }
 
     if (t.type === 'expense') {
+      const isCardTx = wallet?.account_type === 'credit_card'
       commitments.push({
         id: `tx-${t.id}`,
         title: `${t.description || t.category || (language === 'es' ? 'Gasto Programado' : 'Despesa Agendada')}${titleSuffix}`,
@@ -383,6 +402,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
         scope: currentScope,
         transactionId: t.id,
         is_paid: false,
+        impactsCash: !isCardTx,
+        creditCardName: isCardTx ? (wallet?.name || 'Cartão') : undefined,
       })
     } else if (t.type === 'income') {
       commitments.push({
@@ -450,7 +471,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     if (item.flowType === 'in') {
       group.dayInflow += item.amount
     } else {
-      if (item.is_paid !== true && item.status !== 'paid') {
+      if (item.is_paid !== true && item.status !== 'paid' && item.impactsCash !== false) {
         group.dayOutflow += item.amount
       }
     }
@@ -471,9 +492,12 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     totalOutflow += group.dayOutflow
     runningBalance = runningBalance + group.dayInflow - group.dayOutflow
     group.projectedBalance = runningBalance
-    // Exibir etiqueta "Excede saldo" e o aviso ESTRITAMENTE se o saldoProjetado for menor que zero (< 0)
-    group.isAtRisk = runningBalance < 0
-    if (group.isAtRisk) {
+    // Regra Condicional v1.9.4:
+    // Renderizar "Excede saldo" ESTRITAMENTE quando houver saídas de caixa no dia (dayOutflow > 0)
+    // E o saldo projetado ao final do dia for negativo (runningBalance < 0).
+    // Se o dia tiver apenas entradas ou saídas de cartão (impactsCash === false), NUNCA exibir alerta.
+    group.isAtRisk = group.dayOutflow > 0 && runningBalance < 0
+    if (runningBalance < 0) {
       hasOverdraftRisk = true
     }
   }
@@ -664,6 +688,9 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                     } else if (item.type === 'debt') {
                       ItemIcon = HandCoins
                       iconColor = 'text-rose-500'
+                    } else if (item.impactsCash === false) {
+                      ItemIcon = CreditCard
+                      iconColor = 'text-purple-500'
                     } else if (item.type === 'scheduled_expense') {
                       ItemIcon = CalendarClock
                       iconColor = 'text-amber-500'
@@ -692,18 +719,24 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                               {language === 'es' ? 'A Cobrar' : 'A Receber'}
                             </span>
                           )}
-                          {item.type === 'scheduled_expense' && (
+                          {item.type === 'scheduled_expense' && item.impactsCash !== false && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                               {language === 'es' ? 'Por Vencer' : 'A Vencer'}
                             </span>
                           )}
-                          {item.type === 'recurring_bill' && item.is_paid && (
+                          {item.creditCardName && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/20 shrink-0 flex items-center gap-1">
+                              <CreditCard className="w-3 h-3 text-purple-500" />
+                              <span>{item.creditCardName}</span>
+                            </span>
+                          )}
+                          {item.type === 'recurring_bill' && !item.creditCardName && item.is_paid && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0 flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                               <span>{language === 'es' ? 'Pagada' : 'Paga'}</span>
                             </span>
                           )}
-                          {item.type === 'recurring_bill' && !item.is_paid && (
+                          {item.type === 'recurring_bill' && !item.creditCardName && !item.is_paid && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                               {language === 'es' ? 'Por Vencer' : 'A Vencer'}
                             </span>
@@ -729,16 +762,27 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span
-                            className={`font-semibold font-mono ${
-                              isInflow || item.is_paid
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-slate-900 dark:text-white'
-                            }`}
-                          >
-                            {isInflow ? '+' : item.is_paid ? '✓ ' : '- '}
-                            {formatCurrency(item.amount, item.currency)}
-                          </span>
+                          {item.impactsCash === false ? (
+                            <div className="flex flex-col items-end shrink-0">
+                              <span className="font-semibold font-mono text-slate-500 dark:text-slate-400">
+                                - {formatCurrency(item.amount, item.currency)}
+                              </span>
+                              <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium leading-none">
+                                {language === 'es' ? '(En extracto)' : '(Na fatura)'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span
+                              className={`font-semibold font-mono ${
+                                isInflow || item.is_paid
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-slate-900 dark:text-white'
+                              }`}
+                            >
+                              {isInflow ? '+' : item.is_paid ? '✓ ' : '- '}
+                              {formatCurrency(item.amount, item.currency)}
+                            </span>
+                          )}
                           {item.type === 'card_invoice' && !item.is_paid && item.cardWallet && onPayCardInvoice && (
                             <button
                               type="button"

@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.3'
+export const CURRENT_APP_VERSION = '1.9.4'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.4',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Visibilidade de Assinaturas no Calendário, Supressão de Faturas Zeradas e Alerta de Sobregiro v1.9.4',
+      es: 'Visualización de Suscripciones en Calendario, Supresión de Extractos en Cero y Alerta de Sobregiro v1.9.4',
+    },
+    highlights: [
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Visibilidade Total de Assinaturas sem Dupla Contagem de Caixa',
+          es: 'Visibilidad Total de Suscripciones sin Doble Conteo de Caja',
+        },
+        description: {
+          pt: 'Todas as contas fixas e assinaturas do mês são visíveis em suas datas de vencimento. Assinaturas vinculadas a cartão de crédito exibem o badge identificador [💳 Cartão] e o valor informativo "(Na fatura)", segregadas do fluxo de caixa imediato (impactsCash: false) para não duplicar o desembolso já previsto na fatura do cartão.',
+          es: 'Todas las cuentas fijas y suscripciones del mes son visibles en sus fechas de vencimiento. Las suscripciones vinculadas a tarjeta de crédito muestran el badge identificador [💳 Tarjeta] y el monto informativo "(En extracto)", segregadas del flujo de caja inmediato (impactsCash: false) para no duplicar el desembolso ya previsto en el extracto de la tarjeta.',
+        },
+      },
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Supressão de Faturas Fantasma sem Movimentação',
+          es: 'Supresión de Extractos Fantasma sin Movimientos',
+        },
+        description: {
+          pt: 'Cartões de crédito com saldo devedor zerado, limite 100% livre e sem gastos no ciclo (como o Sudameris TC) têm suas linhas de fatura omitidas do calendário, eliminando registros fantasmas e falsos indicadores de faturas quitadas.',
+          es: 'Las tarjetas de crédito con saldo deudor en cero, límite 100% disponible y sin gastos en el ciclo (como Sudameris TC) tienen sus líneas de extracto omitidas del calendario, eliminando registros fantasma y falsos indicadores de facturas pagadas.',
+        },
+      },
+      {
+        icon: 'ShieldAlert',
+        title: {
+          pt: 'Alerta de Sobregiro Diário Estrito ("Excede Saldo")',
+          es: 'Alerta de Sobregiro Diario Estricto ("Excede Saldo")',
+        },
+        description: {
+          pt: 'A etiqueta "Excede saldo" e a sinalização de alerta nos cards diários agora exigem estritamente saídas reais de caixa no dia (dayCashOutflow > 0) com saldo projetado negativo, eliminando alertas espúrios em dias com apenas recebimentos ou despesas em cartão.',
+          es: 'La etiqueta "Excede saldo" y la señalización de alerta en las tarjetas diarias ahora exigen estrictamente salidas reales de caja en el día (dayCashOutflow > 0) con saldo proyectado negativo, eliminando alertas espurias en días con solo ingresos o gastos en tarjeta.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.3',
     releaseDate: '2026-09-24',

@@ -286,6 +286,8 @@ export interface DueCommitmentItem {
   is_paid?: boolean | null
   cardWallet?: Wallet
   revolvingAmount?: number
+  impactsCash?: boolean
+  creditCardName?: string
 }
 
 export interface ParsedNotification {
