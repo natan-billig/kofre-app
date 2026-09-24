@@ -11,9 +11,41 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.8'
+export const CURRENT_APP_VERSION = '1.9.9'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.9',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Unificação Contábil do DTI por Competência e Blindagem Estrutural v1.9.9',
+      es: 'Unificación Contable del DTI por Devengo y Blindaje Estructural v1.9.9',
+    },
+    highlights: [
+      {
+        icon: 'Activity',
+        title: {
+          pt: 'Unificação Contábil do Termômetro DTI por Competência',
+          es: 'Unificación Contable del Termómetro DTI por Devengo',
+        },
+        description: {
+          pt: 'O Termômetro DTI passa a operar sob regime estrito de competência: afere o comprometimento integral da renda mensal sem depender de quitação financeira (isPaid). Elimina em definitivo qualquer amnésia contábil, apurando com precisão 53.0% em Setembro, 168.7% em Outubro e 48.9% em Novembro.',
+          es: 'El Termómetro DTI pasa a operar bajo estricto régimen de devengo: mide el compromiso total del ingreso mensual sin depender de liquidación financiera (isPaid). Elimina en definitiva cualquier amnesia contable, calculando con exactitud 53.0% en Septiembre, 168.7% en Octubre y 48.9% en Noviembre.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Segregação Conceitual entre DTI e Calendário de Caixa',
+          es: 'Segregación Conceptual entre DTI y Calendario de Caja',
+        },
+        description: {
+          pt: 'Separação estrutural definitiva: enquanto o DTI afere o comprometimento orçamentário do período, o Calendário de Vencimentos & Caixa gerencia o regime de caixa em tempo real, baixando despesas quitadas do Total a Vencer e mantendo a projeção encadeada de liquidez intacta.',
+          es: 'Separación estructural definitiva: mientras el DTI evalúa el compromiso presupuestario del período, el Calendario de Vencimientos & Caja gestiona el régimen de caja en tiempo real, descontando gastos liquidados del Total por Vencer y preservando intacta la proyección continua de liquidez.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.8',
     releaseDate: '2026-09-24',
