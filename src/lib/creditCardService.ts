@@ -111,33 +111,38 @@ export function getCreditCardInvoiceDetails(
     }
   }
 
-  const year = referenceDate.getFullYear()
-  const month = referenceDate.getMonth()
-  const todayDay = referenceDate.getDate()
+  const refYear = referenceDate.getFullYear()
+  const refMonth = referenceDate.getMonth()
 
-  // Se hoje <= closingDay: a fatura deste mês ainda está aberta e fecha no closingDay deste mês
-  // Se hoje > closingDay: a fatura deste mês já fechou no closingDay deste mês
-  const maxDayThisMonth = new Date(year, month + 1, 0).getDate()
-  const effClosingDay = Math.min(closingDay, maxDayThisMonth)
-  const currentClosingDate = new Date(year, month, effClosingDay, 23, 59, 59, 999)
+  // Determina o ciclo da fatura com vencimento no mês de referência (ou ciclo corrente do mês de referência)
+  let closingYear = refYear
+  let closingMonth = refMonth
+
+  if (dueDay && dueDay < closingDay) {
+    // Vencimento ocorre no mês seguinte ao fechamento (ex: fecha dia 25, vence dia 5).
+    // Logo, a fatura que VENCE no mês de referência fechou no mês anterior.
+    if (refMonth === 0) {
+      closingYear = refYear - 1
+      closingMonth = 11
+    } else {
+      closingMonth = refMonth - 1
+    }
+  }
+
+  const maxDayClosingMonth = new Date(closingYear, closingMonth + 1, 0).getDate()
+  const effClosingDay = Math.min(closingDay, maxDayClosingMonth)
+  const currentClosingDate = new Date(closingYear, closingMonth, effClosingDay, 23, 59, 59, 999)
 
   // Formato YYYY-MM-DD para comparação precisa com t.transaction_date
   const closingDateStr = `${currentClosingDate.getFullYear()}-${String(
     currentClosingDate.getMonth() + 1
   ).padStart(2, '0')}-${String(currentClosingDate.getDate()).padStart(2, '0')}`
 
-  // Determina a data exata de vencimento correspondente à fatura do ciclo atual
+  // Determina a data exata de vencimento correspondente à fatura deste ciclo
   let dueDate: Date | null = null
   if (dueDay) {
-    if (dueDay >= closingDay) {
-      // Vencimento ocorre no mesmo mês do fechamento
-      const maxDue = new Date(currentClosingDate.getFullYear(), currentClosingDate.getMonth() + 1, 0).getDate()
-      dueDate = new Date(currentClosingDate.getFullYear(), currentClosingDate.getMonth(), Math.min(dueDay, maxDue))
-    } else {
-      // Vencimento ocorre no mês seguinte ao fechamento (ex: fecha dia 25, vence dia 5)
-      const maxDue = new Date(currentClosingDate.getFullYear(), currentClosingDate.getMonth() + 2, 0).getDate()
-      dueDate = new Date(currentClosingDate.getFullYear(), currentClosingDate.getMonth() + 1, Math.min(dueDay, maxDue))
-    }
+    const maxDue = new Date(refYear, refMonth + 1, 0).getDate()
+    dueDate = new Date(refYear, refMonth, Math.min(dueDay, maxDue))
   }
 
   // Segregação das movimentações vinculadas ao cartão
@@ -224,7 +229,7 @@ export function getCreditCardInvoiceDetails(
     dueDay,
     currentClosingDate,
     dueDate,
-    isClosed: todayDay > effClosingDay,
+    isClosed: new Date().getTime() >= currentClosingDate.getTime(),
     isPaid,
     isPartiallyPaid,
     paidAmount,

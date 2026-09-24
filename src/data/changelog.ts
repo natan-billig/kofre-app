@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.0'
+export const CURRENT_APP_VERSION = '1.9.1'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.1',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Dívida Real nos Cartões, Reatividade do DTI e Calendário e Blindagem de Rolagem v1.9.1',
+      es: 'Deuda Real en Tarjetas, Reactividad de DTI y Calendario y Blindaje de Scroll v1.9.1',
+    },
+    highlights: [
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Exibição da Dívida Real e Limite Comprometido',
+          es: 'Visualización de Deuda Real y Límite Comprometido',
+        },
+        description: {
+          pt: 'A barra de progresso de ocupação de limite reflete sempre o comprometimento total real ((limite - disponível) / limite). Cartões com fatura anterior paga exibem o saldo em aberto do ciclo seguinte sem mascarar a dívida viva.',
+          es: 'La barra de progreso de ocupación de límite refleja siempre el compromiso total real ((límite - disponible) / límite). Las tarjetas con extracto anterior pagado muestran el saldo en curso del próximo ciclo sin enmascarar la deuda viva.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Reatividade Total do Calendário e DTI na Troca de Meses',
+          es: 'Reactividad Total del Calendario y DTI al Cambiar de Mes',
+        },
+        description: {
+          pt: 'Ao navegar pelo seletor de meses, o Termômetro DTI e o Calendário de Vencimentos recalculam dinamicamente as faturas, despesas programadas e dívidas com vencimento no mês selecionado.',
+          es: 'Al navegar por el selector de meses, el Termómetro DTI y el Calendario de Vencimientos recalculan dinámicamente los extractos, gastos programados y deudas con vencimiento en el mes seleccionado.',
+        },
+      },
+      {
+        icon: 'ShieldCheck',
+        title: {
+          pt: 'Blindagem Definitiva contra Vazamento de Rolagem (Scroll Lock)',
+          es: 'Blindaje Definitivo contra Fuga de Scroll (Scroll Lock)',
+        },
+        description: {
+          pt: 'Trava dupla no HTML e Body ao abrir modais e contenção estrita de rolagem com overscroll-behavior: contain, impedindo o arrasto indesejado do fundo da aplicação.',
+          es: 'Bloqueo doble en HTML y Body al abrir modales y contención estricta con overscroll-behavior: contain, evitando el desplazamiento no deseado del fondo de la aplicación.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.0',
     releaseDate: '2026-09-24',

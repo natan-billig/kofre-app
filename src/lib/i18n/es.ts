@@ -461,6 +461,8 @@ export const es: TranslationDictionary = {
     initialDebtTip: 'Ingrese el monto que ya debe en esta tarjeta para comenzar a controlar hoy sin registrar compras pasadas.',
     payInvoice: 'Pagar Extracto',
     invoicePaid: 'Extracto Pagado',
+    openDebtNextInvoice: 'En Curso / Próximo Extracto',
+    previousInvoicePaid: 'Extracto Anterior Pagado',
     payInvoiceModalTitle: 'Pagar Extracto de Tarjeta',
     fullPayment: 'Pago Total',
     partialPayment: 'Pago Parcial (Rotativo)',

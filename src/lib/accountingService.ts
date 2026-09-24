@@ -358,7 +358,8 @@ export function calculateBalances(
 export function calculateCardInvoices(
   wallets: Wallet[],
   transactions: Transaction[],
-  scopeFilter: ScopeFilterType | 'all' = 'personal'
+  scopeFilter: ScopeFilterType | 'all' = 'personal',
+  referenceDate: Date = new Date()
 ): CardInvoiceSummary[] {
   const cards = wallets.filter((w) => {
     const matchesScope = scopeFilter === 'all' ? true : w.type === scopeFilter
@@ -366,7 +367,7 @@ export function calculateCardInvoices(
   })
 
   return cards.map((card) => {
-    const details = getCreditCardInvoiceDetails(card, transactions)
+    const details = getCreditCardInvoiceDetails(card, transactions, referenceDate)
     const invoiceAmount = details.currentInvoiceAmount
     const limit = card.credit_limit != null ? Number(card.credit_limit) : null
     const availableLimit = limit != null ? limit - details.totalDebt : null
@@ -375,6 +376,10 @@ export function calculateCardInvoices(
       wallet: card,
       invoiceAmount,
       availableLimit,
+      totalDebt: details.totalDebt,
+      nextInvoiceAmount: details.nextInvoiceAmount,
+      isPaid: details.isPaid,
+      isClosed: details.isClosed,
     }
   })
 }

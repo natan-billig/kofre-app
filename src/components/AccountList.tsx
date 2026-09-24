@@ -309,6 +309,11 @@ export const AccountList: React.FC<AccountListProps> = ({
                 {creditWallets.map((w) => {
                   const details = getCreditCardInvoiceDetails(w, transactions)
                   const hasCycleDates = details.closingDay != null || details.dueDay != null
+                  const hasClosedPendingInvoice = details.currentInvoiceAmount > 0
+                  const hasOpenNextDebt = !hasClosedPendingInvoice && (details.totalDebt > 0 || details.nextInvoiceAmount > 0)
+                  const openDebtAmount = details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt
+                  const displayAmount = hasClosedPendingInvoice ? details.currentInvoiceAmount : hasOpenNextDebt ? openDebtAmount : 0
+                  const payableAmount = hasClosedPendingInvoice ? details.currentInvoiceAmount : hasOpenNextDebt ? openDebtAmount : 0
 
                   return (
                     <div
@@ -339,19 +344,23 @@ export const AccountList: React.FC<AccountListProps> = ({
                         )}
 
                         <span className="text-xs text-purple-600 dark:text-purple-300/80 uppercase font-mono block">
-                          {t('creditCard.currentInvoice')}: {w.currency}
+                          {hasClosedPendingInvoice
+                            ? `${t('creditCard.currentInvoice')}: ${w.currency}`
+                            : hasOpenNextDebt
+                              ? `${t('creditCard.openDebtNextInvoice') || (language === 'es' ? 'En Curso / Próximo Extracto' : 'Em Aberto / Próxima Fatura')}: ${w.currency}`
+                              : `${t('creditCard.currentInvoice')}: ${w.currency}`}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <div className="text-right space-y-0.5">
-                          {/* Fatura Atual destacada */}
+                          {/* Fatura Atual ou Dívida em Aberto destacada */}
                           <div className="text-sm font-bold text-purple-700 dark:text-purple-300 font-mono">
-                            {formatCurrency(details.currentInvoiceAmount, w.currency)}
+                            {formatCurrency(displayAmount, w.currency)}
                           </div>
 
-                          {/* Próxima Fatura se houver compras pós-fechamento */}
-                          {details.nextInvoiceAmount > 0 && (
+                          {/* Próxima Fatura se houver compras pós-fechamento e fatura atual em aberto */}
+                          {hasClosedPendingInvoice && details.nextInvoiceAmount > 0 && (
                             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
                               <span className="text-slate-400 dark:text-slate-500">{t('creditCard.nextInvoice')}:</span>{' '}
                               <span className="text-slate-700 dark:text-slate-300">
@@ -369,22 +378,42 @@ export const AccountList: React.FC<AccountListProps> = ({
                         </div>
 
                         {/* Ação Pagar Fatura ou Badge de Fatura Liquidada */}
-                        {details.currentInvoiceAmount > 0 && onPayCardInvoice && (
+                        {hasClosedPendingInvoice && onPayCardInvoice && (
                           <button
                             type="button"
-                            onClick={() => onPayCardInvoice(w, details.currentInvoiceAmount)}
+                            onClick={() => onPayCardInvoice(w, payableAmount)}
                             className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 border border-purple-200 dark:border-purple-500/30 text-xs font-semibold text-purple-700 dark:text-purple-200 transition-all active:scale-95"
                             title={language === 'es' ? 'Pagar extracto de tarjeta' : 'Pagar fatura do cartão'}
                           >
                             <CreditCard className="w-3.5 h-3.5" />
-                            <span>{language === 'es' ? 'Pagar Fatura' : 'Pagar Fatura'}</span>
+                            <span>{language === 'es' ? 'Pagar Extracto' : 'Pagar Fatura'}</span>
                           </button>
                         )}
 
-                        {details.isPaid && details.currentInvoiceAmount <= 0 && (
+                        {hasOpenNextDebt && (
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              <span>{t('creditCard.previousInvoicePaid') || (language === 'es' ? 'Extracto Anterior Pagado' : 'Fatura Anterior Paga')}</span>
+                            </span>
+                            {onPayCardInvoice && (
+                              <button
+                                type="button"
+                                onClick={() => onPayCardInvoice(w, payableAmount)}
+                                className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 border border-purple-200 dark:border-purple-500/30 text-xs font-semibold text-purple-700 dark:text-purple-200 transition-all active:scale-95"
+                                title={language === 'es' ? 'Pagar extracto en curso' : 'Pagar fatura em aberto'}
+                              >
+                                <CreditCard className="w-3 h-3" />
+                                <span>{language === 'es' ? 'Pagar Extracto' : 'Pagar Fatura'}</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {!hasClosedPendingInvoice && !hasOpenNextDebt && (
                           <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            <span>{language === 'es' ? 'Fatura Paga' : 'Fatura Paga'}</span>
+                            <span>{t('creditCard.invoicePaid') || (language === 'es' ? 'Extracto Pagado' : 'Fatura Paga')}</span>
                           </span>
                         )}
 

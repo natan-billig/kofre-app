@@ -22,3 +22,10 @@
     }
   }
 }
+
+/* Blindagem contra vazamento de rolagem (overscroll leak) em modais e listas roláveis */
+.overflow-y-auto,
+.overflow-x-auto,
+[data-modal-scroll] {
+  overscroll-behavior: contain;
+}

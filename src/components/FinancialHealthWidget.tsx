@@ -32,6 +32,7 @@ interface FinancialHealthWidgetProps {
   debts: DebtItem[]
   currentScope?: ScopeFilterType
   preferredCurrency?: CurrencyCode
+  currentDate?: Date
   userProfile?: Profile | null
   onOpenProfile?: () => void
 }
@@ -43,6 +44,7 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
   debts,
   currentScope = 'personal',
   preferredCurrency = 'PYG',
+  currentDate,
   userProfile,
   onOpenProfile,
 }) => {
@@ -92,6 +94,7 @@ export const FinancialHealthWidget: React.FC<FinancialHealthWidgetProps> = ({
     preferredCurrency,
     userProfile,
     targetCurrency: currencyToUse,
+    referenceDate: currentDate,
   })
 
   // Cores semafóricas

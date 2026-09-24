@@ -34,6 +34,7 @@ interface DueDatesCalendarWidgetProps {
   currentScope?: ScopeFilterType
   preferredCurrency?: CurrencyCode
   selectedMonthDate?: Date
+  currentDate?: Date
   userProfile?: Profile | null
   onTransactionPaid?: (transactionId: string) => Promise<void> | void
   onPayCardInvoice?: (card: Wallet, invoiceAmount: number) => void
@@ -46,12 +47,14 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   debts,
   currentScope = 'personal',
   preferredCurrency = 'PYG',
-  selectedMonthDate = new Date(),
+  selectedMonthDate,
+  currentDate,
   userProfile,
   onTransactionPaid,
   onPayCardInvoice,
 }) => {
   const { t, language } = useTranslation()
+  const activeDate = currentDate || selectedMonthDate || new Date()
 
   // 1. Filtrar carteiras pelo escopo
   const scopedWallets = wallets.filter(
@@ -105,8 +108,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     (b) => b.is_active && b.type === 'income' && b.scope === currentScope && b.currency === currencyToUse
   )
 
-  const selectedYear = selectedMonthDate.getFullYear()
-  const selectedMonth = selectedMonthDate.getMonth() + 1
+  const selectedYear = activeDate.getFullYear()
+  const selectedMonth = activeDate.getMonth() + 1
 
   const hasScheduledIncomes = transactions.some((t) => {
     if (t.is_paid !== false && t.status !== 'pending') return false
@@ -158,7 +161,7 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
   )
 
   for (const card of creditCards) {
-    const details = getCreditCardInvoiceDetails(card, transactions, selectedMonthDate)
+    const details = getCreditCardInvoiceDetails(card, transactions, activeDate)
     const hasInvoice = details.currentInvoiceAmount > 0 || details.isPaid || (details.paidAmount != null && details.paidAmount > 0)
 
     if (hasInvoice && card.due_day) {
@@ -253,6 +256,13 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     let dueDay = 28 // fallback
     if (debt.due_date) {
       const parts = debt.due_date.split('-')
+      if (parts.length >= 2) {
+        const dYear = parseInt(parts[0], 10)
+        const dMonth = parseInt(parts[1], 10)
+        if (dYear !== selectedYear || dMonth !== selectedMonth) {
+          continue
+        }
+      }
       if (parts.length === 3) {
         dueDay = parseInt(parts[2], 10) || 28
       }
@@ -283,6 +293,14 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
     const wallet = scopedWalletMap.get(t.wallet_id)
     if (!wallet) continue
+
+    if (!t.transaction_date) continue
+
+    const parts = t.transaction_date.split('-')
+    if (parts.length < 2) continue
+    const tYear = parseInt(parts[0], 10)
+    const tMonth = parseInt(parts[1], 10)
+    if (tYear !== selectedYear || tMonth !== selectedMonth) continue
 
     const txCurrency = (t.original_currency || wallet.currency || 'PYG') as CurrencyCode
     const rawTxAmount = Number(t.amount) || 0

@@ -141,12 +141,27 @@ export function calculateFinancialHealth({
     }
   }
 
-  // 5. Dívidas a pagar no período: estritamente na moeda ativa
+  // 5. Dívidas a pagar no período: estritamente na moeda ativa e no mês de referência
   let debtsToPayAmount = 0
+  const refYear = referenceDate.getFullYear()
+  const refMonth = referenceDate.getMonth() + 1
+
   for (const debt of debts) {
     if (debt.status !== 'pending') continue
     if (debt.scope !== currentScope) continue
     if (debt.type !== 'i_owe') continue
+
+    // Se houver data de vencimento especificada, filtra pelo mês de referência
+    if (debt.due_date) {
+      const parts = debt.due_date.split('-')
+      if (parts.length >= 2) {
+        const dYear = parseInt(parts[0], 10)
+        const dMonth = parseInt(parts[1], 10)
+        if (dYear !== refYear || dMonth !== refMonth) {
+          continue
+        }
+      }
+    }
 
     const rawDebt = Number(debt.amount) || 0
     if (rawDebt <= 0) continue

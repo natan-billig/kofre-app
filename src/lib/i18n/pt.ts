@@ -459,6 +459,8 @@ export const pt = {
     initialDebtTip: 'Insira o valor que você já deve neste cartão para começar a controlar hoje sem precisar cadastrar compras passadas.',
     payInvoice: 'Pagar Fatura',
     invoicePaid: 'Fatura Paga',
+    openDebtNextInvoice: 'Em Aberto / Próxima Fatura',
+    previousInvoicePaid: 'Fatura Anterior Paga',
     payInvoiceModalTitle: 'Pagar Fatura do Cartão',
     fullPayment: 'Pagamento Total',
     partialPayment: 'Pagamento Parcial (Rotativo)',

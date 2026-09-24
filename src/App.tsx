@@ -304,7 +304,7 @@ export default function App() {
 
   // Compute calculated balances and credit card summaries
   const balances = calculateBalances(wallets, transactions, currentScope)
-  const cardInvoices = calculateCardInvoices(wallets, transactions, currentScope)
+  const cardInvoices = calculateCardInvoices(wallets, transactions, currentScope, selectedDate)
 
   // Active currencies based on user preference and active wallets
   const preferredCurrency: CurrencyCode = userProfile?.preferred_currency || 'PYG'
@@ -521,11 +521,12 @@ export default function App() {
               currentScope === 'personal' ? (
                 <FinancialHealthWidget
                   wallets={wallets}
-                  transactions={monthlyTransactions}
+                  transactions={transactions}
                   recurringBills={recurringBills}
                   debts={debts}
                   currentScope={currentScope}
                   preferredCurrency={preferredCurrency}
+                  currentDate={selectedDate}
                   userProfile={userProfile}
                   onOpenProfile={() => setIsProfileModalOpen(true)}
                 />
@@ -563,6 +564,7 @@ export default function App() {
                 debts={debts}
                 currentScope={currentScope}
                 preferredCurrency={preferredCurrency}
+                currentDate={selectedDate}
                 selectedMonthDate={selectedDate}
                 userProfile={userProfile}
                 onPayCardInvoice={handlePayCardInvoice}

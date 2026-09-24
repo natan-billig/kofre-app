@@ -88,6 +88,10 @@ export interface CardInvoiceSummary {
   wallet: Wallet
   invoiceAmount: number
   availableLimit: number | null
+  totalDebt?: number
+  nextInvoiceAmount?: number
+  isPaid?: boolean
+  isClosed?: boolean
 }
 
 export interface CreateTransactionDTO {

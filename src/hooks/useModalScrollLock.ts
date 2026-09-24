@@ -1,14 +1,13 @@
 import { useEffect } from 'react'
 
 let lockCount = 0
-let originalOverflow = ''
 
 export function useModalScrollLock(isOpen: boolean) {
   useEffect(() => {
     if (!isOpen || typeof document === 'undefined') return
 
     if (lockCount === 0) {
-      originalOverflow = document.body.style.overflow
+      document.documentElement.style.overflow = 'hidden'
       document.body.style.overflow = 'hidden'
     }
     lockCount++
@@ -17,7 +16,8 @@ export function useModalScrollLock(isOpen: boolean) {
       lockCount--
       if (lockCount <= 0) {
         lockCount = 0
-        document.body.style.overflow = originalOverflow || 'unset'
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
       }
     }
   }, [isOpen])
