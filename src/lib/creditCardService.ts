@@ -138,6 +138,20 @@ export function getCreditCardInvoiceDetails(
     currentClosingDate.getMonth() + 1
   ).padStart(2, '0')}-${String(currentClosingDate.getDate()).padStart(2, '0')}`
 
+  // Determina a data de fechamento do ciclo anterior para isolar pagamentos pertinentes
+  let prevClosingYear = closingYear
+  let prevClosingMonth = closingMonth - 1
+  if (prevClosingMonth < 0) {
+    prevClosingYear--
+    prevClosingMonth = 11
+  }
+  const maxDayPrevClosing = new Date(prevClosingYear, prevClosingMonth + 1, 0).getDate()
+  const effPrevClosingDay = Math.min(closingDay, maxDayPrevClosing)
+  const prevClosingDate = new Date(prevClosingYear, prevClosingMonth, effPrevClosingDay, 23, 59, 59, 999)
+  const prevClosingDateStr = `${prevClosingDate.getFullYear()}-${String(
+    prevClosingDate.getMonth() + 1
+  ).padStart(2, '0')}-${String(prevClosingDate.getDate()).padStart(2, '0')}`
+
   // Determina a data exata de vencimento correspondente à fatura deste ciclo
   let dueDate: Date | null = null
   if (dueDay) {
@@ -146,9 +160,11 @@ export function getCreditCardInvoiceDetails(
   }
 
   // Segregação das movimentações vinculadas ao cartão
-  let grossCurrentDebt = Number(wallet.initial_balance || 0)
+  let grossCurrentDebt = 0
   let nextInvoiceDebt = 0
-  let totalPayments = 0
+  let cyclePayments = 0
+  let pastDebt = Number(wallet.initial_balance || 0)
+  let pastPayments = 0
 
   for (const t of transactions) {
     const isExpense = t.type === 'expense' && t.wallet_id === wallet.id
@@ -162,19 +178,37 @@ export function getCreditCardInvoiceDetails(
     const creditedAmount = Number(t.destination_amount ?? t.amount) || 0
 
     if (isExpense) {
-      if (txDate <= closingDateStr) {
+      if (txDate <= prevClosingDateStr) {
+        pastDebt += amount
+      } else if (txDate <= closingDateStr) {
         grossCurrentDebt += amount
       } else {
         nextInvoiceDebt += amount
       }
     } else if (isIncome) {
-      // Receitas/estornos abatem primeiro a fatura atual
-      grossCurrentDebt -= amount
+      if (txDate <= prevClosingDateStr) {
+        pastDebt -= amount
+      } else if (txDate <= closingDateStr) {
+        grossCurrentDebt -= amount
+      } else {
+        nextInvoiceDebt -= amount
+      }
     } else if (isTransferPayment) {
-      // Pagamentos de fatura
-      totalPayments += creditedAmount
+      if (txDate <= prevClosingDateStr) {
+        pastPayments += creditedAmount
+      } else {
+        cyclePayments += creditedAmount
+      }
     }
   }
+
+  // Rolagem de dívida passada não liquidada para a fatura corrente
+  const pastUnpaid = Math.max(0, pastDebt - pastPayments)
+  grossCurrentDebt += pastUnpaid
+
+  // Excedente de pagamentos passados abate pagamentos do ciclo atual
+  const pastExcess = Math.max(0, pastPayments - pastDebt)
+  cyclePayments += pastExcess
 
   const grossInvoiceAmount = Math.max(0, grossCurrentDebt)
 
@@ -184,8 +218,16 @@ export function getCreditCardInvoiceDetails(
   let isPartiallyPaid = false
   let paidAmount = 0
 
-  if (grossInvoiceAmount > 0) {
-    if (totalPayments >= grossInvoiceAmount) {
+  if (totalDebt <= 0) {
+    // Cartão sem saldo devedor geral: liquidado
+    isPaid = true
+    isPartiallyPaid = false
+    paidAmount = grossInvoiceAmount
+    currentInvoiceDebt = 0
+    revolvingAmount = 0
+    nextInvoiceDebt = 0
+  } else if (grossInvoiceAmount > 0) {
+    if (cyclePayments >= grossInvoiceAmount) {
       // Pagamento total ou superior: fatura liquidada
       isPaid = true
       isPartiallyPaid = false
@@ -193,17 +235,17 @@ export function getCreditCardInvoiceDetails(
       currentInvoiceDebt = 0
       revolvingAmount = 0
       // Crédito excedente abate da próxima fatura
-      const excessCredit = totalPayments - grossInvoiceAmount
+      const excessCredit = cyclePayments - grossInvoiceAmount
       if (excessCredit > 0) {
         nextInvoiceDebt = Math.max(0, nextInvoiceDebt - excessCredit)
       }
-    } else if (totalPayments > 0) {
+    } else if (cyclePayments > 0) {
       // Pagamento parcial: fatura liquidada para este ciclo com rolagem de saldo rotativo
       isPaid = true
       isPartiallyPaid = true
-      paidAmount = totalPayments
+      paidAmount = cyclePayments
       currentInvoiceDebt = 0
-      revolvingAmount = grossInvoiceAmount - totalPayments
+      revolvingAmount = grossInvoiceAmount - cyclePayments
       nextInvoiceDebt += revolvingAmount
     } else {
       // Sem pagamento: fatura pendente de quitação
@@ -214,10 +256,15 @@ export function getCreditCardInvoiceDetails(
       revolvingAmount = 0
     }
   } else {
-    // Não houve despesas no ciclo da fatura
-    if (totalPayments > 0) {
-      nextInvoiceDebt = Math.max(0, nextInvoiceDebt - totalPayments)
+    // Não houve despesas no ciclo fechado da fatura
+    if (cyclePayments > 0) {
+      nextInvoiceDebt = Math.max(0, nextInvoiceDebt - cyclePayments)
     }
+    isPaid = totalDebt <= 0
+  }
+
+  if (totalDebt > 0 && currentInvoiceDebt === 0 && nextInvoiceDebt === 0) {
+    nextInvoiceDebt = totalDebt
   }
 
   return {

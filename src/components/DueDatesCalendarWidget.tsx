@@ -11,6 +11,7 @@ import type {
 } from '../lib/types'
 import { getCreditCardInvoiceDetails } from '../lib/creditCardService'
 import { calculateBalances, getActiveCurrencies, updateTransaction } from '../lib/accountingService'
+import { checkBillPaidInMonth } from '../lib/recurringService'
 import { convertAmount } from '../lib/exchangeRateService'
 import { formatCurrency } from '../lib/formatters'
 import { useTranslation } from '../lib/i18n/LanguageContext'
@@ -110,6 +111,16 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
   const selectedYear = activeDate.getFullYear()
   const selectedMonth = activeDate.getMonth() + 1
+  const selectedMonthStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`
+
+  const monthlyTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      if (!t.transaction_date) return false
+      const parts = t.transaction_date.split('-')
+      if (parts.length < 2) return false
+      return parseInt(parts[0], 10) === selectedYear && parseInt(parts[1], 10) === selectedMonth
+    })
+  }, [transactions, selectedYear, selectedMonth])
 
   const hasScheduledIncomes = transactions.some((t) => {
     if (t.is_paid !== false && t.status !== 'pending') return false
@@ -162,13 +173,16 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, activeDate)
-    const hasInvoice = details.currentInvoiceAmount > 0 || details.isPaid || (details.paidAmount != null && details.paidAmount > 0)
+    const openDebt = details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt
+    const hasPendingInvoice = details.currentInvoiceAmount > 0 || (!details.isPaid && openDebt > 0)
+    const paidAmt = (details.paidAmount ?? 0) > 0 ? details.paidAmount! : (details.grossInvoiceAmount ?? 0)
+    const hasPaidInvoice = details.isPaid && paidAmt > 0
 
-    if (hasInvoice && card.due_day) {
-      const isPaid = Boolean(details.isPaid)
-      const amount = isPaid
-        ? details.paidAmount || details.grossInvoiceAmount || 0
-        : details.currentInvoiceAmount
+    if ((hasPendingInvoice || hasPaidInvoice) && card.due_day) {
+      const isPaid = !hasPendingInvoice && hasPaidInvoice
+      const amount = hasPendingInvoice
+        ? (details.currentInvoiceAmount > 0 ? details.currentInvoiceAmount : openDebt)
+        : paidAmt
 
       if (amount > 0) {
         commitments.push({
@@ -190,10 +204,26 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
     }
   }
 
-  // C. Contas Fixas Vigentes (Segregação Bimonetária Real)
+  // C. Contas Fixas Vigentes (Segregação Bimonetária Real e Validação Temporal)
   for (const bill of recurringBills) {
     if (!bill.is_active) continue
     if (bill.scope !== currentScope) continue
+
+    // 1. Deduplicação de contas debitadas em cartão (já inclusas na fatura do cartão)
+    const linkedWallet = bill.wallet_id ? scopedWallets.find((w) => w.id === bill.wallet_id) : null
+    if (linkedWallet && linkedWallet.account_type === 'credit_card') {
+      continue
+    }
+
+    // 2. Filtro temporal de vigência (start_date e end_date)
+    if (bill.start_date) {
+      const startMonthStr = bill.start_date.substring(0, 7)
+      if (startMonthStr > selectedMonthStr) continue
+    }
+    if (bill.end_date) {
+      const endMonthStr = bill.end_date.substring(0, 7)
+      if (endMonthStr < selectedMonthStr) continue
+    }
 
     const isIncome = bill.type === 'income'
     const grossAmount = (!isIncome && bill.total_amount != null && Number(bill.total_amount) > 0)
@@ -201,8 +231,6 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       : Number(bill.amount)
 
     if (grossAmount <= 0) continue
-
-    const linkedWallet = bill.wallet_id ? scopedWallets.find((w) => w.id === bill.wallet_id) : null
 
     let finalAmount: number | null = null
 
@@ -230,6 +258,9 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
 
     const titleSuffix = bill.currency !== currencyToUse ? ` (${formatCurrency(grossAmount, bill.currency)})` : ''
 
+    // 3. Checagem se a conta já foi liquidada neste mês específico
+    const isBillPaid = checkBillPaidInMonth(bill, monthlyTransactions)
+
     commitments.push({
       id: `bill-${bill.id}`,
       title: `${bill.name}${titleSuffix}`,
@@ -240,6 +271,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       dueDay: bill.due_day,
       entityName: bill.category,
       scope: currentScope,
+      is_paid: isBillPaid,
+      status: isBillPaid ? 'paid' : 'pending',
     })
   }
 
@@ -266,6 +299,12 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       if (parts.length === 3) {
         dueDay = parseInt(parts[2], 10) || 28
       }
+    } else {
+      // Dívidas sem data de vencimento específica: só projetar no mês corrente atual
+      const now = new Date()
+      if (selectedYear !== now.getFullYear() || selectedMonth !== now.getMonth() + 1) {
+        continue
+      }
     }
 
     commitments.push({
@@ -279,6 +318,8 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
       dueDate: debt.due_date || undefined,
       entityName: debt.contact_name,
       scope: currentScope,
+      is_paid: false,
+      status: 'pending',
     })
   }
 
@@ -652,6 +693,17 @@ export const DueDatesCalendarWidget: React.FC<DueDatesCalendarWidgetProps> = ({
                             </span>
                           )}
                           {item.type === 'scheduled_expense' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                              {language === 'es' ? 'Por Vencer' : 'A Vencer'}
+                            </span>
+                          )}
+                          {item.type === 'recurring_bill' && item.is_paid && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              <span>{language === 'es' ? 'Pagada' : 'Paga'}</span>
+                            </span>
+                          )}
+                          {item.type === 'recurring_bill' && !item.is_paid && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                               {language === 'es' ? 'Por Vencer' : 'A Vencer'}
                             </span>

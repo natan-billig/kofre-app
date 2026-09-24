@@ -11,9 +11,52 @@ export interface ChangelogRelease {
   highlights: ChangelogHighlight[]
 }
 
-export const CURRENT_APP_VERSION = '1.9.1'
+export const CURRENT_APP_VERSION = '1.9.2'
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
+  {
+    version: '1.9.2',
+    releaseDate: '2026-09-24',
+    title: {
+      pt: 'Sincronização Real de Faturas Futuras no DTI e Totais Reativos no Calendário v1.9.2',
+      es: 'Sincronización Real de Facturas Futuras en DTI y Totales Reactivos en Calendario v1.9.2',
+    },
+    highlights: [
+      {
+        icon: 'Activity',
+        title: {
+          pt: 'Projeção Real de Faturas Futuras no Termômetro DTI',
+          es: 'Proyección Real de Facturas Futuras en el Termómetro DTI',
+        },
+        description: {
+          pt: 'Faturas abertas e dívidas vivas dos cartões de crédito são mapeadas precisamente pelo mês de vencimento. Ao navegar para meses futuros (como Novembro/2026), o saldo devedor em aberto compõe fielmente o somatório de dívidas do DTI, sendo zerado apenas quando a fatura daquele mês específico for efetivamente liquidada.',
+          es: 'Los extractos en curso y la deuda viva de las tarjetas de crédito se mapean con precisión según el mes de vencimiento. Al navegar hacia meses futuros (como Noviembre/2026), el saldo deudor en curso compone fielmente el cálculo de deudas del DTI, anulándose únicamente cuando el extracto de ese mes específico haya sido efectivamente liquidado.',
+        },
+      },
+      {
+        icon: 'Calendar',
+        title: {
+          pt: 'Recálculo Estrito e Dinâmico do Fluxo de Caixa no Calendário',
+          es: 'Recálculo Estricto y Dinámico del Flujo de Caja en el Calendario',
+        },
+        description: {
+          pt: 'Os totais de topo ("Entradas Previstas", "Total a Vencer" e "Saldo Projetado") recalculam estritamente com base nos compromissos que vencem no mês e ano selecionados. Deduplicação de contas debitadas em cartão, validação temporal de vigência e detecção de contas já liquidadas no mês para eliminar valores estáticos repetidos.',
+          es: 'Los totales superiores ("Ingresos Previstos", "Total a Vencer" y "Saldo Proyectado") recalculan estrictamente según los compromisos con vencimiento en el mes y año seleccionados. Deduplicación de cuentas debitadas en tarjeta, validación temporal de vigencia y detección de facturas ya pagadas en el mes para eliminar valores estáticos repetidos.',
+        },
+      },
+      {
+        icon: 'CreditCard',
+        title: {
+          pt: 'Segregação de Ciclos de Faturação e Rolagem Precisa de Saldo',
+          es: 'Segregación de Ciclos de Facturación y Rodamiento Preciso de Saldo',
+        },
+        description: {
+          pt: 'Isolamento contábil de pagamentos entre ciclos sucessivos de faturas de cartão. Pagamentos passados não mascaram faturas de meses futuros e saldos devedores remanescentes rolam fielmente para o próximo vencimento.',
+          es: 'Aislamiento contable de pagos entre ciclos sucesivos de extractos de tarjetas. Pagos anteriores no enmascaran facturas de meses futuros y saldos deudores remanentes ruedan fielmente al próximo vencimiento.',
+        },
+      },
+    ],
+  },
   {
     version: '1.9.1',
     releaseDate: '2026-09-24',

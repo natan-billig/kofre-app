@@ -79,12 +79,17 @@ export function calculateFinancialHealth({
   let cardInvoicesAmount = 0
   for (const card of creditCards) {
     const details = getCreditCardInvoiceDetails(card, transactions, referenceDate)
-    // Faturas quitadas deixam de comprometer a margem de endividamento do mês corrente no Termômetro DTI
-    if (details.isPaid) {
+    // Faturas quitadas deixam de comprometer a margem de endividamento do mês de referência no Termômetro DTI
+    if (details.isPaid && details.currentInvoiceAmount <= 0) {
       continue
     }
-    const invoiceInCardCurrency = Math.max(0, details.currentInvoiceAmount)
-    cardInvoicesAmount += invoiceInCardCurrency
+
+    const openDebt = details.nextInvoiceAmount > 0 ? details.nextInvoiceAmount : details.totalDebt
+    const invoiceInCardCurrency = details.currentInvoiceAmount > 0
+      ? details.currentInvoiceAmount
+      : (!details.isPaid && openDebt > 0 ? openDebt : 0)
+
+    cardInvoicesAmount += Math.max(0, invoiceInCardCurrency)
   }
 
   // 4. Contas Fixas Vigentes no escopo com segregação bimonetária e deduplicação de débito em cartão
